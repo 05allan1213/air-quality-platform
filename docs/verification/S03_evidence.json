@@ -550,5 +550,427 @@
     "T11": "NO-GO",
     "CNEMC_requests": 0,
     "natural_168_hours": "NOT RUN"
+  },
+  "remediation": {
+    "scope": "S03 F01 / F02",
+    "stage_status": "in_progress; pending GPT targeted independent review",
+    "base_commit": "32abe4a11397ec1b6e828dd8053d50fbfb2fd22d",
+    "base_source_sha256": "f8270973b72e0e28fde10b215e2c2d7d8f0caeca777fd6c85fa4a6ff2ff03479",
+    "implementation_commit": "bd955c1636f8eb646b9a954793dd296bd71793f7",
+    "source_sha256": "c41ffeb0385b319510a9220c27eedfd727ef1d693208171c1c10b62727dd5c17",
+    "frozen_files": 114,
+    "digest_algorithm": "scripts/s01_runtime.py:source_hash (POSIX path, NUL, bytes, NUL)",
+    "implementation_paths": [
+      "backend/collection/admission.py",
+      "backend/collection/migrations/0006_reconcile_legacy_quota.py",
+      "backend/collection/services.py",
+      "backend/collection/writer.py",
+      "scripts/s03_checks.py",
+      "tests/collection/test_collection_postgres.py"
+    ],
+    "artifacts": {
+      "baseline_quota": {
+        "path": "tmp/s03-f01-f02/original-f01.json",
+        "sha256": "1e4f2a892bb17405845da08ba52155e183da0623545b9d96882f4f765f951b9c"
+      },
+      "baseline_regressions": {
+        "path": "tmp/s03-f01-f02/red-final.xml",
+        "sha256": "dd9db2f43c1192e6f3230d3ce632ee448db15ae29983a431ca29b89d8a24e80d",
+        "package_sha256": "809d3639cd06719305ba7f0e8abe5b1a3aec0b241fac46317dacef7a6b6ceb49",
+        "tests": 28,
+        "failures": 18,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 10
+      },
+      "fixed_regressions": {
+        "path": "tmp/s03-f01-f02/frozen/green.xml",
+        "sha256": "4e541095d79339c2c2619e6bcb872e1aa06418874ad26bc0865c3a51de7a9456",
+        "package_sha256": "3965f3a0ccab1ee58b289281f524121620d21e396adf40bcb076c7f81d33bfad",
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 28
+      },
+      "full_pytest": {
+        "path": "tmp/s03-f01-f02/frozen/pytest.xml",
+        "sha256": "ed7320469c0a43b17804649435ae6968959be85aa29974fe9061de54c5a882d9",
+        "package_sha256": "7e6fed93fc0ebfc5002f43c8b894e937c683f07a01a39469ad882df3dba4978a",
+        "tests": 271,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "passed": 271
+      },
+      "engineering": {
+        "path": "tmp/s03-f01-f02/frozen/engineering.json",
+        "sha256": "8e8ab61fbfdf2c72c2909e2d596fc4df75c308a47336f22e18a08fc9e32a4481"
+      },
+      "old_hashes": {
+        "path": "tmp/s03-f01-f02/original-receipts.json",
+        "sha256": "58bf037c95bb2d89f1c7fa0384d41ea64291f32e48bb7bd305df2d5160344b40"
+      },
+      "cleanup": {
+        "path": "tmp/s03-f01-f02/frozen/cleanup.json",
+        "sha256": "17234ee93a73efb097dbf371dd807953046ed9010800eaff6d62dbd1bf119e5f"
+      },
+      "s01_timeout_adapter": {
+        "path": "tmp/s03-f01-f02/frozen/timeout-adapter/sitecustomize.py",
+        "sha256": "fbd9e166bf15d84d1c73f90755beac771c0364c0367e1342261af919e5b0555f"
+      },
+      "s03_console": {
+        "path": "tmp/s03-f01-f02/frozen/compose.log",
+        "sha256": "d168e1ea6b5073fdafe2e820aa43cc92fac589480a0cf28cf3e6b51e90d741e3",
+        "package_sha256": "f4c4acd35cca39cd7813fb1e61486381e095bfc57999fbb421e429737c8495ab"
+      },
+      "s02_console": {
+        "path": "tmp/s03-f01-f02/frozen/s02-f-only.log",
+        "sha256": "b2f3c7adb4256e78d091ddc9b66606c8cc80564147db8d8bb52361cbeac2326e"
+      },
+      "source_digest_file": {
+        "path": "tmp/s03-f01-f02/frozen/source.sha256",
+        "sha256": "bd347f2fb5c4fbcde18c6edf09559e4cc9d2de8fbbbf22b54eabe4bf15b33821"
+      },
+      "pytest_console": {
+        "path": "tmp/s03-f01-f02/frozen/pytest.log",
+        "sha256": "0e58fd7c7d5dbeadbd738282970343593d8168ffea3a4c9a10dc25b9ca333d38"
+      },
+      "pre_filter_container_wait_log": {
+        "path": "tmp/s03-f01-f02/v16-wait-scans.json",
+        "sha256": "8e1b1a2a7e3ca9933b86ca57134ce6bf9c854d82250b1202d0b22ab1074878bc"
+      }
+    },
+    "runs": {
+      "s03": {
+        "project": "s03v9bac4542a188",
+        "status": "PASS",
+        "check_count": 197,
+        "checks": {
+          "path": "tmp/s03-evidence/s03v9bac4542a188/checks.json",
+          "sha256": "4adc44acb2fb7e3ede8b4fce856edf34d45411d979031e3759e3f68a126f983f",
+          "package_sha256": "d48e2aaf90bc7c2479c89b132ae468c24c2717e102c76916c1a9d26c312cc4bc"
+        },
+        "result": {
+          "path": "tmp/s03-evidence/s03v9bac4542a188/result.json",
+          "sha256": "02e7184eec4599f9fb3736cda0aed28929a081fb6f9f338bea617696a4a9f4a5"
+        },
+        "matrix": {
+          "V01": "PASS",
+          "V02": "PASS",
+          "V03": "PASS",
+          "V04": "PASS",
+          "V05": "PASS",
+          "V06": "PASS",
+          "V07": "PASS",
+          "V08": "PASS",
+          "V09": "PASS",
+          "V10": "PASS",
+          "V11": "PASS",
+          "V12": "PASS",
+          "V13": "PASS",
+          "V14": "PASS",
+          "V15": "PASS",
+          "V16": "PASS",
+          "V17": "PASS",
+          "V18": "PASS",
+          "V19": "PASS",
+          "V20": "NOT RUN"
+        }
+      },
+      "s03_products": {
+        "project": "s03ve40c70399355",
+        "status": "PASS",
+        "check_count": 173,
+        "checks": {
+          "path": "tmp/s03-evidence/s03ve40c70399355/checks.json",
+          "sha256": "d4dff39bf839dacd272e7e9845d1a14480eb9e70bc7cc5d8c4bf71e0e8f6ac75"
+        },
+        "result": {
+          "path": "tmp/s03-evidence/s03ve40c70399355/result.json",
+          "sha256": "b1a044de5cc224bf4733005b185ca50a36da05f3f34888af76b984b8af770c9e"
+        },
+        "matrix": {
+          "V02": "PASS",
+          "V04": "PASS",
+          "V05": "PASS",
+          "V06": "PASS",
+          "V13": "PASS",
+          "V17": "PASS"
+        }
+      },
+      "s02_without_h": {
+        "project": "s01vb1ae75fa7e07",
+        "status": "BLOCKED",
+        "check_count": 120,
+        "checks": {
+          "path": "tmp/s02-evidence/s01vb1ae75fa7e07/checks.json",
+          "sha256": "b3c7233716beb69b09c9039b564fcd4d4f50617234ffb6c16a5f107255def8fe"
+        },
+        "result": {
+          "path": "tmp/s02-evidence/s01vb1ae75fa7e07/result.json",
+          "sha256": "6b963040c9c36df4e095f745052d7003994101533b179e40f5902452b6e46ac3"
+        },
+        "matrix": {
+          "V01": "PASS",
+          "V02": "PASS",
+          "V03": "PASS",
+          "V04": "PASS",
+          "V05": "PASS",
+          "V06": "PASS",
+          "V07": "PASS",
+          "V08": "BLOCKED",
+          "V09": "BLOCKED",
+          "V10": "BLOCKED",
+          "V11": "BLOCKED",
+          "V12": "BLOCKED",
+          "V13": "BLOCKED",
+          "V14": "PASS",
+          "V15": "PASS",
+          "V16": "BLOCKED",
+          "quality": "PASS"
+        }
+      },
+      "s01": {
+        "project": "s01v8f8cecb2dc50",
+        "status": "PASS",
+        "check_count": 228,
+        "checks": {
+          "path": "tmp/s01-evidence/s01v8f8cecb2dc50/checks.json",
+          "sha256": "988f8aa3a83f6472dff91d49794e1ac21cca07b486417bc299cc915b6aebe76f"
+        },
+        "result": {
+          "path": "tmp/s01-evidence/s01v8f8cecb2dc50/result.json",
+          "sha256": "59d3768c92054091576e242e180d4c04a4066e97db1751da87bf87ec7ca9a33c"
+        }
+      }
+    },
+    "pre_filter_worker_round": {
+      "project": "s03v701eb6dbe73c",
+      "status": "PASS",
+      "check_count": 178,
+      "checks": {
+        "path": "tmp/s03-evidence/s03v701eb6dbe73c/checks.json",
+        "sha256": "1df7d0674dadc6a4400004c286768abd15bb16079c8ec5e391e78f76cde95ec8",
+        "package_sha256": "ced9ef3d5c1b2aa820d43b983f00688b067183421cd9e1d520ab692396609a60"
+      },
+      "result": {
+        "path": "tmp/s03-evidence/s03v701eb6dbe73c/result.json",
+        "sha256": "84fedce9a4b2d2a0f7255d96b93bb3c713ec9220258286336b5e3b5de2c4eb79"
+      },
+      "source_sha256": "b6babad8a8f662e344e7453fafb4e27285eb691e5fe107f60f064fa683604333",
+      "note": "Two success lines in the initial filtered output predated the wait. See pre_filter_container_wait_log for 10 time-bounded scans. The final run uses a PG time lower bound."
+    },
+    "regression": {
+      "database": "PostgreSQL 16.16",
+      "evidence_types": [
+        "F",
+        "injected failure",
+        "PG",
+        "internal loopback HTTP",
+        "local Worker / Redis / Beat"
+      ],
+      "counterexample_selectors": [
+        "tests/collection/test_collection_postgres.py::test_f01_quota_wait_on_last_attempt_still_allows_exactly_three_http_503",
+        "tests/collection/test_collection_postgres.py::test_f01_quota_wait_reuses_unsent_run_and_recovers_without_http_retry",
+        "tests/collection/test_collection_postgres.py::test_f02_later_response_preserves_window_evidence",
+        "tests/collection/test_collection_postgres.py::test_f02_response_classification_and_coverage",
+        "tests/collection/test_collection_postgres.py::test_f02_unscoped_issue_is_classified_without_retaining_ungranted_detail"
+      ],
+      "matched_baseline_and_fixed_case_ids": 28,
+      "original_suite_passed": 10,
+      "original_suite_failed": 18,
+      "frozen_suite_passed": 28,
+      "full_suite_passed": 271,
+      "tests_by_contract": {
+        "S01": 42,
+        "S02": 104,
+        "collection_pg": 81,
+        "collection_wire": 44
+      },
+      "static_checks_passed": 7
+    },
+    "F01": {
+      "source_limits": {
+        "max_requests": 1,
+        "max_concurrent": 1,
+        "period_seconds": 60,
+        "min_interval_seconds": 0
+      },
+      "waiting_run": {
+        "id": "ceafd532-3a81-4a6e-ac7f-1dc47c8cc8e3",
+        "status": "pending",
+        "error_code": "budget_exhausted",
+        "request_state": "unsent",
+        "reserved_at": null,
+        "next_retry_at": "2026-11-21T19:14:39.199554+00:00",
+        "dispatch_due": null,
+        "attempt": 1,
+        "predecessor_id": null,
+        "generation": 1,
+        "deliveries": 1
+      },
+      "recovered_run": {
+        "id": "ceafd532-3a81-4a6e-ac7f-1dc47c8cc8e3",
+        "status": "finished",
+        "error_code": "",
+        "request_state": "responded",
+        "reserved_at": "2026-11-21T19:14:40.575135+00:00",
+        "next_retry_at": null,
+        "dispatch_due": null,
+        "attempt": 1,
+        "predecessor_id": null,
+        "generation": 2,
+        "deliveries": 1
+      },
+      "contenders": [
+        "worker-b-1  | [2026-11-21 19:13:39,144: INFO/MainProcess] Task collection.execute_run[9b99ad08-6e31-48d4-8ece-94dd16af07fd] received",
+        "worker-1    | [2026-11-21 19:13:39,543: INFO/MainProcess] Task collection.execute_run[ceafd532-3a81-4a6e-ac7f-1dc47c8cc8e3] received"
+      ],
+      "beat_rechecks_during_wait": [
+        "worker-b-1  | [2026-11-21 19:13:48,394: INFO/ForkPoolWorker-1] Task collection.reconcile_due[6fa68902-c7e5-4845-97b5-eab046c1d4c7] succeeded in 0.011152170998684596s: None",
+        "worker-b-1  | [2026-11-21 19:13:53,396: INFO/ForkPoolWorker-1] Task collection.reconcile_due[9ce29c82-6ea6-4b83-83e1-9671affce946] succeeded in 0.011348344996804371s: None"
+      ],
+      "computed_recheck_seconds": 60.0,
+      "actual_pg_interval_seconds": 61.375581,
+      "pg_reservations": 2,
+      "origin_http": [
+        {
+          "at_ns": 1795288419217296615,
+          "method": "POST",
+          "shape": "C",
+          "status": 200
+        },
+        {
+          "at_ns": 1795288480593631889,
+          "method": "GET",
+          "shape": "L",
+          "status": 200
+        }
+      ],
+      "http_503_limit": {
+        "test": "test_f01_quota_wait_on_last_attempt_still_allows_exactly_three_http_503",
+        "observed_http": 3,
+        "observed_reservations": 3,
+        "fourth_attempt": false
+      },
+      "legacy_migration_test": "test_f01_legacy_exhausted_quota_is_reconciled[False/True]"
+    },
+    "F02": {
+      "worker_L": [
+        {
+          "result": "quality_only",
+          "issue": "invalid_city_code",
+          "coverage": {
+            "E": 7,
+            "O": 0,
+            "V": 0
+          }
+        },
+        {
+          "result": "partial",
+          "issue": "invalid_city_code",
+          "coverage": {
+            "E": 7,
+            "O": 7,
+            "V": 7
+          }
+        }
+      ],
+      "pg_shapes": [
+        "L",
+        "S",
+        "T"
+      ],
+      "per_shape_cases": [
+        "unattributable",
+        "mixed",
+        "duplicate",
+        "missing",
+        "invalid",
+        "empty",
+        "old"
+      ],
+      "T_mixed": {
+        "result": "partial",
+        "E": 24,
+        "O": 24,
+        "V": 24
+      },
+      "narrow_scope_S": {
+        "result": "quality_only",
+        "batch": null,
+        "quality_issues": 0,
+        "E": 7,
+        "O": 0,
+        "V": 0
+      },
+      "open_S_followup": {
+        "anomaly_empty_or_old": {
+          "E": 14,
+          "O": 7,
+          "V": 7,
+          "window_result": "partial",
+          "receipts": 7
+        },
+        "all_disputed": {
+          "E": 14,
+          "O": 7,
+          "V": 0,
+          "window_result": "quality_only",
+          "receipts": 14
+        }
+      }
+    },
+    "compatibility": {
+      "shared_s02_kernel_changed": false,
+      "s01_s02_entrypoints_changed": false,
+      "first_attempt_source_sha256": "b6babad8a8f662e344e7453fafb4e27285eb691e5fe107f60f064fa683604333",
+      "s01_original_120s": {
+        "project": "s01vc14fc77d109f",
+        "status": "FAIL",
+        "check_count": 26,
+        "checks": {
+          "path": "tmp/s01-evidence/s01vc14fc77d109f/checks.json",
+          "sha256": "e9e5c7e56e6c7bdc589f513686d6d2311091f1957245eff09dd21293f732a434"
+        },
+        "result": {
+          "path": "tmp/s01-evidence/s01vc14fc77d109f/result.json",
+          "sha256": "f8c212a94f356face6249521fd2e7c5f47616e7a49c888f99018ae400b86c3be",
+          "package_sha256": "e9f883b56c6e58ebb6f3d04f438c083b070d20526c3a10641fa98b0c7536bd69"
+        }
+      },
+      "s02_original_without_H": {
+        "project": "s01vf08fdbec3f72",
+        "status": "FAIL",
+        "check_count": 121,
+        "checks": {
+          "path": "tmp/s02-evidence/s01vf08fdbec3f72/checks.json",
+          "sha256": "1bafafb4e9301629922368946ff095fd39a3d12662facc46eb9257886b474773",
+          "package_sha256": "951417528afee7ca9f3dda72179d63b79c01d5c164edf4cf999aeb158611d221"
+        },
+        "result": {
+          "path": "tmp/s02-evidence/s01vf08fdbec3f72/result.json",
+          "sha256": "27a28195e6f13dd8a63a7b5effd273e1296ada81268c54ca3ac9099ade98e446"
+        }
+      },
+      "first_attempt_detail": "S01 pytest -v timed out at 120 s. S02 V15 inherited FAIL. Both receipts retained.",
+      "adjusted_attempt": "Only host subprocess timeout for S01 pytest -v changed from 120 to 300 s; same assertions, suite and services. S02 invoked original S01 child.",
+      "V20_H": "NOT RUN",
+      "real_CNEMC_requests": 0,
+      "T11": "NO-GO",
+      "S04": "NOT STARTED"
+    },
+    "integrity": {
+      "old_receipts_verified": 13,
+      "old_zip_sha256": "db059d451858e2f102475d00ccc8cc21072eb0e5321d7680d431cc7001579c8e",
+      "package_redaction": "Where present, package_sha256 identifies copies with JUnit hostname or absolute repository path removed. Raw local files are preserved."
+    },
+    "reviews": {
+      "admission": "/root/admission_review",
+      "classification": "/root/quality_review",
+      "independent_pg_rerun": "NOT RUN",
+      "formal_stage_verdict": "pending GPT"
+    }
   }
 }

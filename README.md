@@ -208,11 +208,15 @@ python3.13 scripts/verify_s03.py --case V10       # 分块回滚、重新取得�
 
 收到 503 且带 `run_id` 时先按该 UUID 查 PG。`unsent` 表示还未预留访问，`possible` 表示已预留且可能送达来源，`responded` 表示已有响应证据。Redis 恢复后可运行 `docker compose exec worker python backend/manage.py s03_reconcile_due`，Worker 启动及已登记的 Beat 扫描也会恢复待办。真正重新获取使用新的 Run、前驱关联和独立预算。进程崩溃后保留已经提交的块，后继重新取得来源响应。
 
+来源配额不足时，原 Run 显示 `pending / unsent / budget_exhausted`。`next_retry_at` 是依据 PG 预留及当前许可算出的下一次检查时间。Beat 到期后复核权限、暂停和窗口，再投递同一 UUID。等待本身保持原 `attempt`，已预留且可能发出的访问仍计入尝试。响应为 `quality_only` 时，可按 Batch 核对获准的质量问题。`partial` 可能同时包含可用格和无法归属的子项。
+
+升级已有 S03 验证库时，先停止该项目的 Beat 和 Worker 并暂停新触发，再运行 `python backend/manage.py migrate`，然后启动新版本。`collection.0006` 按旧账本中明确 `unsent` 且无预留的配额拒绝校正重试序号，为可恢复的链尾登记到期复查。降级迁移保留已校正的数据。
+
 在**获准的测试库**中用 `psql` 只读核对下例，将变量替换为 HTTP 返回的 Run UUID。若需查看对象、时刻、原因和现行资格，请使用受权窗口 API。重复认可查询的预期结果为零行。
 
 ```sql
 \set run_id '00000000-0000-0000-0000-000000000000'
-SELECT window_id, id, predecessor_id, status, request_state, dispatch, batch_id, error_code
+SELECT window_id, id, predecessor_id, attempt, status, request_state, dispatch, batch_id, error_code, next_retry_at
 FROM collection_run WHERE window_id = (SELECT window_id FROM collection_run WHERE id = :'run_id')
 ORDER BY created_at;
 
