@@ -118,3 +118,56 @@ python3.13 scripts/verify_s01.py
 每轮在应用镜像内执行 `uv lock --check`、Ruff 检查和格式检查、纯规则 mypy、Django 系统和迁移检查、pytest。运行器另外通过真实 HTTP、PG、Redis 和 Worker 完成跨进程断言。阶段报告含两轮标识、手算与实测对账、故障注入和覆盖范围，见 [S01 开发验证记录](docs/verification/S01.md)。
 
 `backend/accounts/` 管会话和入口保护，`backend/samples/` 只管本地 F。正式城市、站点身份与版本规则归 S02，采集业务窗口和可靠恢复归 S03。
+
+## S02 北京历史站点小样
+
+S02 提供正式观测目录、分时段站点身份、逐指标修订和受控历史导入。新库的正式用途许可和观测均为空。两个真实北京站点的数据来自 UCI 数据集 501。平台保留原始小时标签，以 `Asia/Shanghai` 解释源时区并标记假设。CO 从 µg/m³ 换算为 mg/m³。每站取 2013 年 3 月 1–2 日、2017 年 2 月 27–28 日，两段之间的小时保留为空。
+
+**署名**　Chen, S. (2017). *Beijing Multi-Site Air Quality* [Dataset]. UCI Machine Learning Repository. DOI `10.24432/C5RK5G`。选站、选时、逐指标映射及 CO 换算为本项目加工。发布物及许可声明见 [UCI 数据集](https://doi.org/10.24432/C5RK5G) 和 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。
+
+### 在隔离环境复现
+
+操作者确认数据集许可和本次本地使用范围后，准备计划 §5.1 指定的官方内层原始 ZIP，将 `S02_UCI_ZIP` 指向仓库外的该文件。冻结文件为 7,959,991 字节，SHA-256 为 `d1b9261c54132f04c374f762f1e5e512af19f95c95fd6bfa1e8ac7e927e3b0b8`。应用容器只接收本地字节。运行器建立自有 Compose 项目、独占卷和 pytest 库，完成后释放，收据写入 `tmp/s02-evidence/`。
+
+```bash
+python3.13 scripts/verify_s02.py --uci-archive "$S02_UCI_ZIP" --profile uci501-edges-v1
+```
+
+### 在已明确授权的本地项目导入
+
+由受信维护者执行登记。`--actor` 指定活动账号，登记和撤回需要 `observations.manage_grants`，暂存及提交需要 `observations.import_history`，治理还需要 `observations.review_observation`。系统另按产品、用途、受众、日期、对象和字段核对当前来源许可。注册命令重复运行会保留已有的撤回记录。
+
+```bash
+docker compose exec worker python backend/manage.py s02_register_uci --actor "$S02_OPERATOR"
+docker compose exec -T worker python backend/manage.py s02_stage_uci --actor "$S02_OPERATOR" < "$S02_UCI_ZIP"
+```
+
+第二条命令返回 `stage_id`。用同一账号及有效 CSRF 的登录会话提交。以下 `session` 为上文已登录的 `s01_runtime.Client`，`stage_id` 为返回的 UUID。
+
+```python
+status, result = session.call(
+    "/api/v1/admin/history-imports/",
+    {
+        "profile": "uci501-edges-v1",
+        "stage_id": stage_id,
+        "reason": "historical_verification",
+    },
+)
+print(status, result)
+```
+
+`202` 和投递状态未确认的 `503` 都返回可对账的 `attempt_id`。在可信终端查询 `observations.models.ImportAttempt` 的 `state`、`error_code`、`batch_id` 和 `finished_at`。需要重投时用原账号执行 `docker compose exec worker python backend/manage.py s02_redeliver --actor "$S02_OPERATOR" --attempt "$ATTEMPT_ID"`。Worker 在每次实际打开文件及入库时重查许可。已终结的尝试保留原结果。暂存过期或失败后，需要重新暂存获权原件。
+
+普通登录用户用 `GET /api/v1/observations/current/` 精确查一笔。指定 `product` 和 `site_epoch` 的数据库 ID（城市层用 `city`），再指定 `indicator=CO`、`report_kind=hourly`、`window_definition=hourly_label_unspecified`、`standard_series=not_applicable`、`observed_at=2013-02-28T16:00:00Z`。日报用 `local_report_date`。自制 F 请求另带 `scope=synthetic`。授权治理读 `GET /api/v1/admin/observation-evidence/` 指定 `product` 及 `batch`、`station_key` 或 `city_key` 之一，用 `after` 继续读取。只返回仍获准查看的字段。UCI 署名随观测和治理响应提供。
+
+### 撤回与恢复
+
+Worker 独享 `32 MiB` 的 `/run/s02-history` tmpfs，每个暂存件有 20 分钟操作期限。撤权命令先提交授权失效，再核对该产品的独立留存依据、数据库明细及暂存件。仅在有明确授权的目标项目执行。运行器的撤回及故障演练仅使用其自有资源。
+
+```bash
+docker compose exec worker python backend/manage.py s02_revoke_grant \
+  --actor "$S02_OPERATOR" --grant "$GRANT_ID" --reason local_withdrawal
+docker compose exec worker python backend/manage.py s02_dispose_due
+```
+
+限期后可恢复处置的依据以 `expiry_mode=recoverable` 登记，使用资格在数据库截止时刻终止。`DispositionJob.completed_at` 标记数据库与文件已实际核对。漏投和清理失败保留 PG 待办，由 Worker 启动核查、Beat 补偿或上述命令重试。要求在整机停机期间物理删除的硬期限无法由本地部署保证，系统在写入时拒绝该项保存依据。平台内控撤回不改变 UCI 已发布的 CC BY 4.0 许可。详见 [S02 实施计划](docs/plans/S02_IMPLEMENTATION_PLAN.md) 和 [S02 开发验证报告](docs/verification/S02.md)。

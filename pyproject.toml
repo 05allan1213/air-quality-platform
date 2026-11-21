@@ -28,5 +28,5 @@ select = ["E4", "E7", "E9", "F", "I", "B", "UP"]
 
 [tool.mypy]
 python_version = "3.13"
-files = ["backend/samples/normalization.py"]
+files = ["backend/samples/normalization.py", "backend/observations/normalization.py", "backend/observations/import_uci.py"]
 strict = true

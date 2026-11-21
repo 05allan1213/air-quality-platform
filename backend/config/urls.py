@@ -2,6 +2,7 @@ from django.db import DatabaseError, connection
 from django.http import JsonResponse
 from django.urls import include, path
 from django.views.decorators.http import require_GET
+from observations import views as observation_views
 from samples import views as sample_views
 
 
@@ -18,6 +19,9 @@ def ready(request):
 
 urlpatterns = [
     path("health/ready/", ready),
+    path("api/v1/admin/history-imports/", observation_views.history_imports),
+    path("api/v1/observations/current/", observation_views.observations),
+    path("api/v1/admin/observation-evidence/", observation_views.evidence),
     path("api/v1/auth/", include("accounts.urls")),
     path("api/v1/admin/fixture-runs/", sample_views.fixture_runs),
     path("api/v1/fixtures/observations/", sample_views.observations),

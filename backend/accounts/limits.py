@@ -1,6 +1,6 @@
 from django.core.cache import cache
 
-LIMITS = {"register": 8, "login": 12, "fixture": 12}
+LIMITS = {"register": 8, "login": 12, "fixture": 12, "history": 12}
 WINDOW_SECONDS = 60
 
 

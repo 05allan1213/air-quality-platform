@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
     "accounts",
     "samples",
+    "observations",
 ]
 MIDDLEWARE = [
     "config.errors.BoundaryErrors",
@@ -84,4 +85,10 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     "socket_timeout": 1,
     "max_retries": 0,
     "retry_on_timeout": False,
+}
+
+S02_STAGE_DIR = "/run/s02-history"
+CELERY_TASK_ROUTES = {
+    "observations.import_history": {"queue": "s02.history"},
+    "observations.dispose": {"queue": "s02.history"},
 }
