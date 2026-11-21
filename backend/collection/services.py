@@ -13,6 +13,7 @@ from observations.policy import Denied, actor, clock
 
 from .admission import (
     HOUR,
+    BudgetExhausted,
     admission,
     bounds,
     budget,
@@ -48,13 +49,14 @@ def enqueue(run):
 def intent(run):
     # Only automatic retries inherit the trigger. An independent review may also
     # point to a former acquisition for lineage, without inheriting its intent.
-    for _ in range(MAX_ATTEMPTS):
-        if run.reason != "retry":
-            return run.reason
-        if not run.predecessor_id:
-            break
+    seen = set()
+    while run.reason == "retry":
+        if not run.predecessor_id or run.pk in seen:
+            raise Denied("invalid_retry_lineage")
+        seen.add(run.pk)
+        # A repaired legacy chain can also contain historical unsent quota denials.
         run = run.predecessor
-    raise Denied("invalid_retry_lineage")
+    return run.reason
 
 
 def allows_closed(window, reason):
@@ -190,6 +192,7 @@ def publish(run_id):
         if (
             run.status != "pending"
             or run.request_state != "unsent"
+            or run.next_retry_at is not None
             or run.deliveries >= MAX_DELIVERIES
         ):
             return
@@ -213,7 +216,7 @@ def publish(run_id):
 @transaction.atomic
 def claim(run_id):
     run = locked(run_id)
-    if run.status != "pending" or run.request_state != "unsent":
+    if run.status != "pending" or run.request_state != "unsent" or run.next_retry_at is not None:
         return None
     try:
         authorized(run)
@@ -260,7 +263,7 @@ def fence(run, owner):
         raise Denied("stale_owner")
 
 
-def guard_update(run, token, **values):
+def guard_update(run, token, *, check_rights=True, **values):
     fence(run, token)
     # PG determines expiry again in the update that orders this commit against recovery.
     live = WorkWindow.objects.filter(
@@ -270,12 +273,16 @@ def guard_update(run, token, **values):
         lease_until__gt=RawSQL("clock_timestamp()", []),
     )
     deadline = getattr(run, "rights_boundary", None)
-    if deadline:
+    if deadline and check_rights:
         live = live.filter(
             RawSQL("clock_timestamp() < %s", [deadline], output_field=BooleanField())
         )
     if live.update(**values) != 1:
-        raise Denied("stale_owner" if not deadline or deadline > clock() else "rights_boundary")
+        raise Denied(
+            "rights_boundary"
+            if check_rights and deadline and deadline <= clock()
+            else "stale_owner"
+        )
 
 
 @transaction.atomic
@@ -290,12 +297,23 @@ def reserve(run_id, owner):
     job = run.job
     if not can_fetch(job, w.target_end, now):
         raise Denied("backfill_unavailable")
-    budget(job, caps, now)
-    code = target_code(job, w.target_end - HOUR)
-    final_caps = authorized(run)
-    now = clock()
-    if final_caps[:2] != caps[:2]:
-        budget(job, final_caps, now)
+    try:
+        budget(job, caps, now)
+        code = target_code(job, w.target_end - HOUR)
+        final_caps = authorized(run)
+        now = clock()
+        if final_caps[:2] != caps[:2]:
+            budget(job, final_caps, now)
+    except BudgetExhausted as wait:
+        # Atomically release this ownership without reserving or failing the window.
+        # No source use here. A crossed rights boundary schedules immediate re-admission.
+        guard_update(run, owner, check_rights=False, owner=None, lease_until=None)
+        run.owner = None
+        run.status = "pending"
+        run.error_code = wait.code
+        run.next_retry_at = quota_check_at(run, wait.check_at)
+        run.save(update_fields=["owner", "status", "error_code", "next_retry_at"])
+        return None
     if not can_fetch(job, w.target_end, now):
         raise Denied("backfill_unavailable")
     run.request_state = "possible"
@@ -314,6 +332,30 @@ def reserve(run_id, owner):
     )
 
 
+def release_slot(run, now):
+    deadline = run.occupied_until
+    run.occupied_until = now
+    if deadline is None or deadline <= now:
+        return
+    source_id = run.job.product.source_id
+
+    def notify_waiters():
+        # The response released concurrency sooner than its conservative deadline.
+        # Only advance timers that could have depended on that slot. In particular
+        # a latest-only window may close before the original occupancy deadline.
+        Run.objects.filter(
+            job_id__in=Job.objects.filter(product__source_id=source_id).values("pk"),
+            status="pending",
+            error_code="budget_exhausted",
+            request_state="unsent",
+            next_retry_at__gt=now,
+            next_retry_at__lte=deadline,
+        ).update(next_retry_at=now)
+
+    # A failed optional early wake must not turn a committed response into another fetch.
+    transaction.on_commit(notify_waiters, robust=True)
+
+
 @transaction.atomic
 def mark_response(run_id, owner, at):
     run = locked(run_id)
@@ -321,7 +363,7 @@ def mark_response(run_id, owner, at):
     authorized(run)
     run.request_state = "responded"
     run.fetched_at = at
-    run.occupied_until = clock()
+    release_slot(run, clock())
     run.save(update_fields=["request_state", "fetched_at", "occupied_until"])
     guard_update(run, owner, lease_until=clock() + LEASE)
     return run
@@ -361,7 +403,7 @@ def record_failure(run_id, owner, code, *, action="fail", responded=False, retry
         responded = False
     if responded:
         run.request_state = "responded"
-        run.occupied_until = now
+        release_slot(run, now)
         run.save(update_fields=["request_state", "occupied_until"])
     if action == "source":
         src = run.job.product.source
@@ -386,15 +428,64 @@ def record_failure(run_id, owner, code, *, action="fail", responded=False, retry
     terminal(run, "paused" if action in {"source", "product", "deny"} else "failed", code)
 
 
+def quota_check_at(run, available_at):
+    if run.job.profile == "f-latest-v1":
+        return min(available_at, run.window.target_end)
+    return available_at
+
+
+def resume_quota_wait(run):
+    w = run.window
+    try:
+        caps = authorized(run)
+        now = clock()
+        if not can_fetch(run.job, w.target_end, now):
+            terminal(run, "failed", "backfill_unavailable")
+            return
+        if w.closed_at and not allows_closed(w, intent(run)):
+            terminal(run, "coalesced")
+            return
+        budget(run.job, caps, now)
+    except BudgetExhausted as wait:
+        run.next_retry_at = quota_check_at(run, wait.check_at)
+        run.save(update_fields=["next_retry_at"])
+        return
+    except Denied as exc:
+        terminal(run, "paused", exc.code)
+        return
+    # A previous delivery reached a Worker. Start a new broker-delivery cycle
+    # even if the source slot is won by a different Run before the next claim.
+    Run.objects.filter(pk=run.pk).update(
+        status="pending",
+        error_code="",
+        owner=None,
+        finished_at=None,
+        dispatch="pending",
+        deliveries=0,
+        dispatch_due=now,
+    )
+    enqueue(run)
+
+
 @transaction.atomic
 def retry_due(run_id):
     run = locked(run_id)
     w = run.window
     now = clock()
-    if not run.next_retry_at or run.next_retry_at > now or run.status not in ("failed", "expired"):
+    if not run.next_retry_at or run.next_retry_at > now:
         return
     run.next_retry_at = None
     run.save(update_fields=["next_retry_at"])
+    # Also resume an outstanding unsent quota denial written by an older Worker.
+    if (
+        run.status in ("pending", "failed")
+        and run.error_code == "budget_exhausted"
+        and run.request_state == "unsent"
+    ):
+        resume_quota_wait(run)
+        return
+    if run.status not in ("failed", "expired"):
+        return
     if w.disposed or run.attempt >= MAX_ATTEMPTS:
         return
     # A later ordinary completion supersedes work left by an older generation.
@@ -532,6 +623,8 @@ def execute(run_id):
         return
     try:
         args = reserve(run_id, owner)
+        if args is None:
+            return
         body, fetched = adapters.fetch(*args)
         run = mark_response(run_id, owner, fetched)
         parsed = adapters.parse(
@@ -546,10 +639,18 @@ def execute(run_id):
             allowed_codes=run.job.expected_codes,
         )
         del body
-        blocks = list(writer.chunks(writer.manifest(run_id, owner, parsed)))
+        cells, response_anomaly = writer.manifest(run_id, owner, parsed)
+        blocks = list(writer.chunks(cells))
         ordinal = 0
         for i, block in enumerate(blocks):
-            ordinal = writer.commit_chunk(run_id, owner, block, ordinal, i == len(blocks) - 1)
+            ordinal = writer.commit_chunk(
+                run_id,
+                owner,
+                block,
+                ordinal,
+                i == len(blocks) - 1,
+                response_anomaly=response_anomaly,
+            )
         return
     except adapters.WireError as exc:
         code = exc.code
@@ -571,8 +672,6 @@ def execute(run_id):
         code, action, responded, retry_after = exc.code, "deny", False, None
         if code == "stale_owner":
             return
-        if code == "budget_exhausted":
-            action = "retry"
     except DatabaseError:
         code, action, responded, retry_after = "database_error", "retry", False, None
     try:

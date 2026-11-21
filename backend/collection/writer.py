@@ -10,7 +10,7 @@ from observations.models import Batch, QualityIssue, Receipt
 from observations.policy import Denied, Scope, applicable, clock
 
 from .adapters import WireError
-from .admission import cell_key, data_scope
+from .admission import LEDGER, cell_key, data_scope
 from .models import RunItem
 from .services import LEASE, authorized, fence, guard_update, locked, terminal
 
@@ -56,7 +56,7 @@ def batch_for(run):
 def manifest(run_id, owner, parsed):
     run = locked(run_id)
     fence(run, owner)
-    authorized(run)
+    caps = authorized(run)
     if run.request_state != "responded" or run.manifest_count is not None:
         raise Denied("invalid_manifest")
     cells = {}
@@ -69,31 +69,43 @@ def manifest(run_id, owner, parsed):
                 raise WireError(exc.code, responded=True) from None
             problems.add(exc.code)
             continue
+        selected = False
         for value in row.fields:
             key = cell_key(entity.pk, row.time.observed_at_utc, value.indicator)
             if run.window.expected is not None and key not in run.window.expected:
                 problems.add("outside_roster")
                 continue
+            selected = True
             if key not in cells:
                 cells[key] = Cell(key, entity.pk, row, [])
             cells[key].values.append((row, value))
             if len(cells[key].values) > CHUNK_SIZE:
                 raise WireError("too_many_duplicates", responded=True)
+        if selected and not any(value.present for value in row.fields):
+            problems.add("missing_measurements")
     run.manifest_count = len(cells)
     run.save(update_fields=["manifest_count"])
     if problems:
         scope = data_scope(run.job, run.window.target_start, run.window.target_end)
         try:
-            applicable(run.job.product, "retain_normalized", scope, {"collection_ledger"}, clock())
+            applicable(run.job.product, "retain_normalized", scope, LEDGER, clock())
         except Denied:
-            problems.clear()
-        for code in sorted(problems):
-            QualityIssue.objects.create(
-                product=run.job.product, batch=batch_for(run), code=code, scope=scope.serialize()
-            )
+            pass
+        else:
+            for code in sorted(problems):
+                QualityIssue.objects.create(
+                    product=run.job.product,
+                    batch=batch_for(run),
+                    code=code,
+                    scope=scope.serialize(),
+                )
+            applicable(run.job.product, "retain_normalized", scope, LEDGER, clock())
     authorized(run)
+    if caps[2]:
+        run.rights_boundary = min(caps[2], run.rights_boundary or caps[2])
     guard_update(run, owner, lease_until=clock() + LEASE)
-    return [cells[key] for key in sorted(cells)]
+    anomaly = bool(problems - {"outside_target", "outside_roster"})
+    return [cells[key] for key in sorted(cells)], anomaly
 
 
 def chunks(cells):
@@ -139,10 +151,10 @@ def write_cell(ctx, run, cell, ordinal):
     if entity.pk != cell.entity_id:
         raise Denied("identity_changed")
     good = [(r, m.data) for r, m in cell.values if m.data is not None]
-    present = any(m.present for _, m in cell.values)
+    rejected = next((m.issue for _, m in cell.values if m.present and m.data is None), "")
     accepted = bool(good) and not run.window.items.filter(item_key=cell.key, accepted=True).exists()
     status = (
-        ("accepted" if accepted else "reread") if good else ("rejected" if present else "absent")
+        ("accepted" if accepted else "reread") if good else ("rejected" if rejected else "absent")
     )
     item = RunItem.objects.create(
         run=run,
@@ -155,7 +167,7 @@ def write_cell(ctx, run, cell, ordinal):
         generation=run.generation,
         accepted=accepted,
         status=status,
-        reason="" if good else field.issue,
+        reason=rejected or ("" if good else field.issue),
     )
     for r, data in good:
         if r != row and identify(run, r, for_write=True)[0].pk != cell.entity_id:
@@ -184,20 +196,32 @@ def write_cell(ctx, run, cell, ordinal):
     return ordinal
 
 
-def summarize(run):
+def summarize(run, response_anomaly):
     from .queries import tally
 
     w = run.window
-    coverage = tally(w)[0]
-    outcomes = set(
-        Receipt.objects.filter(collection_item__run=run).values_list("outcome", flat=True)
+    coverage, cells = tally(w)
+    receipt_rows = list(
+        Receipt.objects.filter(collection_item__run=run).values_list(
+            "outcome",
+            "collection_item__item_key",
+            revisions.tables(w.product.level)[4] + "__quality",
+        )
     )
-    if not outcomes and not run.items.filter(status="rejected").exists():
-        return "no_new", coverage
-    if not coverage["V"]:
+    outcomes = {outcome for outcome, _, _ in receipt_rows}
+    item_anomaly = run.items.exclude(reason="").exists()
+    if not outcomes:
+        return ("quality_only" if response_anomaly or item_anomaly else "no_new"), coverage
+    valid_in_run = any(
+        quality == "valid" and cells[key]["valid"] for _, key, quality in receipt_rows
+    )
+    if not valid_in_run:
         return "quality_only", coverage
-    if coverage["O"] > coverage["V"] or (
-        coverage["E"] is not None and coverage["E"] > coverage["O"]
+    if (
+        response_anomaly
+        or item_anomaly
+        or coverage["O"] > coverage["V"]
+        or (coverage["E"] is not None and coverage["E"] > coverage["O"])
     ):
         return "partial", coverage
     if "first" in outcomes:
@@ -208,7 +232,7 @@ def summarize(run):
 
 
 @transaction.atomic
-def commit_chunk(run_id, owner, cells, ordinal, last):
+def commit_chunk(run_id, owner, cells, ordinal, last, *, response_anomaly):
     run = locked(run_id)
     fence(run, owner)
     authorized(run)
@@ -231,7 +255,7 @@ def commit_chunk(run_id, owner, cells, ordinal, last):
     if last:
         if run.items.count() != run.manifest_count:
             raise Denied("incomplete_manifest")
-        result, coverage = summarize(run)
+        result, coverage = summarize(run, response_anomaly)
         run.result = result
         run.save(update_fields=["result"])
         w = run.window
@@ -243,12 +267,15 @@ def commit_chunk(run_id, owner, cells, ordinal, last):
         authorized(run)
         if cells:
             revisions.finish_checks(ctx)
+        window_result = result
+        if coverage["V"] and w.result == "partial" and result in {"quality_only", "no_new"}:
+            window_result = "partial"
         guard_update(
             run,
             owner,
             owner=None,
             lease_until=None,
-            result=w.result if w.closed_at else result,
+            result=w.result if w.closed_at else window_result,
             closed_at=w.closed_at or (clock() if complete else None),
         )
         terminal(run, "finished")

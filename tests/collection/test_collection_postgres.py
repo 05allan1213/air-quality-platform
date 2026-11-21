@@ -8,6 +8,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from importlib import import_module
 from pathlib import Path
 from queue import Queue
 from uuid import uuid4
@@ -359,13 +360,401 @@ def test_v16_source_budget_is_shared_across_products_and_keeps_failed_reservatio
     assert first_owner and second_owner
     services.reserve(first.pk, first_owner)
     services.record_failure(first.pk, first_owner, "timeout", action="retry")
-    with pytest.raises(Denied, match="budget_exhausted"):
-        services.reserve(second.pk, second_owner)
+    assert services.reserve(second.pk, second_owner) is None
     first.refresh_from_db()
     second.refresh_from_db()
     assert first.request_state == "possible"
     assert first.reserved_at and first.next_retry_at
     assert second.request_state == "unsent" and second.reserved_at is None
+    assert second.error_code == "budget_exhausted" and second.next_retry_at
+
+
+def test_f01_quota_wait_reuses_unsent_run_and_recovers_without_http_retry(
+    operator, source, job, published, monkeypatch
+):
+    source.collection_limits = LIMITS | {
+        "min_interval_seconds": 60,
+        "max_concurrent": 1,
+        "max_requests": 1,
+    }
+    source.save(update_fields=["collection_limits"])
+    other_job = make_job(operator, source, "L", expected_codes=None)
+    allow_collection(operator, other_job)
+
+    calls = []
+    started = threading.Event()
+    release = threading.Event()
+
+    def fetch(shape, code, name, target, profile):
+        calls.append((shape, code, name, target, profile))
+        if shape == "C":
+            started.set()
+            assert release.wait(5)
+            body = city_packet()
+        else:
+            body = []
+        return json.dumps(body).encode(), clock()
+
+    monkeypatch.setattr(adapters, "fetch", fetch)
+    first = services.submit(operator.pk, request(job))
+    second = services.submit(operator.pk, request(other_job))
+    pids = Queue()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first_future = pool.submit(in_db_session, pids, lambda: services.execute(first.pk))
+        assert started.wait(5)
+        second_future = pool.submit(in_db_session, pids, lambda: services.execute(second.pk))
+        second_future.result(timeout=10)
+        release.set()
+        first_future.result(timeout=10)
+
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert pids.get_nowait() != pids.get_nowait()
+    assert len(calls) == 1
+    assert first.status == "finished" and first.request_state == "responded"
+    assert (second.status, second.error_code, second.request_state, second.attempt) == (
+        "pending",
+        "budget_exhausted",
+        "unsent",
+        1,
+    )
+    assert second.reserved_at is None and second.next_retry_at
+    assert not Run.objects.filter(predecessor=second).exists()
+    assert second.next_retry_at == first.reserved_at + timedelta(seconds=60)
+    assert second.owner is None and second.window.owner is None and second.finished_at is None
+    assert second.window.result == "pending"
+    published_count = len(published)
+    for _ in range(4):
+        services.execute(second.pk)  # delayed or duplicate broker deliveries
+        Run.objects.filter(pk=second.pk).update(next_retry_at=clock())  # competing due checks
+        services.reconcile_due()
+    second.refresh_from_db()
+    assert second.generation == 1 and second.attempt == 1 and second.reserved_at is None
+    assert second.next_retry_at == first.reserved_at + timedelta(seconds=60)
+    assert len(calls) == 1 and len(published) == published_count
+
+    Run.objects.filter(pk=first.pk).update(
+        reserved_at=clock() - timedelta(seconds=61), occupied_until=clock() - timedelta(seconds=1)
+    )
+    Run.objects.filter(pk=second.pk).update(next_retry_at=clock() - timedelta(seconds=1))
+    services.reconcile_due()
+    second.refresh_from_db()
+    assert second.status == "pending" and second.attempt == 1
+    assert second.request_state == "unsent" and second.reserved_at is None
+    assert not Run.objects.filter(predecessor=second).exists()
+    assert published[-1] == str(second.pk)
+
+    services.execute(second.pk)
+    second.refresh_from_db()
+    assert len(calls) == 2
+    assert second.status == "finished" and second.request_state == "responded"
+    assert second.attempt == 1 and second.predecessor_id is None
+    assert Run.objects.filter(reserved_at__isnull=False).count() == 2
+
+
+def test_f01_quota_wait_on_last_attempt_still_allows_exactly_three_http_503(
+    operator, job, source, monkeypatch
+):
+    hits = []
+
+    class Unavailable(BaseHTTPRequestHandler):
+        def do_POST(self):
+            hits.append(self.path)
+            self.send_response(503)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    limits = LIMITS | {"min_interval_seconds": 0, "max_requests": 2}
+    source.collection_limits = limits
+    source.save(update_fields=["collection_limits"])
+    job.product.usegrant_set.filter(operation="acquire_online").update(collection_limits=limits)
+    with ThreadingHTTPServer(("127.0.0.1", 0), Unavailable) as server:
+        monkeypatch.setattr(transport, "ORIGIN", f"http://127.0.0.1:{server.server_port}")
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            run = services.submit(operator.pk, request(job))
+            for attempt in (1, 2):
+                services.execute(run.pk)
+                run.refresh_from_db()
+                assert (run.attempt, run.request_state, run.error_code, len(hits)) == (
+                    attempt,
+                    "responded",
+                    "upstream_transient",
+                    attempt,
+                )
+                assert run.next_retry_at and run.reserved_at
+                # Advance only HTTP backoff. The two PG reservations still consume quota.
+                Run.objects.filter(pk=run.pk).update(next_retry_at=clock())
+                services.reconcile_due()
+                run = run.successors.get()
+            services.execute(run.pk)
+            services.execute(run.pk)
+            run.refresh_from_db()
+            assert (run.status, run.attempt, run.error_code, len(hits)) == (
+                "pending",
+                3,
+                "budget_exhausted",
+                2,
+            )
+            assert run.request_state == "unsent" and run.reserved_at is None and run.next_retry_at
+            # Age only this disposable window's prior reservations. V16 uses wall time.
+            run.window.runs.filter(reserved_at__isnull=False).update(
+                reserved_at=clock() - timedelta(seconds=61)
+            )
+            Run.objects.filter(pk=run.pk).update(next_retry_at=clock())
+            services.reconcile_due()
+            services.execute(run.pk)
+            run.refresh_from_db()
+            services.reconcile_due()
+            assert (run.status, run.attempt, run.request_state, run.error_code) == (
+                "failed",
+                3,
+                "responded",
+                "upstream_transient",
+            )
+            assert run.next_retry_at is None and not run.successors.exists()
+            assert run.window.runs.filter(reserved_at__isnull=False).count() == len(hits) == 3
+        finally:
+            server.shutdown()
+            thread.join()
+
+
+@pytest.mark.parametrize("last_requested", [False, True])
+def test_f01_legacy_exhausted_quota_is_reconciled(operator, job, upstream, last_requested):
+    first = services.submit(operator.pk, request(job))
+    now = clock()
+    Run.objects.filter(pk=first.pk).update(
+        status="failed", error_code="budget_exhausted", dispatch_due=None, finished_at=now
+    )
+    lineage, last = [first], first
+    for attempt in (2, 3):
+        requested = last_requested and attempt == 3
+        last = Run.objects.create(
+            job=job,
+            window=first.window,
+            actor=operator,
+            executor=job.executor,
+            predecessor=last,
+            reason="retry",
+            attempt=attempt,
+            status="failed",
+            error_code="upstream_transient" if requested else "budget_exhausted",
+            request_state="responded" if requested else "unsent",
+            reserved_at=now - timedelta(seconds=2) if requested else None,
+            finished_at=now,
+        )
+        lineage.append(last)
+    migration = import_module("collection.migrations.0006_reconcile_legacy_quota").Migration
+    # Exercise the exact RunSQL of the upgrade against disposable historical rows.
+    with connection.schema_editor() as editor:
+        migration.operations[0].database_forwards("collection", editor, None, None)
+    for old in lineage:
+        old.refresh_from_db()
+    assert [old.attempt for old in lineage] == [1, 1, 1]
+    assert first.next_retry_at is None and lineage[1].next_retry_at is None
+    assert last.next_retry_at and last.reserved_at == (
+        now - timedelta(seconds=2) if last_requested else None
+    )
+    services.reconcile_due()
+    active = last.successors.get() if last_requested else last
+    upstream[1].append(city_packet())
+    services.execute(active.pk)
+    active.refresh_from_db()
+    assert (active.status, active.attempt) == ("finished", 2 if last_requested else 1)
+    assert Run.objects.filter(reserved_at__isnull=False).count() == 1 + last_requested
+    assert len(upstream[0]) == 1
+
+
+@pytest.mark.parametrize(
+    ("change", "status", "code"),
+    [
+        ("job", "paused", "collection_paused"),
+        ("source", "paused", "collection_paused"),
+        ("actor", "paused", "permission_denied"),
+        ("executor", "paused", "permission_denied"),
+        ("grant", "paused", "use_denied"),
+        ("disposed", "paused", "window_disposed"),
+        ("closed", "coalesced", ""),
+    ],
+)
+def test_f01_quota_wake_rechecks_admission(
+    operator, job, upstream, django_user_model, published, change, status, code
+):
+    requester = django_user_model.objects.create_user("fixture-requester", is_staff=True)
+    requester.user_permissions.add(Permission.objects.get(codename="run_collection"))
+    # The permission boundary is earlier than the next rolling slot.
+    permission = job.product.usegrant_set.get(operation="acquire_online")
+    permission.valid_until = clock() + timedelta(seconds=40)
+    permission.collection_limits = LIMITS | {"max_requests": 1}
+    permission.save(update_fields=["valid_until", "collection_limits"])
+    first = services.submit(operator.pk, request(job))
+    services.reserve(first.pk, services.claim(first.pk))
+    waiting = services.submit(requester.pk, request(job, target=BOUNDARY + timedelta(hours=1)))
+    services.execute(waiting.pk)
+    waiting.refresh_from_db()
+    assert waiting.next_retry_at == permission.valid_until
+    match change:
+        case "job":
+            Job.objects.filter(pk=job.pk).update(enabled=False)
+        case "source":
+            Source.objects.filter(pk=job.product.source_id).update(
+                collection_pause="operator_pause"
+            )
+        case "actor" | "executor":
+            who = requester if change == "actor" else operator
+            django_user_model.objects.filter(pk=who.pk).update(is_active=False)
+        case "grant":
+            revoke_grant(operator.pk, permission.pk, "F quota wait revocation")
+        case "disposed":
+            WorkWindow.objects.filter(pk=waiting.window_id).update(disposed=True)
+        case "closed":
+            WorkWindow.objects.filter(pk=waiting.window_id).update(closed_at=clock())
+    before = len(published)
+    Run.objects.filter(pk=waiting.pk).update(next_retry_at=clock())
+    services.reconcile_due()
+    waiting.refresh_from_db()
+    assert (waiting.status, waiting.error_code, waiting.next_retry_at) == (status, code, None)
+    assert waiting.request_state == "unsent" and waiting.reserved_at is None
+    assert not waiting.successors.exists() and not upstream[0] and len(published) == before
+
+
+@pytest.mark.parametrize(("period", "interval", "delay"), [(60, 0, 50), (30, 0, 30), (30, 45, 44)])
+def test_f01_tightened_limits_choose_first_available_slot(operator, job, period, interval, delay):
+    now = clock()
+    for i, (age, remaining) in enumerate([(20, 10), (10, 30), (1, 40)]):
+        prior = services.submit(operator.pk, request(job, target=BOUNDARY + timedelta(hours=i)))
+        Run.objects.filter(pk=prior.pk).update(
+            status="failed",
+            request_state="possible",
+            reserved_at=now - timedelta(seconds=age),
+            occupied_until=now + timedelta(seconds=remaining),
+        )
+    job.product.source.collection_limits = dict(
+        period_seconds=period, min_interval_seconds=interval, max_concurrent=2, max_requests=2
+    )
+    job.product.source.save(update_fields=["collection_limits"])
+    # Only the source limits are binding here.
+    job.product.usegrant_set.filter(operation="acquire_online").update(
+        collection_limits=LIMITS | {"max_concurrent": 32}
+    )
+    run = services.submit(operator.pk, request(job, target=BOUNDARY + timedelta(hours=3)))
+    services.execute(run.pk)
+    run.refresh_from_db()
+    assert run.next_retry_at == now + timedelta(seconds=delay)
+    assert run.attempt == 1 and run.reserved_at is None
+
+
+def test_f01_wait_respects_latest_window_end(operator, source, job, upstream, monkeypatch):
+    source.collection_limits = LIMITS | {"max_requests": 1, "period_seconds": 86400}
+    source.save(update_fields=["collection_limits"])
+    first = services.submit(operator.pk, request(job))
+    services.reserve(first.pk, services.claim(first.pk))
+    latest = make_job(operator, source, "L", profile="f-latest-v1", expected_codes=None)
+    allow_collection(operator, latest)
+    at = clock().replace(minute=0, second=0, microsecond=0)
+    run = services.submit(operator.pk, request(latest, target=at))
+    services.execute(run.pk)
+    run.refresh_from_db()
+    assert run.next_retry_at == run.window.target_end
+    # Inject the window-end instant into the scanner. The SQL ledger stays real.
+    monkeypatch.setattr(services, "clock", lambda: run.window.target_end)
+    services.retry_due(run.pk)
+    run.refresh_from_db()
+    assert (run.status, run.error_code, run.next_retry_at) == (
+        "failed",
+        "backfill_unavailable",
+        None,
+    )
+    assert run.attempt == 1 and run.reserved_at is None and not upstream[0]
+
+
+def test_f01_rights_transition_during_quota_refusal_preserves_wait(
+    operator, job, upstream, monkeypatch
+):
+    first = services.submit(operator.pk, request(job))
+    services.reserve(first.pk, services.claim(first.pk))
+    run = services.submit(operator.pk, request(job, target=BOUNDARY + timedelta(hours=1)))
+    starts = clock() + timedelta(seconds=2)
+    grant(
+        operator,
+        job.product,
+        "acquire_online",
+        valid_from=starts,
+        collection_limits=LIMITS | {"max_requests": 1},
+    )
+    budget = services.budget
+
+    def cross_boundary(*args):
+        try:
+            budget(*args)
+        except services.BudgetExhausted:
+            wait_for_pg_time(starts)
+            raise
+
+    monkeypatch.setattr(services, "budget", cross_boundary)
+    services.execute(run.pk)
+    run.refresh_from_db()
+    assert (run.status, run.request_state, run.next_retry_at) == ("pending", "unsent", starts)
+    services.reconcile_due()
+    first.refresh_from_db()
+    run.refresh_from_db()
+    assert run.next_retry_at == first.reserved_at + timedelta(seconds=60)
+    assert run.attempt == 1 and run.reserved_at is None and not upstream[0]
+
+
+def test_f01_early_slot_release_wakes_latest_before_window_end(
+    operator, job, source, upstream, monkeypatch
+):
+    # Inject a clock close to the latest-only window deadline into the services.
+    # The database still serializes real reservations and on-commit notifications.
+    source.collection_limits = LIMITS | {"min_interval_seconds": 0}
+    source.save(update_fields=["collection_limits"])
+    at = clock().replace(minute=0, second=0, microsecond=0)
+    end = at + timedelta(hours=1)
+    now = end - timedelta(seconds=12)
+    monkeypatch.setattr(services, "clock", lambda: now)
+    monkeypatch.setattr(writer, "clock", lambda: now)
+    first = services.submit(operator.pk, request(job))
+    owner = services.claim(first.pk)
+    services.reserve(first.pk, owner)
+    latest = make_job(operator, source, "L", profile="f-latest-v1", expected_codes=None)
+    allow_collection(operator, latest)
+    waiting = services.submit(operator.pk, request(latest, target=at))
+    services.execute(waiting.pk)
+    waiting.refresh_from_db()
+    assert waiting.next_retry_at == end
+    now += timedelta(seconds=2)
+    services.mark_response(first.pk, owner, now)
+    waiting.refresh_from_db()
+    assert waiting.next_retry_at == now
+    services.reconcile_due()
+    upstream[1].append([])
+    services.execute(waiting.pk)
+    waiting.refresh_from_db()
+    assert (waiting.status, waiting.attempt, waiting.reserved_at) == ("finished", 1, now)
+    assert len(upstream[0]) == 1
+
+
+def test_f01_failed_early_notification_keeps_response_and_original_timer(operator, job):
+    first = services.submit(operator.pk, request(job))
+    owner = services.claim(first.pk)
+    services.reserve(first.pk, owner)
+    waiting = services.submit(operator.pk, request(job, target=BOUNDARY + timedelta(hours=1)))
+    services.execute(waiting.pk)
+    waiting.refresh_from_db()
+    timer = waiting.next_retry_at
+    with reject_observation_write(
+        Run, "UPDATE", f"NEW.id = '{waiting.pk}' AND NEW.next_retry_at < OLD.next_retry_at"
+    ):
+        services.mark_response(first.pk, owner, clock())
+    first.refresh_from_db()
+    waiting.refresh_from_db()
+    assert (first.request_state, first.next_retry_at) == ("responded", None)
+    assert waiting.next_retry_at == timer and waiting.reserved_at is None
 
 
 def city_packet(code="123", name="Fixture City", *, at=BOUNDARY, aqi=43):
@@ -774,7 +1163,8 @@ def test_l2_03_disposition_erases_roster_and_manifest_even_without_batch(
             city_name="Fixture City",
             source_timezone=job.product.source_timezone,
         )
-        assert len(writer.manifest(run.pk, owner, parsed)) == 7
+        cells, anomaly = writer.manifest(run.pk, owner, parsed)
+        assert len(cells) == 7 and not anomaly
         run.refresh_from_db()
         assert run.manifest_count == 7
     assert run.batch_id is None
@@ -910,6 +1300,184 @@ def wait_for_pg_time(boundary):
             [boundary],
         )
     assert clock() >= boundary
+
+
+@pytest.mark.parametrize("shape", ["L", "S", "T"])
+@pytest.mark.parametrize(
+    "case", ["unattributable", "mixed", "duplicate", "missing", "invalid", "empty", "old"]
+)
+def test_f02_response_classification_and_coverage(operator, source, upstream, shape, case):
+    job = make_job(operator, source, shape, expected_codes=["A001" if shape == "S" else "123"])
+    if shape == "L":
+        city = City.objects.create(source=source, name="Fixture City", geography="fixture-city")
+        CityIdentifier.objects.create(
+            city=city,
+            source=source,
+            code="123",
+            active_period=TimestamptzRange(START, END),
+            evidence="F synthetic roster",
+        )
+        valid = {
+            "Area": city.name,
+            "CityCode": "123",
+            "TimePoint": BOUNDARY.isoformat(),
+            "AQI": 43,
+            **{f"{name}Level": 1 for name in ("PM2_5", "PM10", "SO2", "NO2", "CO", "O3")},
+        }
+        unassigned = valid | {"CityCode": "0"}
+        issue = "invalid_city_code"
+    elif shape == "S":
+        (valid,) = station_packet(job, source, codes=("A001",))
+        # The station is in the catalogue, but the source label contradicts it.
+        unassigned = valid | {"PositionName": "Unverified station"}
+        issue = "station_mismatch"
+    else:
+        valid = {
+            "Area": job.city.name,
+            "CityCode": "123",
+            "TimePoint": BOUNDARY.isoformat(),
+            "AQI": 43,
+        }
+        unassigned = valid | {"TimePoint": "unknown", "TimePointStr": "01-02 08:00"}
+        issue = "invalid_time"
+
+    identity = {
+        k: v
+        for k, v in valid.items()
+        if k in {"Area", "CityCode", "TimePoint", "StationCode", "PositionName"}
+    }
+    fields = valid.keys() - identity.keys()
+    field_count = len(fields)
+    if case == "unattributable":
+        body, result, codes = [unassigned], "quality_only", {issue}
+    elif case == "mixed":
+        body, result, codes = [valid, unassigned], "partial", {issue}
+    elif case == "duplicate":
+        body, result, codes = [valid | {"AQI": True}, valid], "partial", set()
+    elif case == "missing":
+        body, result, codes = [identity], "quality_only", {"missing_measurements"}
+    elif case == "invalid":
+        body, result, codes = [identity | dict.fromkeys(fields, True)], "quality_only", set()
+    elif case == "empty":
+        body, result, codes = [], "no_new", set()
+    else:
+        old = BOUNDARY - timedelta(hours=24 if shape == "T" else 1)
+        body, result, codes = [valid | {"TimePoint": old.isoformat()}], "no_new", {"outside_target"}
+
+    mixed = case in {"mixed", "duplicate"}
+    if shape == "T" and mixed:
+        # Fill every expected hour so partial must come from the anomaly.
+        body += [
+            valid | {"TimePoint": (BOUNDARY - timedelta(hours=h)).isoformat()} for h in range(1, 24)
+        ]
+    allow_collection(operator, job)
+    calls, responses = upstream
+    responses.append(body)
+    run = services.submit(operator.pk, request(job))
+    services.execute(run.pk)
+    run.refresh_from_db()
+    assert (run.status, run.request_state, run.result, len(calls)) == (
+        "finished",
+        "responded",
+        result,
+        1,
+    )
+    assert (
+        set(QualityIssue.objects.filter(batch_id=run.batch_id).values_list("code", flat=True))
+        == codes
+    )
+    expected_count = 24 if shape == "T" else field_count
+    valid_count = expected_count if mixed else 0
+    received = field_count if case == "invalid" else valid_count
+    output = read_window(operator.pk, run.window_id)
+    coverage = output["coverage"]
+    assert (coverage["E"], coverage["O"], coverage["V"]) == (
+        expected_count,
+        received,
+        valid_count,
+    )
+    assert coverage["object_slots"]["O"] == (
+        24 if shape == "T" and mixed else int(mixed or case in {"missing", "invalid"})
+    )
+    assert bool(coverage["latest_observed_at"]) == bool(received)
+    assert bool(coverage["latest_valid_at"]) == bool(valid_count)
+    outcomes = [receipt["outcome"] for receipt in output["receipts"]]
+    assert outcomes.count("first") == valid_count
+    if case == "duplicate":
+        assert outcomes.count("duplicate") == field_count - 1
+        aqi = run.items.get(indicator="AQI", observed_at=BOUNDARY)
+        assert (aqi.status, aqi.accepted, aqi.reason) == ("accepted", True, "invalid_value")
+    else:
+        assert len(outcomes) == valid_count
+    reasons = {cell["reason"] for cell in output["cells"]}
+    assert "upstream_not_reported" not in reasons
+    assert reasons == (
+        {
+            "mixed": {""},
+            "duplicate": {""},
+            "missing": {"missing_key"},
+            "invalid": {"invalid_value"},
+        }.get(case, {"insufficient_evidence"})
+        | ({"insufficient_evidence"} if shape == "T" and not mixed else set())
+    )
+
+
+@pytest.mark.parametrize("case", ["anomaly", "empty", "old", "all_disputed"])
+def test_f02_later_response_preserves_window_evidence(operator, source, upstream, case):
+    job = make_job(operator, source, "S", expected_codes=["A001", "B002"])
+    valid, _ = station_packet(job, source)
+    allow_collection(operator, job)
+    upstream[1].append([valid])
+    first = services.submit(operator.pk, request(job))
+    services.execute(first.pk)
+    first.refresh_from_db()
+    assert first.result == "partial" and first.window.closed_at is None
+
+    old = (BOUNDARY - timedelta(hours=1)).isoformat()
+    body, result = {
+        "anomaly": ([valid | {"PositionName": "Unverified station"}], "quality_only"),
+        "empty": ([], "no_new"),
+        "old": ([valid | {"TimePoint": old}], "no_new"),
+        "all_disputed": (
+            [valid | dict.fromkeys(("AQI", "PM2_5", "PM10", "SO2", "NO2", "CO", "O3"), 1)],
+            "quality_only",
+        ),
+    }[case]
+    upstream[1].append(body)
+    wait_for_pg_time(first.reserved_at + timedelta(seconds=1))
+    later = services.submit(operator.pk, request(job, reason="review"))
+    services.execute(later.pk)
+    later.refresh_from_db()
+    assert later.status == "finished" and later.result == result
+    disputed = case == "all_disputed"
+    assert later.items.count() == (7 if disputed else 0)
+    assert len(upstream[0]) == 2 and later.window_id == first.window_id
+    output = read_window(operator.pk, later.window_id)
+    assert (output["state"], output["result"]) == (
+        "open",
+        "quality_only" if disputed else "partial",
+    )
+    coverage = output["coverage"]
+    assert (coverage["E"], coverage["O"], coverage["V"]) == (14, 7, 0 if disputed else 7)
+    assert len(output["receipts"]) == (14 if disputed else 7)
+
+
+def test_f02_unscoped_issue_is_classified_without_retaining_ungranted_detail(
+    operator, source, upstream
+):
+    job = make_job(operator, source, "S", expected_codes=["A001"])
+    (valid,) = station_packet(job, source, codes=("A001",))
+    grant(operator, job.product, "acquire_online")
+    for operation in ("process_local", "retain_normalized", "review"):
+        grant(operator, job.product, operation, geography=job.city.geography, object_code="A001")
+    upstream[1].append([valid | {"PositionName": "Unverified station"}])
+    run = services.submit(operator.pk, request(job))
+    services.execute(run.pk)
+    run.refresh_from_db()
+    assert run.result == "quality_only" and run.batch_id is None
+    assert not QualityIssue.objects.filter(product=job.product).exists()
+    coverage = read_window(operator.pk, run.window_id)["coverage"]
+    assert (coverage["E"], coverage["O"], coverage["V"]) == (7, 0, 0)
 
 
 def test_l2_followup_02_newly_effective_quota_rechecks_prior_reservation(

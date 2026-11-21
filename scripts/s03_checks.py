@@ -1,5 +1,6 @@
 """Exercise S03 against real subprocesses and the owned PostgreSQL/Redis project."""
 
+import json
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -588,6 +589,26 @@ def no_new(p, account, job):
         [p.accepted_count(old_window), p.count("L") - start],
         [0, 2],
     )
+    # The same legal array envelope can carry no attributable data or a mix.
+    roster_job = register_job(p, "L", expected=["001"])
+    for days, result, received in [(1, "quality_only", 0), (2, "partial", 7)]:
+        at = target - timedelta(days=days)
+        packet = list_packet(at, 1) if received else []
+        p.script(
+            "L", {"body": [*packet, {"CityCode": "0", "Area": "F", "TimePoint": at.isoformat()}]}
+        )
+        run, window = identification(p.post(tag, account, roster_job, at))
+        final = p.settled(run)
+        codes = p.sql(
+            f"SELECT code FROM observations_qualityissue WHERE batch_id={int(final['batch_id'])}"
+        )
+        p.equal(
+            tag,
+            "F02 Worker result and batch quality evidence",
+            [final["result"], codes],
+            [result, "invalid_city_code"],
+        )
+        projection(p, tag, account, window, (7, received, received))
     p.script("C", {"raw": ""})
     invalid, invalid_window = identification(p.post(tag, account, job, target))
     p.equal(
@@ -779,61 +800,205 @@ def request_scope_and_budget(p, account, job):
             p.sql(
                 f"UPDATE observations_usegrant SET geography='*',object_code='*',data_from='0001-01-01',data_until='9999-12-31' {selector}"
             )
-    p.script("C", {"gate": "source-occupancy", "body": city_packet(at)})
-    p.script("L", {"body": list_packet(at, 1)})
-    c_run, c_window = identification(p.post(tag, account, job, at))
+    source = "WHERE namespace='s03.fixture'"
+    previous_limits = json.loads(
+        p.sql(f"SELECT collection_limits FROM observations_source {source}")
+    )
+    limits = previous_limits | {"max_requests": 1, "period_seconds": 60, "min_interval_seconds": 0}
+    reservations = f"""
+        SELECT count(*) FROM collection_run r JOIN collection_job j ON j.id=r.job_id
+        JOIN observations_product p ON p.id=j.product_id
+        WHERE p.source_id=(SELECT id FROM observations_source {source})
+          AND r.reserved_at IS NOT NULL
+    """
+    wait_for(
+        "prior scenarios' reservations to age out naturally",
+        lambda: (
+            p.sql(reservations + " AND r.reserved_at > clock_timestamp()-interval '60 seconds'")
+            == "0"
+        ),
+        seconds=75,
+    )
+    reservation_baseline = int(p.sql(reservations))
+    event_baseline = len(p.origin("/_events"))
+    p.sql(f"UPDATE observations_source SET collection_limits='{json.dumps(limits)}' {source}")
+    p.equal(
+        tag,
+        "F01 actual source limits from PostgreSQL",
+        json.loads(p.sql(f"SELECT collection_limits FROM observations_source {source}")),
+        limits,
+    )
+
+    def receipt(row):
+        return {
+            field: row[field]
+            for field in (
+                "id",
+                "status",
+                "error_code",
+                "request_state",
+                "reserved_at",
+                "next_retry_at",
+                "dispatch_due",
+                "attempt",
+                "predecessor_id",
+                "generation",
+                "deliveries",
+            )
+        }
+
     try:
-        p.hit("source-occupancy")
-        l_run, _ = identification(p.post(tag, account, list_job, at))
-        blocked = p.settled(l_run)
-        in_flight = p.row(c_run)
+        p.script("C", {"gate": "source-occupancy", "body": city_packet(at)})
+        p.script("L", {"body": list_packet(at, 1)})
+        c_run, c_window = identification(p.post(tag, account, job, at))
+        try:
+            p.hit("source-occupancy")
+            l_run, l_window = identification(p.post(tag, account, list_job, at))
+            blocked = wait_for(
+                "competing product's budget decision",
+                lambda: row if (row := p.row(l_run))["error_code"] else None,
+                seconds=12,
+            )
+            in_flight = p.row(c_run)
+        finally:
+            p.release("source-occupancy")
+        p.record(tag, "F01 waiting Run in PostgreSQL", receipt(blocked))
+        p.equal(
+            tag,
+            "F01 competing Run waits unreserved while first Worker holds the source slot",
+            [
+                blocked["status"],
+                blocked["error_code"],
+                blocked["request_state"],
+                blocked["reserved_at"],
+                blocked["attempt"],
+                blocked["predecessor_id"],
+                blocked["dispatch_due"],
+                in_flight["status"],
+                in_flight["request_state"],
+                p.count("L") - starting["L"],
+            ],
+            [
+                "pending",
+                "budget_exhausted",
+                "unsent",
+                None,
+                1,
+                None,
+                None,
+                "running",
+                "possible",
+                0,
+            ],
+        )
+        first_at = datetime.fromisoformat(in_flight["reserved_at"])
+        due_at = datetime.fromisoformat(blocked["next_retry_at"])
+        p.equal(
+            tag,
+            "F01 earliest recheck from reservation in seconds",
+            (due_at - first_at).total_seconds(),
+            60.0,
+        )
+        completed = p.settled(c_run)
+        p.equal(
+            tag,
+            "released city response completes once and writes seven cells",
+            [
+                completed["status"],
+                completed["request_state"],
+                p.accepted_count(c_window),
+                p.count("C") - starting["C"],
+            ],
+            ["finished", "responded", 7, 1],
+        )
+        blocked_worker = p.worker_log(l_run)
+        owning_worker = p.worker_log(c_run)
+        p.record(tag, "worker receipt for blocked competing product", blocked_worker)
+        p.record(tag, "worker receipt for budget-owning product", owning_worker)
+        p.equal(
+            tag,
+            "source-budget contenders consumed by two distinct Workers",
+            [
+                len(blocked_worker),
+                len(owning_worker),
+                len({line.split("|", 1)[0].strip() for line in blocked_worker + owning_worker}),
+            ],
+            [1, 1, 2],
+        )
+
+        # Compose can re-align service labels between calls. Bound the log query
+        # by PG time so older successes cannot stand in for scans during this wait.
+        scan_start = datetime.fromisoformat(p.sql("SELECT clock_timestamp()")).isoformat()
+        p.compose("start", "beat")
+
+        def new_scans():
+            logs = p.compose("logs", "--no-color", "--since", scan_start, "worker", "worker-b")
+            found = [
+                line
+                for line in logs.splitlines()
+                if "Task collection.reconcile_due[" in line and "] succeeded in" in line
+            ]
+            return found if len(found) >= 2 else None
+
+        scans = wait_for("two completed Beat reconciliation tasks", new_scans, seconds=35)
+        p.record(tag, "F01 completed Beat reconciliations while budget is unavailable", scans)
+        p.equal(
+            tag,
+            "F01 repeated scans preserve original wait without more HTTP or reservations",
+            [
+                p.sql(f"SELECT clock_timestamp() < '{due_at.isoformat()}'::timestamptz"),
+                receipt(p.row(l_run)),
+                int(p.sql(reservations)) - reservation_baseline,
+                p.count("L") - starting["L"],
+            ],
+            ["t", receipt(blocked), 1, 0],
+        )
+
+        restored = p.settled(l_run)
+        p.record(tag, "F01 recovered Run in PostgreSQL", receipt(restored))
+        deliveries = p.worker_log(l_run)
+        p.record(tag, "F01 Worker receives original UUID again", deliveries)
+        p.equal(tag, "F01 Worker receipts for the original UUID", len(deliveries), 2)
+        p.record(
+            tag,
+            "F01 Beat dispatches reconciliation tasks",
+            [
+                line
+                for line in p.compose("logs", "--no-color", "beat").splitlines()
+                if "Scheduler: Sending due task s03.reconcile (collection.reconcile_due)" in line
+            ][-5:],
+        )
+        after = p.origin("/_events")[event_baseline:]
+        p.record(tag, "F01 internal source HTTP receipts", after)
+        p.equal(
+            tag,
+            "F01 Beat recovers same UUID, attempt and one reservation per request",
+            [
+                restored["id"],
+                restored["status"],
+                restored["request_state"],
+                restored["attempt"],
+                restored["predecessor_id"],
+                restored["next_retry_at"],
+                p.sql(f"SELECT count(*) FROM collection_run WHERE window_id={l_window}"),
+                p.accepted_count(l_window),
+                int(p.sql(reservations)) - reservation_baseline,
+                [event["shape"] for event in after],
+            ],
+            [l_run, "finished", "responded", 1, None, None, "1", 7, 2, ["C", "L"]],
+        )
+        recovered_at = datetime.fromisoformat(restored["reserved_at"])
+        p.record(
+            tag,
+            "F01 actual PG reservation interval seconds",
+            (recovered_at - first_at).total_seconds(),
+        )
+        assert recovered_at >= due_at
     finally:
-        p.release("source-occupancy")
-    p.equal(
-        tag,
-        "product L cannot bypass C's shared in-flight source reservation",
-        [
-            blocked["error_code"],
-            blocked["reserved_at"],
-            in_flight["status"],
-            in_flight["request_state"],
-            p.count("L"),
-        ],
-        ["budget_exhausted", None, "running", "possible", starting["L"]],
-    )
-    completed = p.settled(c_run)
-    p.equal(
-        tag,
-        "released city response completes once and writes seven cells",
-        [
-            completed["status"],
-            completed["request_state"],
-            p.accepted_count(c_window),
-            p.count("C") - starting["C"],
-        ],
-        ["finished", "responded", 7, 1],
-    )
-    blocked_worker = p.worker_log(l_run)
-    owning_worker = p.worker_log(c_run)
-    p.record(tag, "worker receipt for blocked competing product", blocked_worker)
-    p.record(tag, "worker receipt for budget-owning product", owning_worker)
-    p.equal(
-        tag,
-        "source-budget contenders consumed by two distinct Workers",
-        len({line.split("|", 1)[0].strip() for line in blocked_worker + owning_worker}),
-        2,
-    )
-    p.sql(
-        f"UPDATE collection_run SET next_retry_at=clock_timestamp() WHERE id='{l_run}' AND next_retry_at IS NOT NULL"
-    )
-    p.reconcile()
-    retry = p.successor(l_run)
-    p.equal(
-        tag,
-        "linked L retry fetches after the shared in-flight slot is released",
-        [p.settled(retry)["request_state"], p.count("L") - starting["L"]],
-        ["responded", 1],
-    )
+        p.stop_beat()
+        p.sql(
+            f"UPDATE observations_source SET collection_limits='{json.dumps(previous_limits)}' {source}"
+        )
 
 
 def historical_boundary(p, account):

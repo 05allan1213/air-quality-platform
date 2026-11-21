@@ -167,26 +167,42 @@ def can_fetch(job, end, now):
     return now < end
 
 
+class BudgetExhausted(Denied):
+    def __init__(self, check_at):
+        super().__init__("budget_exhausted")
+        self.check_at = check_at
+
+
 def check_budget(runs, limits, now):
-    recent = runs.filter(reserved_at__gt=now - timedelta(seconds=limits["period_seconds"]))
-    return (
-        recent.count() < limits["max_requests"]
-        and not runs.filter(
-            reserved_at__gt=now - timedelta(seconds=limits["min_interval_seconds"])
-        ).exists()
-        and runs.filter(occupied_until__gt=now).count() < limits["max_concurrent"]
+    """Earliest admissible time under one set of limits, under the Source lock."""
+
+    def nth_latest(field, cutoff, n):
+        rows = runs.filter(**{f"{field}__gt": cutoff}).order_by(f"-{field}")
+        return rows.values_list(field, flat=True)[n - 1 : n].first()
+
+    period = timedelta(seconds=limits["period_seconds"])
+    interval = timedelta(seconds=limits["min_interval_seconds"])
+    # If limits have tightened, several reservations may have to expire.
+    rolling = nth_latest("reserved_at", now - period, limits["max_requests"])
+    latest = nth_latest("reserved_at", now - interval, 1) if interval else None
+    slot = nth_latest("occupied_until", now, limits["max_concurrent"])
+    return max(
+        now, rolling + period if rolling else now, latest + interval if latest else now, slot or now
     )
 
 
 def budget(job, caps, now):
-    source_limits, grant_limits, _ = caps
+    source_limits, grant_limits, boundary = caps
     all_runs = Run.objects.filter(
         job__product__source_id=job.product.source_id, reserved_at__isnull=False
     )
-    if not check_budget(all_runs, source_limits, now) or not all(
-        check_budget(all_runs.filter(job__product=job.product), c, now) for c in grant_limits
-    ):
-        raise Denied("budget_exhausted")
+    product_runs = all_runs.filter(job__product=job.product)
+    check_at = max(
+        check_budget(all_runs, source_limits, now),
+        *(check_budget(product_runs, limits, now) for limits in grant_limits),
+    )
+    if check_at > now:
+        raise BudgetExhausted(min(check_at, boundary) if boundary else check_at)
 
 
 def cell_key(entity_id, observed_at, indicator):
