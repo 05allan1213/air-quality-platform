@@ -1,0 +1,119 @@
+# ============================================================
+# Python
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+__pypackages__/
+
+# Build and packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+.hypothesis/
+
+# Type checking and linting
+.mypy_cache/
+.pyright/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# ============================================================
+# Frontend (Node.js / Vue / React / Vite)
+# ============================================================
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.vite/
+*.tsbuildinfo
+
+# Frontend test coverage
+coverage/
+
+# ============================================================
+# Environment variables and secrets
+# ============================================================
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+*.pem
+*.key
+
+# ============================================================
+# Local databases and generated data
+# ============================================================
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+data/raw/
+data/processed/
+data/cache/
+
+uploads/
+logs/
+*.log
+*.pid
+
+# ============================================================
+# Temporary files
+# ============================================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~
+
+# ============================================================
+# IDE and editors
+# ============================================================
+.idea/
+.vscode/
+*.code-workspace
+
+# ============================================================
+# Operating system
+# ============================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# AI development workflow
+# ============================================================
+.task/
+.serena/
+  
