@@ -1,0 +1,554 @@
+{
+  "baseline": "d7c5d8b79bdd60d4fc5d3d1840fc1e4043dfae0a",
+  "source_sha256": "f8270973b72e0e28fde10b215e2c2d7d8f0caeca777fd6c85fa4a6ff2ff03479",
+  "outcomes": {
+    "V01": "PASS",
+    "V02": "PASS",
+    "V03": "PASS",
+    "V04": "PASS",
+    "V05": "PASS",
+    "V06": "PASS",
+    "V07": "PASS",
+    "V08": "PASS",
+    "V09": "PASS",
+    "V10": "PASS",
+    "V11": "PASS",
+    "V12": "PASS",
+    "V13": "PASS",
+    "V14": "PASS",
+    "V15": "PASS",
+    "V16": "PASS",
+    "V17": "PASS",
+    "V18": "PASS",
+    "V19": "PASS",
+    "V20": "PASS"
+  },
+  "runs": {
+    "s03_runtime": {
+      "path": "tmp/s03-evidence/s03v4de300743d26",
+      "checks": 176,
+      "checks_sha256": "24d70e2a87ad51e20f81c4c2a339d6dd7f4c36f8f64ca24f4a57217222671f83",
+      "result_sha256": "00e59d9bd6555d01bc4faa265eb564e161f93df823b37a5164dc208ead4f0016",
+      "status": "PASS"
+    },
+    "s03_product": {
+      "path": "tmp/s03-evidence/s03vb4db719bad0e",
+      "checks": 173,
+      "checks_sha256": "41acaec6b09e3dd0d65f71474c5f654d99bd6f95caa52ae2ad9b01f090dfd977",
+      "result_sha256": "41312f7f510a20dbefb9f603da60ed6a78765e0918b6c0024d6a913f72544853",
+      "status": "PASS"
+    },
+    "s02_H": {
+      "path": "tmp/s02-evidence/s01vbec973e8ef91",
+      "checks": 253,
+      "checks_sha256": "796da4230781a5a5ac5455d4f08d298c6764b4561124611ed252073c5d6cd4d0",
+      "result_sha256": "778199819f859084ee3d3b99c0fb0e25c6962a9067d606e3918436a0a553175f",
+      "status": "PASS"
+    },
+    "s01_regression": {
+      "path": "tmp/s01-evidence/s01v208b35c95d2f",
+      "checks": 228,
+      "checks_sha256": "5810e5aa0d9a0cd528da9cd3c590c0575c5b8b145d6c17757aaa704eabe9a81f",
+      "result_sha256": "35eac5275060d2953d60e24308f439d61443db275aa575719b0a2cb0a9e7986d",
+      "status": "PASS"
+    }
+  },
+  "runtime_scenarios": {
+    "V01/S02 to S03": "PASS",
+    "V01/Independent empty PostgreSQL rollback and forward": "PASS",
+    "V19/isolated two Workers and one Beat": "PASS",
+    "V03/City read through Worker and Session": "PASS",
+    "V07/Beat and manual race in a retryable window": "PASS",
+    "V08/Redis outage, lost delivery, same UUID": "PASS",
+    "V08/Redis accepted publication with missing confirmation": "PASS",
+    "V10/Final commit then kill before ACK": "PASS",
+    "V09/Expired acquisition owner": "PASS",
+    "V10/Partial block and unchanged acquisition": "PASS",
+    "V10/Partial block and changed acquisition": "PASS",
+    "V14/Partial block and vanished original window": "PASS",
+    "V14/Latest-only cannot fetch historical target": "PASS",
+    "V12/Bounded retries and shared pause": "PASS",
+    "V15/Revoked queued identity and in-flight rights": "PASS",
+    "V16/Package authority and source concurrency": "PASS",
+    "V18/Closed-window independent review": "PASS",
+    "V11/Empty, old and malformed data": "PASS"
+  },
+  "product_scenarios": {
+    "V02": "PASS",
+    "V04": "PASS",
+    "V05": "PASS",
+    "V06": "PASS",
+    "V13": "PASS",
+    "V17": "PASS"
+  },
+  "s02_scenarios": {
+    "V01": "PASS",
+    "V02": "PASS",
+    "V03": "PASS",
+    "V04": "PASS",
+    "V05": "PASS",
+    "V06": "PASS",
+    "V07": "PASS",
+    "V08": "PASS",
+    "V09": "PASS",
+    "V10": "PASS",
+    "V11": "PASS",
+    "V12": "PASS",
+    "V13": "PASS",
+    "V14": "PASS",
+    "V15": "PASS",
+    "V16": "PASS",
+    "quality": "PASS"
+  },
+  "full_pytest": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "227",
+    "time": "92.844",
+    "timestamp": "2026-11-21T16:37:01.768717+00:00"
+  },
+  "rules_pytest": {
+    "name": "pytest",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "tests": "35",
+    "time": "0.147",
+    "timestamp": "2026-11-21T16:36:59.666514+00:00"
+  },
+  "selected_observations": {
+    "runtime": [
+      {
+        "section": "V01",
+        "check": "S02 watermark/qualification and original key",
+        "actual": "1|3|1"
+      },
+      {
+        "section": "V01",
+        "check": "clean PG application owner and disabled collection",
+        "actual": "s01_app|0|0"
+      },
+      {
+        "section": "V03",
+        "check": "SQL city key counts",
+        "actual": 7
+      },
+      {
+        "section": "V07",
+        "check": "concurrent manual replay same UUID and window",
+        "actual": [
+          "dda8e276-044d-4eac-a6f5-bc8efa24e70a",
+          2,
+          2
+        ]
+      },
+      {
+        "section": "V07",
+        "check": "one initial 503 plus one actual recovery acquisition",
+        "actual": 2
+      },
+      {
+        "section": "V08",
+        "check": "same UUID resolves after missing message and redelivery",
+        "actual": "finished"
+      },
+      {
+        "section": "V08",
+        "check": "only one real acquisition and reservation",
+        "actual": "finished"
+      },
+      {
+        "section": "V10",
+        "check": "ACK-loss redelivery preserves closure, Batch and accepted cells",
+        "actual": [
+          "2026-11-21 16:38:14.18232+00",
+          8,
+          7,
+          7,
+          1
+        ]
+      },
+      {
+        "section": "V09",
+        "check": "late predecessor cannot add a receipt or rewrite the closure",
+        "actual": [
+          7,
+          7,
+          true,
+          0
+        ]
+      },
+      {
+        "section": "V10",
+        "check": "first completed block remains and failing receipt rolled back",
+        "actual": [
+          128,
+          128
+        ]
+      },
+      {
+        "section": "V10",
+        "check": "broker redelivery after user-visible commit cannot acquire again",
+        "actual": 2
+      },
+      {
+        "section": "V10",
+        "check": "same versus changed response SQL disputed count",
+        "actual": 0
+      },
+      {
+        "section": "V10",
+        "check": "window E/O/V",
+        "actual": {
+          "E": 1400,
+          "O": 1400,
+          "V": 1400
+        }
+      },
+      {
+        "section": "V10",
+        "check": "first completed block remains and failing receipt rolled back",
+        "actual": [
+          128,
+          128
+        ]
+      },
+      {
+        "section": "V10",
+        "check": "broker redelivery after user-visible commit cannot acquire again",
+        "actual": 2
+      },
+      {
+        "section": "V10",
+        "check": "same versus changed response SQL disputed count",
+        "actual": 19
+      },
+      {
+        "section": "V10",
+        "check": "window E/O/V",
+        "actual": {
+          "E": 1400,
+          "O": 1400,
+          "V": 1381
+        }
+      },
+      {
+        "section": "V14",
+        "check": "first completed block remains and failing receipt rolled back",
+        "actual": [
+          128,
+          128
+        ]
+      },
+      {
+        "section": "V14",
+        "check": "broker redelivery after user-visible commit cannot acquire again",
+        "actual": 2
+      },
+      {
+        "section": "V14",
+        "check": "window E/O/V",
+        "actual": {
+          "E": 1400,
+          "O": 128,
+          "V": 128
+        }
+      },
+      {
+        "section": "V12",
+        "check": "three attempts maximum for persistent temporary errors",
+        "actual": [
+          3,
+          "upstream_transient",
+          null,
+          3,
+          0
+        ]
+      },
+      {
+        "section": "V12",
+        "check": "observed reservation interval seconds",
+        "actual": 7.273829
+      },
+      {
+        "section": "V12",
+        "check": "observed reservation interval seconds",
+        "actual": 5.012424
+      },
+      {
+        "section": "V15",
+        "check": "no writes from response returned after acquire withdrawal",
+        "actual": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "section": "V16",
+        "check": "product L cannot bypass C's shared in-flight source reservation",
+        "actual": [
+          "budget_exhausted",
+          null,
+          "running",
+          "possible",
+          6
+        ]
+      },
+      {
+        "section": "V18",
+        "check": "three real acquisitions across all five trigger attempts",
+        "actual": 3
+      },
+      {
+        "section": "V18",
+        "check": "window E/O/V",
+        "actual": {
+          "E": 7,
+          "O": 7,
+          "V": 6
+        }
+      }
+    ],
+    "products": [
+      {
+        "section": "V02",
+        "check": "window E/O/V",
+        "actual": [
+          14,
+          13,
+          12
+        ]
+      },
+      {
+        "section": "V04",
+        "check": "window E/O/V",
+        "actual": [
+          14,
+          13,
+          13
+        ]
+      },
+      {
+        "section": "V04",
+        "check": "window E/O/V",
+        "actual": [
+          14,
+          14,
+          14
+        ]
+      },
+      {
+        "section": "V05",
+        "check": "window E/O/V",
+        "actual": [
+          null,
+          2,
+          1
+        ]
+      },
+      {
+        "section": "V05",
+        "check": "three isolated AQI identities in PostgreSQL",
+        "actual": "C:false,L:false,T:true"
+      },
+      {
+        "section": "V06",
+        "check": "no redirect target hit",
+        "actual": 0
+      },
+      {
+        "section": "V06",
+        "check": "drip deadline elapsed seconds",
+        "actual": 16.413781
+      },
+      {
+        "section": "V06",
+        "check": "marker absent in PostgreSQL logical data and Redis deliveries",
+        "actual": [
+          "absent",
+          "absent"
+        ]
+      },
+      {
+        "section": "V13",
+        "check": "window E/O/V",
+        "actual": [
+          14,
+          13,
+          12
+        ]
+      },
+      {
+        "section": "V13",
+        "check": "object slots and CO/SO2 distinction",
+        "actual": [
+          {
+            "E": 2,
+            "O": 2
+          },
+          {
+            "E": 2,
+            "O": 2,
+            "V": 1
+          },
+          {
+            "E": 2,
+            "O": 1,
+            "V": 1
+          }
+        ]
+      },
+      {
+        "section": "V13",
+        "check": "window E/O/V",
+        "actual": [
+          14,
+          13,
+          12
+        ]
+      },
+      {
+        "section": "V13",
+        "check": "window E/O/V",
+        "actual": [
+          null,
+          13,
+          12
+        ]
+      },
+      {
+        "section": "V13",
+        "check": "unknown roster cannot imply ratios",
+        "actual": [
+          null,
+          null
+        ]
+      },
+      {
+        "section": "V17",
+        "check": "window E/O/V",
+        "actual": [
+          14,
+          14,
+          14
+        ]
+      },
+      {
+        "section": "V17",
+        "check": "window E/O/V",
+        "actual": [
+          14,
+          14,
+          14
+        ]
+      },
+      {
+        "section": "V17",
+        "check": "metadata stripped physically and authorized keys retained",
+        "actual": "14|0"
+      },
+      {
+        "section": "V17",
+        "check": "window E/O/V",
+        "actual": [
+          14,
+          14,
+          14
+        ]
+      },
+      {
+        "section": "V17",
+        "check": "authoritative survivor evidence under unknown disposed-window denominator",
+        "actual": [
+          "disposed",
+          null,
+          7,
+          7,
+          7
+        ]
+      },
+      {
+        "section": "V17",
+        "check": "authoritative survivor evidence under unknown disposed-window denominator",
+        "actual": [
+          "disposed",
+          null,
+          7,
+          7,
+          7
+        ]
+      },
+      {
+        "section": "V17",
+        "check": "marker absent in PostgreSQL logical data and Redis deliveries",
+        "actual": [
+          "absent",
+          "absent"
+        ]
+      }
+    ],
+    "UCI_501": [
+      {
+        "section": "V08",
+        "check": "approved UCI archive bytes and fingerprint",
+        "actual": [
+          7959991,
+          "d1b9261c54132f04c374f762f1e5e512af19f95c95fd6bfa1e8ac7e927e3b0b8"
+        ]
+      },
+      {
+        "section": "V08",
+        "check": "H keys, confirmed revisions, current values, and lineage",
+        "actual": [
+          1,
+          1152,
+          1152,
+          1152,
+          1152
+        ]
+      },
+      {
+        "section": "V08",
+        "check": "H city and AQI count",
+        "actual": "0|0"
+      },
+      {
+        "section": "V08",
+        "check": "per station/window hourly labels, missing, CO missing and non-null values",
+        "actual": [
+          "Aotizhongxin|2013|48|0|0|288",
+          "Aotizhongxin|2017|48|15|3|273",
+          "Changping|2013|48|4|1|284",
+          "Changping|2017|48|3|1|285"
+        ]
+      }
+    ]
+  },
+  "uci_attribution": "Chen, S. (2017). Beijing Multi-Site Air Quality. UCI Machine Learning Repository. DOI 10.24432/C5RK5G. CC BY 4.0. Station/window selection, indicator mapping, CO conversion by the project.",
+  "targeted_postgresql": {
+    "tmp/s03-dev/pytest-postgres-l2.xml": {
+      "cases": 7,
+      "sha256": "18f93a283465d0ee2e83357432172b60a8e3c1ae5bff0f5e3a47170fa379f897"
+    },
+    "tmp/s03-dev/pytest-postgres-followup.xml": {
+      "cases": 6,
+      "sha256": "9a9c08dacb4628df283fc633fd5b1f19654f303f5a8651b6949bdd4a60cf496e"
+    },
+    "tmp/s03-dev/three-stations.xml": {
+      "cases": 1,
+      "sha256": "6d6b58b42abdfe37f33b31eab4bea48884c1c6c022330b1ca5f772468c7efec2"
+    },
+    "tmp/s03-dev/tls-and-refusal.xml": {
+      "cases": 3,
+      "sha256": "5589e40343c1ded0e250df109e3620bc71e803a11cd4dbba6b0c978e86fed52d"
+    }
+  },
+  "real_city_admission": {
+    "T11": "NO-GO",
+    "CNEMC_requests": 0,
+    "natural_168_hours": "NOT RUN"
+  }
+}

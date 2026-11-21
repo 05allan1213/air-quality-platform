@@ -171,3 +171,54 @@ docker compose exec worker python backend/manage.py s02_dispose_due
 ```
 
 限期后可恢复处置的依据以 `expiry_mode=recoverable` 登记，使用资格在数据库截止时刻终止。`DispositionJob.completed_at` 标记数据库与文件已实际核对。漏投和清理失败保留 PG 待办，由 Worker 启动核查、Beat 补偿或上述命令重试。要求在整机停机期间物理删除的硬期限无法由本地部署保证，系统在写入时拒绝该项保存依据。平台内控撤回不改变 UCI 已发布的 CC BY 4.0 许可。详见 [S02 实施计划](docs/plans/S02_IMPLEMENTATION_PLAN.md) 和 [S02 开发验证报告](docs/verification/S02.md)。
+
+## S03 离线采集与窗口对账
+
+在仓库根目录运行下面的验证器，可从一次管理员 HTTP 请求追到 Worker、模拟来源、PG 批次和窗口对账。验证器创建独占的 Compose 项目和 PG 卷，给测试 Worker 接入只在内部网络可见的 `s03-origin`。测试完毕后释放自有资源，JSON 收据留在 `tmp/s03-evidence/<项目名>/`。首次构建所需的镜像及锁定包须在本机可用。
+
+```bash
+python3.13 scripts/verify_s03.py                  # V01～V19，F / 注入故障
+python3.13 scripts/verify_s03.py --case V08       # Redis 投递和同 UUID 恢复
+python3.13 scripts/verify_s03.py --case V10       # 分块回滚、重新取得响应、ACK 前退出
+```
+
+默认 Compose 的 Worker 监听 `s01.fixture,s02.history,s03.collection`。排期、运行预算及完成事实在 PostgreSQL 中。空库没有在线 Job，四种契约仅登记在 `s03.fixture` 命名空间。`f-exact-v1` 的模拟来源能按原标签取数，`f-latest-v1` 仅能取当前包。真实来源的许可、回溯能力与联网验收单列在[验证报告](docs/verification/S03.md)。
+
+### 产品及时间
+
+| 形状 | 请求 | 获准处理的数据 |
+|---|---|---|
+| L | 全国一次 GET | 同一来源小时的城市 AQI 和六项污染物等级。等级单位为 `grade` |
+| C | POST `cityCode`，空正文 | 城市直接发布的 AQI 和六项浓度。CO 为 mg/m³，其余五项为 µg/m³ |
+| S | GET `cityName` | 按站点代码、城市归属和站址有效期核对的逐站七项 |
+| T | POST `citycode`，空正文 | 选定终点及之前 23 个小时内实际出现的 AQI 点 |
+
+`target` 须带时区并对齐整点。查询会保留字段缺失、显式空值、删失和真零的差别。对象及时段有独立名册依据时，逐格报告应到 E、字段实到 O 和当前有效 V。未知分母和相应比率返回 `null`。同窗的实际获取次数、首次认可数与当前 V 可各不相同。
+
+### 操作及恢复
+
+以下请求在已经登记了合成目录、完整来源许可和配额的隔离项目中使用。可从 `s03_register_job --help` 查看建立初始停用 Job 的参数。登记及管理需要 `observations.manage_collection`，实际执行主体和发起者需要 `observations.run_collection`。来源准入分别核整包获取、指定范围处理与留存。治理读和独立复核另需 `observations.review_observation`。POST 使用登录 Session 与当前 CSRF 令牌。
+
+| 入口 | 请求与操作结果 |
+|---|---|
+| `POST /api/v1/admin/collection-runs/` | JSON 包含 `job`、`target`、`request_id`（调用者生成的 UUID）和 `reason`。`manual` 为普通触发，`review` 为独立取证，`backfill` 为可回溯的缺格补采。返回 `run_id`、`window_id`、`dispatch`。幂等号冲突返回 409 |
+| `POST /api/v1/admin/collection-jobs/<id>/` | `{"action":"pause"}` 暂停该 Job。`resume`、`resume_product`、`resume_source` 各自只恢复对应范围。来源返回 429 后按 PG 冷却期重新准入 |
+| `GET /api/v1/admin/collection-windows/<id>/` | 查看目标时段、逐格资格、Run 及来源批次。用 `object_code`、`indicator` 选范围，用 `run=<uuid>` 定位一次尝试。`next_after` 与 `next_run_after` 分别传回 `after` 与 `run_after`。有明细截断时再按对象、指标或 Run 查询 |
+| `POST /api/v1/admin/collection-runs/<uuid>/` | 对已耗尽投递轮次且仍为 `unsent` 的 Run 提交 `{"action":"redeliver"}`，保留 UUID 和操作者审计 |
+
+收到 503 且带 `run_id` 时先按该 UUID 查 PG。`unsent` 表示还未预留访问，`possible` 表示已预留且可能送达来源，`responded` 表示已有响应证据。Redis 恢复后可运行 `docker compose exec worker python backend/manage.py s03_reconcile_due`，Worker 启动及已登记的 Beat 扫描也会恢复待办。真正重新获取使用新的 Run、前驱关联和独立预算。进程崩溃后保留已经提交的块，后继重新取得来源响应。
+
+在**获准的测试库**中用 `psql` 只读核对下例，将变量替换为 HTTP 返回的 Run UUID。若需查看对象、时刻、原因和现行资格，请使用受权窗口 API。重复认可查询的预期结果为零行。
+
+```sql
+\set run_id '00000000-0000-0000-0000-000000000000'
+SELECT window_id, id, predecessor_id, status, request_state, dispatch, batch_id, error_code
+FROM collection_run WHERE window_id = (SELECT window_id FROM collection_run WHERE id = :'run_id')
+ORDER BY created_at;
+
+SELECT window_id, item_key, count(*) FILTER (WHERE accepted) AS accepted_count
+FROM collection_runitem WHERE window_id = (SELECT window_id FROM collection_run WHERE id = :'run_id')
+GROUP BY window_id, item_key HAVING count(*) FILTER (WHERE accepted) > 1;
+```
+
+排查缺口时先对比目标时段、来源观测时刻和 `fetched_at`。遇到 `backfill_unavailable` 查看该 profile 的回溯范围，遇到 `permission_lost` 查看当前许可与处置记录，遇到 `disputed` 用 Batch/Receipt 定位 S02 的同键裁决。只剩部分获权对象时按 `object_code` 查询，撤权处置后的整包清单不再参与覆盖对账。闭窗后的独立复核保留首次收口和每格首次认可，可改变当前质量资格。
