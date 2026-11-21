@@ -1,0 +1,16 @@
+{
+  "author": "City Air Quality Platform project",
+  "purpose": "local_demo",
+  "product": "F",
+  "source": "local.fixture.v1",
+  "entity": "F:CITY:001",
+  "synthetic": true,
+  "fixture_key": "co-hour-v1",
+  "fixture_version": "1",
+  "indicator": "CO",
+  "raw_value": "1250",
+  "raw_unit": "µg/m³",
+  "source_timezone": "Asia/Shanghai",
+  "source_time": "2001-02-03T08:00:00+08:00",
+  "window_semantics": "previous_hour_right_label_[start,end)"
+}

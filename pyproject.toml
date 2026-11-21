@@ -1,0 +1,32 @@
+[project]
+name = "air-quality-platform"
+version = "0.1.0"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "Django>=5.2,<5.3", "djangorestframework>=3.16,<4", "psycopg[binary]>=3.2,<4",
+    "celery[redis]>=5.5,<6", "django-celery-beat>=2.8,<3",
+]
+
+[dependency-groups]
+dev = ["mypy>=1.15,<3", "pytest>=8,<10", "pytest-django>=4.10,<5", "ruff>=0.11,<1"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+pythonpath = ["backend"]
+testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["backend/samples/normalization.py"]
+strict = true

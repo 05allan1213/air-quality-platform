@@ -1,0 +1,11 @@
+.git
+.serena
+.venv
+.env*
+**/__pycache__
+**/*.pyc
+.*_cache
+tmp
+temp
+logs
+docs

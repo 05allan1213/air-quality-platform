@@ -1,0 +1,73 @@
+x-app: &app
+  image: ${COMPOSE_PROJECT_NAME}-app:local
+  pull_policy: never
+  environment:
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?local secret required}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?local password required}
+    POSTGRES_DB: ${POSTGRES_DB:-air_quality}
+    POSTGRES_USER: ${POSTGRES_USER:-air_local}
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-127.0.0.1,localhost}
+    COOKIE_SECURE: ${COOKIE_SECURE:-0}
+  networks: [backend]
+
+x-after-migration: &after-migration
+  migrate: {condition: service_completed_successfully}
+  redis: {condition: service_healthy}
+
+services:
+  db:
+    image: postgres:16-alpine@sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-air_quality}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?local bootstrap password required}
+      APP_DB_USER: ${POSTGRES_USER:-air_local}
+      APP_DB_PASSWORD: ${POSTGRES_PASSWORD:?local app password required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/10-app-role.sql:/docker-entrypoint-initdb.d/10-app-role.sql:ro
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  redis:
+    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+    command: [redis-server, --save, '', --appendonly, 'no']
+    volumes:
+      - type: tmpfs
+        target: /data
+    networks: [backend]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  migrate:
+    <<: *app
+    build: .
+    command: [python, backend/manage.py, migrate, --noinput]
+    depends_on:
+      db: {condition: service_healthy}
+  web:
+    <<: *app
+    command: [python, backend/manage.py, runserver, '0.0.0.0:8000', --noreload]
+    networks: [front, backend]
+    ports: ['127.0.0.1:${WEB_PORT:-8000}:8000']
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  worker:
+    <<: *app
+    command: [celery, -A, config, worker, -l, INFO, -Q, s01.fixture, --concurrency=1]
+    depends_on: *after-migration
+  beat:
+    <<: *app
+    command: [celery, -A, config, beat, -l, INFO]
+    depends_on: *after-migration
+
+volumes:
+  pgdata:
+networks:
+  front: {}
+  backend: {internal: true}
