@@ -111,6 +111,9 @@ def reconcile_data(product, grants, now):
         ):
             Batch.objects.filter(pk=issue.batch_id).update(identity=None, redacted=True)
             issue.delete()
+    from collection.retention import reconcile
+
+    reconcile(product, grants, now)
     Batch.objects.filter(product=product, receipts__isnull=True, qualityissue__isnull=True).delete()
 
 

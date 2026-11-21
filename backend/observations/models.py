@@ -17,6 +17,9 @@ def text(size=100, **kwargs):
 class Source(models.Model):
     namespace = text(unique=True)
     publisher = text(200)
+    collection_limits = models.JSONField(null=True, blank=True)
+    collection_pause = text(blank=True)
+    collection_resume_after = models.DateTimeField(null=True, blank=True)
 
 
 class Product(models.Model):
@@ -31,9 +34,12 @@ class Product(models.Model):
     evidence = models.TextField(blank=True)
     attribution = models.TextField(blank=True)
     rights_version = models.PositiveBigIntegerField(default=0)
+    collection_pause = text(blank=True)
 
     class Meta:
         permissions = [
+            ("manage_collection", "Manage collection jobs and pauses"),
+            ("run_collection", "Execute authorized collection jobs"),
             ("import_history", "Import a controlled historical batch"),
             ("review_observation", "Review authorized observation evidence"),
             ("manage_grants", "Register and withdraw source uses"),
@@ -71,6 +77,7 @@ class UseGrant(models.Model):
     terms_version = text()
     attribution = models.TextField(blank=True)
     restrictions = models.JSONField(default=dict)
+    collection_limits = models.JSONField(null=True, blank=True)
     confirmed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
@@ -358,6 +365,10 @@ class ImportAttempt(models.Model):
 
 
 class Receipt(models.Model):
+    collection_metadata = models.JSONField(null=True)
+    collection_item = models.ForeignKey(
+        "collection.RunItem", null=True, on_delete=models.SET_NULL, related_name="receipts"
+    )
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE, related_name="receipts")
     city_revision = models.ForeignKey(CityRevision, null=True, on_delete=models.CASCADE)
     station_revision = models.ForeignKey(StationRevision, null=True, on_delete=models.CASCADE)

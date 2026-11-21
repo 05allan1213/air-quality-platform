@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "accounts",
     "samples",
     "observations",
+    "collection",
 ]
 MIDDLEWARE = [
     "config.errors.BoundaryErrors",
@@ -87,8 +88,12 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     "retry_on_timeout": False,
 }
 
+S03_FIXTURE_HTTP = os.environ.get("S03_FIXTURE_HTTP") == "1"
+
 S02_STAGE_DIR = "/run/s02-history"
 CELERY_TASK_ROUTES = {
+    "collection.execute_run": {"queue": "s03.collection"},
+    "collection.reconcile_due": {"queue": "s03.collection"},
     "observations.import_history": {"queue": "s02.history"},
     "observations.dispose": {"queue": "s02.history"},
 }

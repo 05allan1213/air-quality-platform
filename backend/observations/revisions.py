@@ -68,6 +68,10 @@ def check(ctx, op, scope, fields):
 
 def finish(ctx):
     actor(ctx.actor_id, "import_history")
+    finish_checks(ctx)
+
+
+def finish_checks(ctx):
     now = clock()
     for op, scope, fields in ctx.checks:
         applicable(ctx.product, op, scope, fields, now, ctx.grants)
@@ -300,6 +304,23 @@ def fixture_identity(product, ticket, profile):
         raise Denied("invalid_batch") from None
 
 
+def lock_stations(product, candidates):
+    if product.level == "station":
+        # Products can share stations. Every writer takes station locks in PK order.
+        from .models import Station
+
+        codes = {candidate.data.object_code for candidate in candidates}
+        station_ids = Station.objects.filter(
+            source=product.source, stationidentifier__kind="code", stationidentifier__code__in=codes
+        ).values_list("pk", flat=True)
+        list(
+            Station.objects.select_for_update()
+            .filter(pk__in=station_ids)
+            .order_by("pk")
+            .values_list("pk", flat=True)
+        )
+
+
 @transaction.atomic
 def ingest_batch(actor_id, product_id, identity, profile, candidates):
     product = locked_product(product_id)
@@ -328,20 +349,7 @@ def ingest_batch(actor_id, product_id, identity, profile, candidates):
         applicable(product, "retain_normalized", PACKAGE_SCOPE, {"batch_identity"}, clock(), grants)
     else:
         identity = fixture_identity(product, identity, profile)
-    if product.level == "station":
-        # Products can share stations. Every writer takes station locks in PK order.
-        from .models import Station
-
-        codes = {candidate.data.object_code for candidate in candidates}
-        station_ids = Station.objects.filter(
-            source=product.source, stationidentifier__kind="code", stationidentifier__code__in=codes
-        ).values_list("pk", flat=True)
-        list(
-            Station.objects.select_for_update()
-            .filter(pk__in=station_ids)
-            .order_by("pk")
-            .values_list("pk", flat=True)
-        )
+    lock_stations(product, candidates)
     batch, created = Batch.objects.get_or_create(
         product=product,
         identity=identity,

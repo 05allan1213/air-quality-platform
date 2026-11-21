@@ -126,7 +126,7 @@ def applicable(product, operation, scope, fields, now, rows=None):
                 all(a == "*" or b == "*" or a == b for a, b in dimensions)
                 and grant.data_from < scope.end
                 and scope.start < grant.data_until
-                and ("*" in grant.fields or wanted.intersection(grant.fields))
+                and ("*" in grant.fields or "*" in wanted or wanted.intersection(grant.fields))
             ):
                 raise Denied()
         elif (
@@ -159,6 +159,7 @@ def require_use(actor_id, product, operation, scope, fields):
             "review": "review_observation",
             "analyze": "review_observation",
             "acquire_file": "import_history",
+            "acquire_online": "run_collection",
             "process_local": "import_history",
         }.get(operation),
     )
@@ -187,6 +188,12 @@ def register_grant(actor_id, product_id, **terms):
         or not all(isinstance(v, str) and v for v in terms["fields"])
     ):
         raise Denied("invalid_grant")
+    if terms.get("collection_limits") is not None:
+        from collection.admission import validate_limits
+
+        if terms["operation"] != "acquire_online":
+            raise Denied("invalid_grant")
+        validate_limits(terms["collection_limits"])
     grant = UseGrant(product=product, confirmed_by=user, **terms)
     grant.full_clean(
         exclude=[

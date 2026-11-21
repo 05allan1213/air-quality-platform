@@ -1,3 +1,4 @@
+from collection import views as collection_views
 from django.db import DatabaseError, connection
 from django.http import JsonResponse
 from django.urls import include, path
@@ -19,6 +20,10 @@ def ready(request):
 
 urlpatterns = [
     path("health/ready/", ready),
+    path("api/v1/admin/collection-runs/", collection_views.runs),
+    path("api/v1/admin/collection-runs/<uuid:run_id>/", collection_views.recover),
+    path("api/v1/admin/collection-jobs/<int:pk>/", collection_views.jobs),
+    path("api/v1/admin/collection-windows/<int:pk>/", collection_views.windows),
     path("api/v1/admin/history-imports/", observation_views.history_imports),
     path("api/v1/observations/current/", observation_views.observations),
     path("api/v1/admin/observation-evidence/", observation_views.evidence),

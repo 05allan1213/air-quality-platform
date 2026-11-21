@@ -1,0 +1,34 @@
+# Used only by scripts/verify_s03.py with its disposable project and volume.
+services:
+  web:
+    environment:
+      S03_FIXTURE_HTTP: "1"
+  worker:
+    # Both consumers use one late-ACK slot so a held request cannot prefetch its competitor.
+    command: [sh, -ec, 'python backend/manage.py s02_dispose_due && python backend/manage.py s03_reconcile_due && exec celery -A config worker -l INFO -Q s01.fixture,s02.history,s03.collection --concurrency=1 --prefetch-multiplier=1']
+    environment:
+      S03_FIXTURE_HTTP: "1"
+    depends_on:
+      s03-origin: {condition: service_healthy}
+  s03-origin:
+    image: ${COMPOSE_PROJECT_NAME}-app:local
+    pull_policy: never
+    command: [python, scripts/s03_http.py]
+    read_only: true
+    networks: [backend]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "from urllib.request import urlopen; urlopen('http://127.0.0.1:8080/_events', timeout=2).close()"]
+      interval: 1s
+      timeout: 3s
+      retries: 20
+  worker-b:
+    environment:
+      S03_FIXTURE_HTTP: "1"
+    extends:
+      file: compose.yaml
+      service: worker
+    command: [sh, -ec, 'python backend/manage.py s02_dispose_due && python backend/manage.py s03_reconcile_due && exec python scripts/s03_worker.py']
+    depends_on:
+      s03-origin: {condition: service_healthy}
