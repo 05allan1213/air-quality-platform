@@ -1,5 +1,6 @@
 """Operator-only field verification, called explicitly inside the local Web container."""
 
+import json
 from decimal import Decimal
 from getpass import getpass
 from time import monotonic, sleep
@@ -112,6 +113,7 @@ class Command(BaseCommand):
                     raise Denied("seven_field_evidence_required")
                 evidence = {r["id"] for r in projection["receipts"]}
                 stamp = run.window.target_start
+                fields = []
                 # Read each field through its authorized Session contract before comparing the DB receipt.
                 for indicator in ENDPOINTS["A03"].indicators:
                     series = "not_applicable"
@@ -138,16 +140,48 @@ class Command(BaseCommand):
                     if len(result) != 1:
                         raise Denied("field_unavailable")
                     field = result[0]
-                    if not Receipt.objects.filter(
-                        pk__in=evidence,
-                        batch_id=run.batch_id,
-                        city_revision_id=field["revision_id"],
-                        city_revision__value=Decimal(field["value"]),
-                        city_revision__unit=field["unit"],
-                        city_revision__key__city_id=job.city_id,
-                        city_revision__key__observed_at_utc=stamp,
-                    ).exists():
+                    if (
+                        field["source"],
+                        field["product"],
+                        field["synthetic"],
+                        field["indicator"],
+                    ) != ("cnemc", job.product_id, False, indicator):
+                        raise Denied("field_identity_mismatch")
+                    # Equal pollutant values are not interchangeable; bind to this exact RunItem.
+                    receipt_ids = list(
+                        Receipt.objects.filter(
+                            pk__in=evidence,
+                            batch_id=run.batch_id,
+                            collection_item__run=run,
+                            collection_item__window=run.window,
+                            collection_item__object_code="110000",
+                            collection_item__indicator=indicator,
+                            collection_item__observed_at=stamp,
+                            collection_item__accepted=True,
+                            city_revision_id=field["revision_id"],
+                            city_revision__is_current=True,
+                            city_revision__quality="valid",
+                            city_revision__value=Decimal(field["value"]),
+                            city_revision__unit=field["unit"],
+                            city_revision__key__city_id=job.city_id,
+                            city_revision__key__indicator=indicator,
+                            city_revision__key__report_kind="hourly",
+                            city_revision__key__window_definition="hourly_label_unspecified",
+                            city_revision__key__standard_series=series,
+                            city_revision__key__observed_at_utc=stamp,
+                        ).values_list("pk", flat=True)[:2]
+                    )
+                    if len(receipt_ids) != 1:
                         raise Denied("field_receipt_mismatch")
+                    fields.append(
+                        {
+                            "indicator": indicator,
+                            "value": str(field["value"]),
+                            "unit": field["unit"],
+                            "revision_id": field["revision_id"],
+                            "receipt_id": receipt_ids[0],
+                        }
+                    )
         except Denied as exc:
             raise CommandError(exc.code) from None
         except (
@@ -158,4 +192,22 @@ class Command(BaseCommand):
             ValueError,
         ):
             raise CommandError("validation_unavailable") from None
-        self.stdout.write(f"PASS A03 run={run.pk} window={run.window_id} fields=7")
+        self.stdout.write(
+            json.dumps(
+                {
+                    "status": "PASS",
+                    "source": job.product.source.namespace,
+                    "synthetic": job.product.synthetic,
+                    "product_id": job.product_id,
+                    "city_id": job.city_id,
+                    "observed_at": stamp.isoformat(),
+                    "window_id": run.window_id,
+                    "run_id": str(run.pk),
+                    "batch_id": run.batch_id,
+                    "receipt_ids": sorted(evidence),
+                    "fields": fields,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
+        )
