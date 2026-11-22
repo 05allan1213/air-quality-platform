@@ -1,0 +1,720 @@
+{
+  "cases": [
+    {
+      "check": "V15",
+      "input_expected": "real old Cookie and seeded S01–S03 facts survive forward migration",
+      "result": "PASS",
+      "observed": "comparison of old Cookie and independent SQL/API snapshots succeeded"
+    },
+    {
+      "check": "V01/HTTP",
+      "input_expected": "anonymous, invalid CSRF, privilege injection rejected; legitimate register/login and PATCH succeeds",
+      "result": "PASS",
+      "observed": "USER flags and permission rows verified by independent SQL"
+    },
+    {
+      "check": "V02/V07/V11/HTTP",
+      "input_expected": "exact and explicit history, offset equivalence, empty gap, F isolation, bounded pagination",
+      "result": "PASS",
+      "observed": {
+        "co_rows_match_independent_sql": 2
+      }
+    },
+    {
+      "check": "V12/HTTP",
+      "input_expected": "profile isolation, CSRF, wrong/weak password, password change, old Cookie replay, disable, permission revoke",
+      "result": "PASS",
+      "observed": "real HTTP and independent PG permissions passed"
+    },
+    {
+      "check": "V16/H",
+      "input_expected": "exact archive bytes, independent raw CO conversion, SQL key/revision/unit, HTTP station/latest and history, uncovered gap",
+      "result": "PASS",
+      "observed": {
+        "archive_sha256": "d1b9261c54132f04c374f762f1e5e512af19f95c95fd6bfa1e8ac7e927e3b0b8",
+        "verified_sites": 2,
+        "windows_per_site": 2,
+        "verified_co_rows": 187,
+        "negative_display_gap_status": 403,
+        "worker_dispatch": "NOT RUN (actual S02 consume service ran in isolated importer)"
+      }
+    },
+    {
+      "check": "V17/F journey",
+      "input_expected": "genuine authorized L → C/T → directory → station → window → favorites → new Session; independent SQL",
+      "result": "PASS",
+      "observed": {
+        "L_cities": 2,
+        "C_values": 7,
+        "T_aqi_points": 1,
+        "favorite_rows": 1,
+        "independent_station_db_match": true,
+        "collection_run_delta": 0
+      }
+    },
+    {
+      "check": "V14/H and F",
+      "input_expected": "H and F private intents coexist in isolated domains; display withdrawal hides H summary",
+      "result": "PASS",
+      "observed": {
+        "both_domains": true,
+        "display_revocation_keeps_intent": true
+      }
+    },
+    {
+      "check": "V11/SQL plans",
+      "input_expected": "compare authorized SQL, page sizes and execution plans on small and expanded F datasets",
+      "result": "PASS",
+      "observed": {
+        "small": {
+          "sizes": {
+            "station_keys": 4,
+            "l_keys": 2,
+            "l_snapshot_cities": 2
+          },
+          "requests": {
+            "history": {
+              "sql_count": 12,
+              "http_ms": 27.886,
+              "returned_rows": 2,
+              "plans": [
+                {
+                  "shared_hits": 26,
+                  "shared_reads": 0,
+                  "db_ms": 0.254,
+                  "root": "Limit",
+                  "output_rows": 2,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Limit",
+                    "Nested Loop",
+                    "Sort"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c"
+                  ]
+                }
+              ]
+            },
+            "station_latest": {
+              "sql_count": 17,
+              "http_ms": 45.771,
+              "returned_rows": 2,
+              "plans": [
+                {
+                  "shared_hits": 47,
+                  "shared_reads": 0,
+                  "db_ms": 0.332,
+                  "root": "Nested Loop",
+                  "output_rows": 2,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 35,
+                  "shared_reads": 0,
+                  "db_ms": 0.384,
+                  "root": "Nested Loop",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 29,
+                  "shared_reads": 0,
+                  "db_ms": 0.27,
+                  "root": "Nested Loop",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 14,
+                  "shared_reads": 0,
+                  "db_ms": 0.25,
+                  "root": "Nested Loop",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 14,
+                  "shared_reads": 0,
+                  "db_ms": 0.245,
+                  "root": "Nested Loop",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                }
+              ]
+            },
+            "national": {
+              "sql_count": 24,
+              "http_ms": 53.383,
+              "returned_rows": 1,
+              "plans": [
+                {
+                  "shared_hits": 17,
+                  "shared_reads": 0,
+                  "db_ms": 0.357,
+                  "root": "Limit",
+                  "output_rows": 1,
+                  "nodes": [
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Limit",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": []
+                },
+                {
+                  "shared_hits": 13,
+                  "shared_reads": 0,
+                  "db_ms": 0.477,
+                  "root": "Aggregate",
+                  "output_rows": 1,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": []
+                },
+                {
+                  "shared_hits": 24,
+                  "shared_reads": 0,
+                  "db_ms": 0.451,
+                  "root": "Aggregate",
+                  "output_rows": 1,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort"
+                  ],
+                  "indexes": []
+                },
+                {
+                  "shared_hits": 22,
+                  "shared_reads": 0,
+                  "db_ms": 0.419,
+                  "root": "Limit",
+                  "output_rows": 1,
+                  "nodes": [
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Incremental Sort",
+                    "Limit",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort",
+                    "Subquery Scan",
+                    "WindowAgg"
+                  ],
+                  "indexes": []
+                },
+                {
+                  "shared_hits": 4,
+                  "shared_reads": 0,
+                  "db_ms": 0.229,
+                  "root": "Nested Loop",
+                  "output_rows": 1,
+                  "nodes": [
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Nested Loop",
+                    "Seq Scan"
+                  ],
+                  "indexes": []
+                },
+                {
+                  "shared_hits": 11,
+                  "shared_reads": 0,
+                  "db_ms": 0.412,
+                  "root": "Nested Loop",
+                  "output_rows": 1,
+                  "nodes": [
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Seq Scan"
+                  ],
+                  "indexes": [
+                    "observations_city_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 7,
+                  "shared_reads": 0,
+                  "db_ms": 0.112,
+                  "root": "Sort",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort"
+                  ],
+                  "indexes": []
+                }
+              ]
+            }
+          }
+        },
+        "expanded": {
+          "sizes": {
+            "station_keys": 1438,
+            "l_keys": 956,
+            "l_snapshot_cities": 320
+          },
+          "requests": {
+            "history": {
+              "sql_count": 12,
+              "http_ms": 37.843,
+              "returned_rows": 50,
+              "plans": [
+                {
+                  "shared_hits": 4386,
+                  "shared_reads": 0,
+                  "db_ms": 3.362,
+                  "root": "Limit",
+                  "output_rows": 51,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Limit",
+                    "Nested Loop",
+                    "Sort"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c"
+                  ]
+                }
+              ]
+            },
+            "station_latest": {
+              "sql_count": 17,
+              "http_ms": 50.904,
+              "returned_rows": 2,
+              "plans": [
+                {
+                  "shared_hits": 8709,
+                  "shared_reads": 0,
+                  "db_ms": 8.468,
+                  "root": "Nested Loop",
+                  "output_rows": 2,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 72,
+                  "shared_reads": 0,
+                  "db_ms": 0.401,
+                  "root": "Nested Loop",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 72,
+                  "shared_reads": 0,
+                  "db_ms": 0.464,
+                  "root": "Nested Loop",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 72,
+                  "shared_reads": 0,
+                  "db_ms": 0.363,
+                  "root": "Nested Loop",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 72,
+                  "shared_reads": 0,
+                  "db_ms": 0.473,
+                  "root": "Nested Loop",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_stationobservation_pkey",
+                    "observations_stationobservation_product_id_212958fc",
+                    "observations_stationrevision_key_id_ea39745c",
+                    "observations_stationrevision_pkey"
+                  ]
+                }
+              ]
+            },
+            "national": {
+              "sql_count": 22,
+              "http_ms": 184.742,
+              "returned_rows": 50,
+              "plans": [
+                {
+                  "shared_hits": 5518,
+                  "shared_reads": 0,
+                  "db_ms": 18.068,
+                  "root": "Limit",
+                  "output_rows": 1,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Limit",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_cityobservation_pkey",
+                    "observations_cityrevision_key_id_90af8d74",
+                    "observations_cityrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 4823,
+                  "shared_reads": 0,
+                  "db_ms": 16.763,
+                  "root": "Aggregate",
+                  "output_rows": 1,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort",
+                    "Unique"
+                  ],
+                  "indexes": [
+                    "observations_cityobservation_pkey",
+                    "observations_cityrevision_key_id_90af8d74",
+                    "observations_cityrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 4828,
+                  "shared_reads": 0,
+                  "db_ms": 17.428,
+                  "root": "Aggregate",
+                  "output_rows": 3,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort"
+                  ],
+                  "indexes": [
+                    "observations_cityobservation_pkey",
+                    "observations_cityrevision_key_id_90af8d74",
+                    "observations_cityrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 4826,
+                  "shared_reads": 0,
+                  "db_ms": 17.453,
+                  "root": "Limit",
+                  "output_rows": 51,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Incremental Sort",
+                    "Index Scan",
+                    "Limit",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort",
+                    "Subquery Scan",
+                    "WindowAgg"
+                  ],
+                  "indexes": [
+                    "observations_cityobservation_pkey",
+                    "observations_cityrevision_key_id_90af8d74",
+                    "observations_cityrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 1958,
+                  "shared_reads": 0,
+                  "db_ms": 1.975,
+                  "root": "Sort",
+                  "output_rows": 50,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort"
+                  ],
+                  "indexes": [
+                    "observations_cityobservation_pkey",
+                    "observations_cityrevision_key_id_90af8d74"
+                  ]
+                },
+                {
+                  "shared_hits": 4935,
+                  "shared_reads": 0,
+                  "db_ms": 16.765,
+                  "root": "Nested Loop",
+                  "output_rows": 50,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Seq Scan"
+                  ],
+                  "indexes": [
+                    "observations_city_pkey",
+                    "observations_cityobservation_pkey",
+                    "observations_cityrevision_key_id_90af8d74",
+                    "observations_cityrevision_pkey"
+                  ]
+                },
+                {
+                  "shared_hits": 41,
+                  "shared_reads": 0,
+                  "db_ms": 0.709,
+                  "root": "Sort",
+                  "output_rows": 0,
+                  "nodes": [
+                    "Aggregate",
+                    "Function Scan",
+                    "Hash",
+                    "Hash Join",
+                    "Index Scan",
+                    "Nested Loop",
+                    "Seq Scan",
+                    "Sort"
+                  ],
+                  "indexes": [
+                    "observations_cityobservation_pkey",
+                    "observations_cityrevision_key_id_90af8d74"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "check": "V17/PG outage",
+      "input_expected": "connection endpoint unavailable then restored",
+      "result": "PASS",
+      "observed": null
+    }
+  ],
+  "runtime": {
+    "django": "5.2.19",
+    "postgresql": "16.16"
+  },
+  "runner_exit_code": 0,
+  "source_sha256": "f28cd1a7273f1fbf43321970aeba9cb1310e76369e32ffd6b1df4d859fff5b17",
+  "source_unchanged": true,
+  "cleanup_remaining_containers": 0,
+  "phase": "s04",
+  "network": "isolated loopback namespace, no worker or beat",
+  "full_receipt_sha256": "83b681a526d231cb2eaadc96b2a845b137d29d8ba4bc8bb92cb1ff112fd5cee9",
+  "pytest": {
+    "tests": 348,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "s04_cases": 37
+  },
+  "static_checks": {
+    "uv_lock_offline": "PASS",
+    "ruff_check": "PASS",
+    "ruff_format": "PASS",
+    "configured_mypy_files": 3,
+    "django_check": "PASS",
+    "migrate_check": "PASS",
+    "makemigrations_check_dry_run": "PASS"
+  }
+}

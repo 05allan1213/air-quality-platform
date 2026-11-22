@@ -2,6 +2,10 @@
 
 S01 提供一条可在本机复现的链路。管理员提交项目自制的 F 夹具，独立 Celery Worker 从 Redis 收件，在 PostgreSQL 中记录结果。普通用户登录后按观测时刻读取 CO 浓度。当前数据的用途为本地演示，外采业务计划为零。
 
+## 查询与用户业务
+
+登录后可从全国同刻概览进入城市七项、独立趋势、站点和历史明细，并在“我的关注”复访已收藏的实体。查询链路只需 Web、PostgreSQL 和已获准的存量数据。查询参数、分页、字段可用性、改密与收藏示例见 [S04 用户 API](docs/operations/S04.md)。开发验证和真实 H 核对见 [S04 工程交接](docs/verification/S04.md)。
+
 ## 启动本地环境
 
 需要 Git、带 Compose 和 BuildKit 的本地 Docker，以及 Python 3.13。以下命令在仓库根目录执行。第一次构建需要获取固定 digest 的基础镜像和 `uv.lock` 中的包。本地开发环境使用 `uv sync --locked`。容器自带锁定的 Python、uv 和验证工具。
