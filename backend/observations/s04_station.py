@@ -7,14 +7,22 @@ from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
 
 from django.db import transaction
-from django.db.models import DateTimeField, F, Func, Q
+from django.db.models import Case, DateTimeField, F, Func, Q, When
 from django.urls import path
 
 from .models import City, SiteEpoch
 from .normalization import INDICATORS, REPORT_KIND, WINDOWS
 from .policy import Denied, Scope
 from .queries import pk
-from .s04_http import decode_cursor, encode_cursor, instant, page_size, params, read_view
+from .s04_http import (
+    decode_cursor,
+    encode_cursor,
+    fingerprint,
+    instant,
+    page_size,
+    params,
+    read_view,
+)
 from .selection import TICK, ReadContext
 
 HOURLY = "hourly_label_unspecified"
@@ -105,7 +113,17 @@ def _status(epoch, at):
     return "current"
 
 
-def _site_projection(product, epoch, at, codes=(), has_catalog=False):
+def _directory_instant(period, as_of):
+    end = period.upper
+    return min(as_of, end - TICK) if end else as_of
+
+
+def _codes_at(segments, reference):
+    return {s.code for s in segments if s.start <= reference < s.end}
+
+
+def _site_projection(product, epoch, at, codes):
+    has_catalog = bool(codes)
     return {
         "station": epoch.station_id,
         "site_epoch": epoch.pk,
@@ -113,7 +131,7 @@ def _site_projection(product, epoch, at, codes=(), has_catalog=False):
         "station_name": epoch.station.name if has_catalog else None,
         "city_name": epoch.city.name if has_catalog else None,
         "site_name": epoch.name if has_catalog else None,
-        "codes": sorted(set(codes)),
+        "codes": sorted(codes),
         "period_start": epoch.active_period.lower if has_catalog else None,
         "period_end": epoch.active_period.upper if has_catalog else None,
         "status": _status(epoch, at) if has_catalog else "unknown",
@@ -128,41 +146,64 @@ def _site_projection(product, epoch, at, codes=(), has_catalog=False):
     }
 
 
-def _catalog_codes(catalog, *, at=None):
-    codes = defaultdict(set)
-    for s in catalog.segments:
-        if at is None or s.start <= at < s.end:
-            codes[s.entity_id].add(s.code)
-    return codes
-
-
-def _catalog_page(ctx, product, candidates, catalog, at, controls, route, conditions):
-    codes = _catalog_codes(catalog, at=at if route == "station-directory" else None)
+def _catalog_page(ctx, product, candidates, at, controls, route, conditions, *, city=None):
+    periods = dict(candidates.values_list("pk", "active_period"))
+    catalog = _epoch_catalog(ctx, product, periods, at, current=city is not None)
+    if not catalog.permitted and (city is None or not _directory_permitted(ctx, product, city, at)):
+        raise Denied()
+    by_epoch = defaultdict(list)
+    for segment in catalog.segments:
+        by_epoch[segment.entity_id].append(segment)
+    codes = {
+        pk: _codes_at(segments, _directory_instant(periods[pk], at))
+        for pk, segments in by_epoch.items()
+    }
+    # Sort on the same start the reader can see. Hidden starts tie at NULL and use the public ID.
     visible = candidates.filter(pk__in=codes).annotate(
-        period_start=Func(F("active_period"), function="LOWER", output_field=DateTimeField()),
+        public_start=Case(
+            When(
+                pk__in=[pk for pk in codes if codes[pk]],
+                then=Func(F("active_period"), function="LOWER"),
+            ),
+            output_field=DateTimeField(),
+        )
     )
     after = controls["after"]
     if after:
         last = visible.filter(pk=after["epoch"]).first()
-        if last is None:
+        if last is None or after.get("sort") != fingerprint(
+            [last.station_id, last.public_start, last.pk]
+        ):
             raise Denied("page_changed")
+        within = Q(public_start__isnull=True, pk__gt=last.pk)
+        if last.public_start is not None:
+            within = (
+                Q(public_start__isnull=True)
+                | Q(public_start__gt=last.public_start)
+                | Q(public_start=last.public_start, pk__gt=last.pk)
+            )
         visible = visible.filter(
-            Q(station_id__gt=last.station_id)
-            | Q(station_id=last.station_id, period_start__gt=last.period_start)
-            | Q(station_id=last.station_id, period_start=last.period_start, pk__gt=last.pk),
+            Q(station_id__gt=last.station_id) | (Q(station_id=last.station_id) & within)
         )
     size = controls["size"]
-    rows = list(visible.order_by("station_id", "period_start", "pk")[: size + 1])
+    rows = list(
+        visible.order_by("station_id", F("public_start").asc(nulls_last=True), "pk")[: size + 1]
+    )
     cursor = None
     if len(rows) > size:
+        last = rows[size - 1]
         cursor = encode_cursor(
             route,
             ctx.user_id,
             conditions,
-            {"epoch": rows[size - 1].pk, "at": at.isoformat()},
+            {
+                "epoch": last.pk,
+                "at": at.isoformat(),
+                "sort": fingerprint([last.station_id, last.public_start, last.pk]),
+            },
         )
     return {
-        "results": [_site_projection(product, row, at, codes[row.pk], True) for row in rows[:size]],
+        "results": [_site_projection(product, row, at, codes[row.pk]) for row in rows[:size]],
         "page": {"page_size": size, "next_cursor": cursor},
     }
 
@@ -175,23 +216,6 @@ def _directory_permitted(ctx, product, city, at):
             product, Scope(city.geography, "*", indicator, day, day + timedelta(days=1)), CATALOG
         )
         for indicator in INDICATORS[product.shape]
-    )
-
-
-def directory_visible(ctx, product, city, at):
-    """Data-independent authorization for a city-to-directory link."""
-    if product.source_id != city.source_id or product.shape not in ("S", "H"):
-        return False
-    ids = list(
-        epoch_queryset(product)
-        .filter(city_id=city.pk, active_period__contains=at)
-        .values_list("pk", flat=True)
-    )
-    return _epoch_catalog(ctx, product, ids, at, current=True).permitted or _directory_permitted(
-        ctx,
-        product,
-        city,
-        at,
     )
 
 
@@ -213,19 +237,15 @@ def read_station_directory(user_id, query, city):
     after = decode_cursor(values.get("cursor"), "station-directory", user_id, conditions)
     at = instant(after["at"]) if after else requested_at or ctx.now
     candidates = epoch_queryset(product).filter(city_id=city.pk, active_period__contains=at)
-    ids = list(candidates.values_list("pk", flat=True))
-    catalog = _epoch_catalog(ctx, product, ids, at, current=True)
-    if not catalog.permitted and not _directory_permitted(ctx, product, city, at):
-        raise Denied()
     payload = _catalog_page(
         ctx,
         product,
         candidates,
-        catalog,
         at,
         {"size": size, "after": after},
         "station-directory",
         conditions,
+        city=city,
     )
     ctx.finish()
     return dict(
@@ -312,15 +332,10 @@ def read_station(user_id, query, station, *, fixture_status=None):
         after = decode_cursor(values.get("cursor"), "station-epochs", user_id, conditions)
         if after:
             as_of = instant(after["at"])
-        ids = list(candidates.values_list("pk", flat=True))
-        catalog = _epoch_catalog(ctx, product, ids, as_of)
-        if not catalog.permitted:
-            raise Denied()
         payload = _catalog_page(
             ctx,
             product,
             candidates,
-            catalog,
             as_of,
             {"size": size, "after": after},
             "station-epochs",
@@ -347,12 +362,9 @@ def read_station(user_id, query, station, *, fixture_status=None):
         raise Denied()
     # Current editions use only the code active at the requested instant. For a closed
     # epoch, use its last instant and still require that exact scope to allow catalog.
-    catalog_at = (
-        min(as_of, epoch.active_period.upper - TICK) if epoch.active_period.upper else as_of
-    )
-    catalog = _epoch_catalog(ctx, product, [epoch.pk], catalog_at, current=True)
-    codes = _catalog_codes(catalog, at=catalog_at)[epoch.pk]
-    identity = _site_projection(product, epoch, as_of, codes, bool(codes))
+    reference = _directory_instant(epoch.active_period, as_of)
+    catalog = _epoch_catalog(ctx, product, [epoch.pk], reference, current=True)
+    identity = _site_projection(product, epoch, as_of, _codes_at(catalog.segments, reference))
     source_status = _apply_fixture_status(product, rows, fixture_status)
     links = _history_links(product, epoch, scopes, rows, as_of)
     ctx.finish()

@@ -1,7 +1,9 @@
 """Nationwide L snapshots with authorization before anchoring or aggregation."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
+from itertools import pairwise
+from zoneinfo import ZoneInfo
 
 from collection.models import WorkWindow
 from django.core.exceptions import EmptyResultSet
@@ -17,7 +19,7 @@ from .normalization import (
     STANDARD_2026,
     UNKNOWN_STANDARD,
 )
-from .policy import Denied
+from .policy import Denied, Scope
 from .queries import pk
 from .s04_city import HOURLY_WINDOWS, _on_source_hour, city_navigation
 from .s04_http import (
@@ -142,6 +144,24 @@ def _hour_rows(scope, selection):
 
 def _city_ids(rows):
     return rows.order_by().values("key__city_id")
+
+
+def _empty_domain_permitted(ctx, product, *, end, start=None, summary=False):
+    """Authorize an empty national scope independently of any directory entries."""
+    zone = ZoneInfo(product.source_timezone)
+    day_end = (end - TICK).astimezone(zone).date() + timedelta(days=1)
+    if start is not None:
+        cuts = [start.astimezone(zone).date(), day_end]
+    else:
+        days = {day_end}
+        for grant in ctx.grants[product.pk]:
+            days.update(day for day in (grant.data_from, grant.data_until) if day < day_end)
+        cuts = sorted(days)
+    # A wildcard scope requires nationwide permission and is vetoed by any
+    # intersecting restriction. basis() also schedules the end-of-read recheck.
+    return any(
+        ctx.basis(product, Scope("*", "*", "AQI", a, b), summary=summary) for a, b in pairwise(cuts)
+    )
 
 
 def _matching_catalog(catalog, selection):
@@ -383,7 +403,7 @@ def read_national(user_id, query):
         else {"end": (selection.as_of or ctx.now) + TICK}
     )
     base = ctx.scope(product, AQI, window=selection.window, **bounds)
-    if not base.permitted:
+    if not base.permitted and not _empty_domain_permitted(ctx, product, **bounds):
         raise Denied()
     if anchor is None:
         anchor = _hour_rows(base, selection).aggregate(latest=Max("key__observed_at_utc"))["latest"]
@@ -409,12 +429,15 @@ def read_national(user_id, query):
     if filtered:
         matched = set(requested_catalog.segments)
         summary_scope = Visibility(product, [s for s in summary_scope.segments if s in matched])
-    if not summary_scope.permitted and selection.order == "aqi_desc":
+    summary_permitted = summary_scope.permitted or _empty_domain_permitted(
+        ctx, product, summary=True, **bounds
+    )
+    if not summary_permitted and selection.order == "aqi_desc":
         raise Denied()
 
     rankable = None
     summary = {"state": "unavailable"}
-    if summary_scope.permitted:
+    if summary_permitted:
         eligible = _hour_rows(summary_scope, selection).filter(
             pk__in=visible.order_by().values("pk")
         )

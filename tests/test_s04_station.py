@@ -1,25 +1,32 @@
 """Station windows against PostgreSQL with S02-validated F data."""
 
+import secrets
 from datetime import timedelta
 from functools import partial
 
+import httpx
 import pytest
 from collection.models import Run
 from config.urls import urlpatterns as project_patterns
 from django.urls import path
 from observations.catalog import relocate
-from observations.models import StationRevision
+from observations.models import SiteEpoch, StationIdentifier, StationRevision
 from observations.policy import revoke_grant
 from observations.s04_http import read_view
 from observations.s04_station import FixtureStatus, read_station
+from psycopg.types.range import TimestamptzRange
 from s02_support import (
     BOUNDARY,
+    START,
     allow,
     candidate,
     create_product,
     create_site,
     ingest_fixture,
+    observe_db,
 )
+from test_s04_accounts import login
+from test_s04_accounts import loopback as loopback
 
 urlpatterns = [
     path(
@@ -201,3 +208,100 @@ def test_directory_requires_catalog_and_keeps_identity_across_relocation(operato
     assert retain_catalog.revoked_at is None
     empty = reader.get(route, NS | {"product": regional.pk, "site_epoch": successor.pk}).json()
     assert empty["state"] == "no_data" and empty["identity"]["period_end"] is None
+
+
+def test_epoch_choices_disclose_catalog_at_the_represented_instant(operator, reader):
+    product = create_product("s04-limited-directory")
+    epoch = create_site(product)
+    cutoff = BOUNDARY.date()
+    for operation in ("retain_normalized", "display"):
+        allow(operator, product, operation, fields=["catalog"], data_until=cutoff)
+    route = f"/api/v1/stations/{epoch.station_id}/"
+    query = NS | {"product": product.pk}
+    before = reader.get(route, query | {"as_of": (BOUNDARY - HOUR).isoformat()}).json()
+    assert before["results"][0]["codes"] == ["001"]
+    after = reader.get(route, query | {"as_of": BOUNDARY.isoformat()})
+    assert after.status_code == 200
+    row = after.json()["results"][0]
+    assert row["site_epoch"] == epoch.pk and row["station"] == epoch.station_id
+    assert row["codes"] == [] and row["status"] == "unknown"
+    assert all(
+        row[k] is None
+        for k in ("city", "station_name", "city_name", "site_name", "period_start", "period_end")
+    )
+
+
+def test_epoch_pages_sort_only_by_disclosed_starts(operator, django_user_model, loopback):
+    product = create_product("s04-epoch-order")
+    day = timedelta(days=1)
+    latest = create_site(product)
+    latest.active_period = TimestamptzRange(START + 4 * day, START + 6 * day)
+    latest.save(update_fields=["active_period"])
+    StationIdentifier.objects.filter(station=latest.station).update(
+        active_period=TimestamptzRange(START, START + 6 * day)
+    )
+    middle, earliest = (
+        SiteEpoch.objects.create(
+            station=latest.station,
+            city=latest.city,
+            active_period=TimestamptzRange(START + n * day, START + (n + 2) * day),
+        )
+        for n in (2, 0)
+    )
+
+    def grant_day(n):
+        dates = {
+            "data_from": (START + n * day).date(),
+            "data_until": (START + (n + 1) * day).date(),
+        }
+        allow(operator, product, "retain_normalized", fields=["catalog"], **dates)
+        return allow(operator, product, "display", fields=["catalog"], **dates)
+
+    for n in (0, 2, 4):
+        grant_day(n)
+    with observe_db() as pg:
+        ids = [
+            row[0]
+            for row in pg.execute(
+                "SELECT id FROM observations_siteepoch WHERE station_id=%s ORDER BY id",
+                (latest.station_id,),
+            )
+        ]
+    assert ids == [latest.pk, middle.pk, earliest.pk]
+    password = secrets.token_urlsafe(24)
+    user = django_user_model.objects.create_user("s04-epoch-order-reader", password=password)
+    route = f"/api/v1/stations/{latest.station_id}/"
+    query = NS | {"product": product.pk, "as_of": (START + 6 * day).isoformat(), "page_size": 1}
+    with httpx.Client(base_url=loopback, trust_env=False) as web:
+        login(web, user.username, password)
+
+        def all_pages():
+            rows = []
+            tokens = []
+            options = query
+            while True:
+                response = web.get(route, params=options)
+                assert (
+                    response.status_code == 200 and "no-store" in response.headers["Cache-Control"]
+                )
+                page = response.json()
+                assert len(page["results"]) == 1
+                rows.extend(page["results"])
+                token = page["page"]["next_cursor"]
+                if token is None:
+                    return rows, tokens
+                assert len(tokens) < len(ids) and token not in tokens
+                tokens.append(token)
+                options = query | {"cursor": token}
+
+        hidden, _ = all_pages()
+        assert all(row["period_start"] is None and row["status"] == "unknown" for row in hidden)
+        assert [row["site_epoch"] for row in hidden] == ids
+        first_day = grant_day(1)
+        grant_day(3)
+        mixed, tokens = all_pages()
+        assert [row["site_epoch"] for row in mixed] == [earliest.pk, middle.pk, latest.pk]
+        assert [row["period_start"] is not None for row in mixed] == [True, True, False]
+        revoke_grant(operator.pk, first_day.pk, "F page anchor loses its public ordering field")
+        changed = web.get(route, params=query | {"cursor": tokens[0]})
+        assert changed.status_code == 409 and changed.json() == {"code": "page_changed"}

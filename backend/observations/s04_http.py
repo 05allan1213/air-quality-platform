@@ -37,13 +37,13 @@ def params(query, allowed_keys):
     return result
 
 
-def instant(value, hour=False) -> datetime:
+def instant(value) -> datetime:
     try:
         stamp = parse_time(value)
     except Rejected:
         raise Denied("invalid_request") from None
     # Leave room for UTC offsets, source-local day ends and rolling windows.
-    if stamp.year in (1, 9999) or hour and (stamp.minute or stamp.second or stamp.microsecond):
+    if stamp.year in (1, 9999):
         raise Denied("invalid_request")
     return stamp
 

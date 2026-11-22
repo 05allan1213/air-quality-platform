@@ -1,8 +1,10 @@
 """S04 L snapshots and derived releases on an isolated PostgreSQL test database."""
 
+import secrets
 from datetime import timedelta
 from urllib.parse import parse_qs, urlsplit
 
+import httpx
 import pytest
 from collection.admission import cell_key
 from collection.models import WorkWindow
@@ -18,6 +20,8 @@ from observations.s04_national import HOURLY, _hour_rows, _rankable, _selection
 from observations.selection import TICK, ReadContext
 from psycopg.types.range import TimestamptzRange
 from s02_support import START, allow, candidate, create_product, ingest_fixture, observe_db
+from test_s04_accounts import login
+from test_s04_accounts import loopback as loopback
 
 pytestmark = pytest.mark.django_db(transaction=True)
 URL = "/api/v1/overview/national/"
@@ -246,6 +250,71 @@ def test_v08_newest_visible_same_standard_even_when_summary_is_missing(national)
     newest = call(client, product)
     assert newest["snapshot_at"].startswith("2024-01-02T01:00:00")
     assert [row["city"] for row in newest["results"]] == [a.pk]
+
+
+def test_v08_national_domain_allows_empty_reads_without_city_identifiers(national, loopback):
+    operator, reader, _ = national
+    product = create_product("s04-empty", "L")
+    product.source_timezone = "Asia/Shanghai"
+    product.save(update_fields=["source_timezone"])
+    assert not CityIdentifier.objects.filter(source=product.source).exists()
+    exact = {"at": START.isoformat()}
+    next_day = START + 16 * HOUR  # Midnight on Jan 2 at the source.
+    dates = {"data_until": (START + 24 * HOUR).date()}
+    ranking = {"order": "aqi_desc", "standard_series": STANDARD_2012}
+    cache.clear()
+    password = secrets.token_urlsafe(24)
+    reader.set_password(password)
+    reader.save(update_fields=["password"])
+    with httpx.Client(base_url=loopback, trust_env=False) as web:
+        login(web, reader.username, password)
+
+        def read(status=200, **options):
+            response = web.get(URL, params={"product": product.pk, "scope": "synthetic", **options})
+            assert response.status_code == status, response.text
+            assert "private" in response.headers["Cache-Control"]
+            assert "no-store" in response.headers["Cache-Control"]
+            return response.json()
+
+        assert read(403, **exact) == {"code": "use_denied"}
+        allow(operator, product, "retain_normalized", fields=sorted(REQUIRED), **dates)
+        allow(operator, product, "display", fields=DERIVED, object_code="001", **dates)
+        allow(operator, product, "display", fields=DERIVED, geography="east", **dates)
+        allow(operator, product, "display", fields=DERIVED, indicator="CO", **dates)
+        assert read(403, **exact) == {"code": "use_denied"}
+        assert read(403, geography="east", **exact, **ranking) == {"code": "use_denied"}
+
+        allow(operator, product, "display", fields=["*"], **dates)
+        allow(operator, product, "process_local", fields=["*"], **dates)
+        fixed = read(**exact)
+        assert fixed["snapshot_at"].startswith("2024-01-01T00:00:00")
+        assert fixed["state"] == "no_data" and fixed["results"] == []
+        assert fixed["summary"] == {"state": "unavailable"}
+        assert read()["snapshot_at"] is None
+        assert read(as_of=START.isoformat())["snapshot_at"] is None
+        assert read(403, as_of=(START - 9 * HOUR).isoformat()) == {"code": "use_denied"}
+        assert read(403, at=next_day.isoformat()) == {"code": "use_denied"}
+        assert read(403, **exact, **ranking) == {"code": "use_denied"}
+
+        summary_grants(operator, product, **dates)
+        for options in ({}, exact, exact | {"q": "甲市", "geography": "east"}):
+            empty = read(**options, **ranking)
+            assert empty["results"] == [] and empty["state"] == "no_data"
+            assert_counts(empty, 0, 0, 0)
+
+        for op, veto in (
+            ("display", {"effect": "deny"}),
+            ("process_local", {"restrictions": {"fixture": "restrict calculation"}}),
+        ):
+            grant = allow(
+                operator, product, op, fields=["overview_summary"], object_code="001", **veto
+            )
+            assert read(**exact)["summary"] == {"state": "unavailable"}
+            assert read(403, **exact, **ranking) == {"code": "use_denied"}
+            revoke_grant(operator.pk, grant.pk, "F empty-domain veto")
+            assert_counts(read(**exact, **ranking), 0, 0, 0)
+        allow(operator, product, "display", effect="deny", object_code="001", fields=["normalized"])
+        assert read(403, **exact) == {"code": "use_denied"}
 
 
 def test_v08_roster_is_disclosed_only_with_independent_field_authority(national):
