@@ -53,17 +53,68 @@ python3.13 .tasks/cnemc-integration/evidence/window_boundaries.py
 
 ## 限定实源核验
 
-取得本轮城市、端点、完整响应获取范围、字段与受众、留存处置、出口和绝对总额的依据后，由操作者私下登记人工 A03 Job。`compose.cnemc.yaml` 仅用于已有受控出口的环境。`CNEMC_EGRESS_NETWORK` 应指向已经核验的目标地址、TLS 和端口白名单网络，覆盖文件只把 Worker 接入该网络。设 `CNEMC_MODE=limited`，验证前复核服务端 Job、用户及授予总额。
+### 首次 A03 的许可输入
 
-在本地 Web 容器中显式执行单次命令，Session 密码从终端读取。以下是命令格式，替换为本次实际登记值。
+可提供仓库外的许可文件路径，或附条款编号的摘录。登记方从材料中填写下表。产品固定为 `cnemc / city-live-hour`，入口为 `POST /CityData/GetAQIDataPublishLiveInfo?cityCode=…`。若许可覆盖北京，已有目录资料给出 `北京市`、`110000`，无需再查在线城市字典。
+
+| 需从许可确认的事实 | 私有登记清单中的位置与格式 |
+|---|---|
+| 可核的条款引用、版本、署名、生效与终止时间 | `products[].evidence/attribution` 和 `grants[].terms/terms_version/valid_from/valid_until`。引用和版本填文本，时间填带时区的 ISO 8601。限定获取授权必须有终点。 |
+| 获准城市、目录使用区间、这次人工触发的 Worker 是否可获取该城完整 latest 响应，以及可处理的观测日期 | `cities[].geography/from/until/evidence`、`grants[].geography/object_code/data_from/data_until`。`acquire_online/platform` 取 `endpoints=["A03"]`、`indicator="*"`、`fields=["*"]`，地域和城市码限定到获准的一城。数据日期用 `YYYY-MM-DD` 半开区间。A03 没有日期参数，现行获取检查覆盖该城所有可能返回日期（`0001-01-01` 至 `9999-12-31`）。若条款只许获取某日或裁剪后的字段，停在登记前。处理与展示仍可按日、按指标收窄。周期权限可记为未授予或未确认，本次仅登记人工任务。 |
+| 来源和 A03 的允许速率、并发、本轮剩余额度，额度是否与其他采集共享 | `collection_limits` 在清单顶层和获取授权各填一份，均为四个整数 `min_interval_seconds`、`max_concurrent`、`period_seconds`、`max_requests`。本次两层并发均取 1，获取授权 `max_total_requests=1`。共享时按原依据登记 `validation_allocation={"basis":…, "total":…}` 并核剩余份额。保留已用额度，包括发送结果不明的预留。 |
+| 七项规范化、溯源、目录与账本可保留到何时，许可允许的 PG 存放位置，到期及撤权后如何处置 | `process_local/platform` 需 `normalized`。`retain_normalized/platform` 需覆盖 `normalized`、`provenance`、`collection_ledger`。`catalog` 需取 `indicator="*"` 并覆盖该城目录期，`validation_ledger` 需覆盖获取授权的完整范围。可对账本单列授权。只有实际允许恢复后处置时才填 `expiry_mode="recoverable"`。现有判权会拒绝含 `retain_until` 的留存授权，也会拒绝带 `valid_until` 的硬截止留存。此类条款须先解决处置能力。 |
+| 谁可经 Session 查询七项、谁可核对回执，允许查看哪些字段 | `display/local_authenticated` 需 `normalized`、`provenance`，面向该实例全部已登录用户。若许可限于具名人员，须先确认该实例的访问及注册范围仅涵盖这些人员。`review/operator` 还需 `collection_ledger`。原值、原包、截图、分析、导出、公开展示、再分发、备份各按已确认条款登记，均非本次必填。 |
+
+`jobs[]` 只建一个 Job。`city_code` 用获准城市码，`selection.mode="include"`，`selection.objects` 仅为该码列 `AQI, PM2.5, PM10, SO2, NO2, CO, O3`。`executor` 用本地获准执行账号主键，`validation_terms_version` 对应上述一次获取授权，省略 `first_due`。登记命令会返回禁用的 Job 主键。
+
+### 验收项目与出口
+
+使用独立项目 `cnemc-a03-once`，其 PG 卷、Redis 队列和单并发 Worker 仅供本次验收。先核对项目归属和存量预留，重启和回读沿用同一 PG 卷。`A03_ENV_FILE` 指向操作者的私有环境文件，按 `.env.example` 填本地秘密及可用的回环 `WEB_PORT`。正式出口名称写入该文件的 `CNEMC_EGRESS_NETWORK`。
+
+网络管理员需确认出口对业务流量仅放行 `air.cnemc.cn` 的 TCP 18007，并允许 Worker 经获准的 DNS 解析器查询该域名。`external: true` 只引用 Docker 网络，目的地址与端口过滤由实际出口执行。HTTPX 直连并验证服务端证书链和主机名，`trust_env=False` 同时用于客户端与传输层。若组织要求显式代理，当前传输须等待获准的兼容出口。首次对目标的 DNS、TCP、TLS 和 HTTP 访问随获准的一次业务请求进行。
+
+在仓库根目录使用下列两套命令。`base` 用于离线登记。`once` 复用已有出网覆盖，并锁定 `limited`、Beat 副本数 0。独立项目名对两者相同。
 
 ```sh
-python backend/manage.py cnemc_verify_once --username USER --job JOB \
-  --target APPROVED_SOURCE_HOUR --request-id MANUAL_UUID
-python backend/manage.py cnemc_verify_once --username USER --job JOB --read-run RUN_UUID
+base() { docker compose --env-file "${A03_ENV_FILE:?}" -p cnemc-a03-once -f compose.yaml "$@"; }
+once() (
+  unset CNEMC_EGRESS_NETWORK
+  CNEMC_MODE=limited docker compose --env-file "${A03_ENV_FILE:?}" -p cnemc-a03-once \
+    -f compose.yaml -f compose.cnemc.yaml -f compose.cnemc.once.yaml "$@"
+)
+base config -q
+once config -q
+once config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["networks"]["cnemc-egress"]["name"])'
 ```
 
-第一条经同源 Session 提交并查回七项，在获准的回执范围内逐项核 PG 修订、数值和单位。第二条用于关闭采集出口、冷启后的回读。命令只输出 Run、Window 和字段数。复核异常、缺测或已有争议时返回非零退出码。实源收据的保管遵从本次私有许可。
+将显示的网络名与管理员核准的出站规则对照。许可材料齐备且获准使用此库后，用 `base ps -a` 确认服务归属。在该验收项目停 Worker 和 Beat，再做离线登记。新库先按项目账号流程建立本地活动身份。`ACTOR_ID` 需有 `manage_grants` 和 `manage_collection`，执行身份需有 `run_collection`，暂停和恢复 Job 的账号需有 `manage_collection`。Session 核验账号需有 `run_collection` 和 `review_observation`。
+
+```sh
+base stop worker beat && base up -d --build web redis
+base exec -T web python backend/manage.py cnemc_register /dev/stdin \
+  --actor "${ACTOR_ID:?}" < "${A03_MANIFEST:?}"
+```
+
+核对单一 Job、单城七项、仅 A03、无排期、剩余本轮额度为 1 及实际出口规则。确认 Beat 已停止后才接入出网 Worker。
+
+```sh
+beat_id=$(base ps --status running -q beat) && [ -z "$beat_id" ] && once up -d web worker
+```
+
+启动成功后复核 `once ps`，用管理 Session 对本 Job 执行前述 `resume`。选许可期内的当前整点（带时区），保存本次唯一的 UUID，显式提交一次。Session 密码由终端读取。
+
+```sh
+once exec web python backend/manage.py cnemc_verify_once --username USER --job JOB \
+  --target APPROVED_SOURCE_HOUR --request-id MANUAL_UUID
+```
+
+验收命令经同源 Session 查回七项，逐项核 PG 修订、数值、单位与该批回执。记录获准的 Run、Window 和字段数。返回异常或超时也应先暂停 Job、停止专用 Worker，核对原 Run 和额度。使用原卷在基础网络上重建 Web 后可只读复核。按条款保管收据，执行到期和撤权处置。
+
+```sh
+once stop worker
+base up -d --no-deps --force-recreate web
+base exec web python backend/manage.py cnemc_verify_once --username USER --job JOB --read-run RUN_UUID
+```
 
 ## S04 已有读接口
 

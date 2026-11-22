@@ -1,0 +1,18 @@
+# First A03 acceptance only. Apply AFTER compose.yaml and compose.cnemc.yaml.
+# Egress still comes exclusively from the operator's CNEMC_EGRESS_NETWORK.
+name: cnemc-a03-once
+x-limited: &limited
+  CNEMC_MODE: limited
+
+services:
+  web:
+    environment: *limited
+  worker:
+    environment: *limited
+  migrate:
+    environment:
+      CNEMC_MODE: 'off'
+  beat:
+    scale: 0
+    environment:
+      CNEMC_MODE: 'off'
