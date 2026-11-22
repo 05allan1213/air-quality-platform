@@ -113,7 +113,9 @@ def test_account_sessions_csrf_password_and_permissions(loopback):
         assert a.post(password, json=change | {"new_password": "123"}, headers=a_token).json() == {
             "code": "invalid_request"
         }
-        for _ in range(LIMITS["password"] - 2):
+        unchanged = a.post(password, json=change | {"new_password": old_password}, headers=a_token)
+        assert (unchanged.status_code, unchanged.json()) == (400, {"code": "invalid_request"})
+        for _ in range(LIMITS["password"] - 3):
             assert a.post(password, json={}, headers=a_token).status_code == 400
         assert a.post(password, json=change, headers=a_token).status_code == 429
         assert a.get(ME).status_code == a2.get(ME).status_code == 200

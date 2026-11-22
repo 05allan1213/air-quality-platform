@@ -86,6 +86,8 @@ def change_password(request):
         # Avoid the automatic hash upgrade on a rejected change request.
         if not check_password(fields["old_password"], user.password):
             return error("invalid_credentials", 403)
+        if constant_time_compare(fields["old_password"], fields["new_password"]):
+            return error("invalid_request", 400)
         try:
             validate_password(fields["new_password"], user)
         except ValidationError:
