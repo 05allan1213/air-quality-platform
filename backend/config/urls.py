@@ -27,6 +27,7 @@ urlpatterns = [
     path("api/v1/admin/collection-jobs/<int:pk>/", collection_views.jobs),
     path("api/v1/admin/collection-windows/<int:pk>/", collection_views.windows),
     path("api/v1/admin/history-imports/", observation_views.history_imports),
+    path("api/v1/", include("observations.s04_city")),
     path("api/v1/", include("observations.s04_station")),
     path("api/v1/observations/query/", read_view(read_detail)),
     path("api/v1/observations/current/", observation_views.observations),
