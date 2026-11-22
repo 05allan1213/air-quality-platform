@@ -1,0 +1,729 @@
+{
+  "code_commit": "90e61e0351cba83c7527474f7b71814c1c663802",
+  "evidence_type": "Project-authored F; disposable PostgreSQL; isolated injected failure",
+  "source_sha256": "7f828d02e1d0c3d721c3ada668bc60b393fa80c418f68d6e20e268cff5442dd3",
+  "postgres_image": "sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857",
+  "cnemc_mode": "off",
+  "stage_acceptance": "pending V16 and independent GPT stage acceptance",
+  "V16_execution": "NOT RUN",
+  "verification": {
+    "V01": "PASS",
+    "V02": "PASS",
+    "V03": "PASS",
+    "V04": "PASS",
+    "V05": "PASS",
+    "V06": "PASS",
+    "V07": "PASS",
+    "V08": "PASS",
+    "V09": "PASS",
+    "V10": "PASS",
+    "V11": "PASS",
+    "V12": "PASS",
+    "V13": "PASS",
+    "V14": "PASS",
+    "V15": "PASS",
+    "V16": "BLOCKED",
+    "V17": "PASS",
+    "V18": "PASS"
+  },
+  "runs": {
+    "pytest": {
+      "run": "s05-9f704c8fc3",
+      "returncode": 0,
+      "run_json_sha256": "8732241ea236a423e27b170cd93f501536c256383e33a6d4f07e1a6dfbd0380c",
+      "passed": 479,
+      "seconds": 311.63,
+      "s01_to_s04": 348,
+      "s05": 131
+    },
+    "fresh": {
+      "run": "s05-209309b4c2",
+      "returncode": 0,
+      "run_json_sha256": "9fe8993b83f2c3e30f12c288490412641b4523ef9e256aeca7fdeef3c3f30698",
+      "phase_json_sha256": "e6ee2b93e09992ad149d8e8d843807ae50617cd9ee26ab034b1a92280dbb9164",
+      "checks": {
+        "result": "PASS",
+        "leaves": [
+          [
+            "accounts",
+            "0003_export_ticket"
+          ],
+          [
+            "auth",
+            "0012_alter_user_first_name_max_length"
+          ],
+          [
+            "collection",
+            "0008_skipped_schedule_range"
+          ],
+          [
+            "contenttypes",
+            "0002_remove_content_type_name"
+          ],
+          [
+            "django_celery_beat",
+            "0019_alter_periodictasks_options"
+          ],
+          [
+            "observations",
+            "0010_online_endpoint_grants"
+          ],
+          [
+            "samples",
+            "0002_local_grants"
+          ],
+          [
+            "sessions",
+            "0001_initial"
+          ]
+        ]
+      }
+    },
+    "migration": {
+      "run": "s05-25902cc221",
+      "returncode": 0,
+      "run_json_sha256": "bbe5520e685f9d9c17bdbd9497ba2bf809635c17e1b77e4e74c694436f31e8d4",
+      "phase_json_sha256": "efbd8342e8af369179142b47ff6e044775d9f677e7d1df5d37a7d999e54b32e4",
+      "checks": {
+        "result": "PASS",
+        "accounts_before": "0001_initial",
+        "accounts_after": "0003_export_ticket",
+        "leaves": [
+          [
+            "accounts",
+            "0003_export_ticket"
+          ],
+          [
+            "auth",
+            "0012_alter_user_first_name_max_length"
+          ],
+          [
+            "collection",
+            "0008_skipped_schedule_range"
+          ],
+          [
+            "contenttypes",
+            "0002_remove_content_type_name"
+          ],
+          [
+            "django_celery_beat",
+            "0019_alter_periodictasks_options"
+          ],
+          [
+            "observations",
+            "0010_online_endpoint_grants"
+          ],
+          [
+            "samples",
+            "0002_local_grants"
+          ],
+          [
+            "sessions",
+            "0001_initial"
+          ]
+        ],
+        "scope": "S04 frozen source, F rows, old Session, forward/reverse/reapply",
+        "s04_source_sha256": "f28cd1a7273f1fbf43321970aeba9cb1310e76369e32ffd6b1df4d859fff5b17",
+        "s04_origin": "98548111e364654253c7957aaa68c5388d0914d0"
+      }
+    },
+    "s04-http": {
+      "run": "s05-cd4ea875c6",
+      "returncode": 0,
+      "run_json_sha256": "88f2193915d6b7a5cbece22061f1de13fc20748113d2852d8dd7f8284a6b2979",
+      "phase_json_sha256": "32ca557767dc1e3ea5275ec93cd87d70ed87ae11c28e7eb4581bc061537a0f87",
+      "checks": [
+        "registration, Session and CSRF",
+        "precise and historical detail",
+        "profile, password change, permission withdrawal and old Session rejection",
+        "F read journey",
+        "S04 SQL plans",
+        "PG outage"
+      ]
+    },
+    "async": {
+      "run": "s05-02d6758f7e",
+      "returncode": 0,
+      "run_json_sha256": "9f14c53d1e03fe0156071a5f656e59d4a9a5340956be03a14dffc8b15b6f30d9",
+      "phase_json_sha256": "43c4277c1a8b9d16932af2429cbee87c75a46b06a505c48adce406156d2aae65",
+      "checks": {
+        "result": "PASS",
+        "redis": "Unix socket, TCP disabled",
+        "worker": "S01 CSRF-protected HTTP to fixture committed",
+        "beat": "S03 stale lease expired",
+        "collection_run_delta": 0
+      }
+    },
+    "restart": {
+      "run": "s05-33ba08adc2",
+      "returncode": 0,
+      "run_json_sha256": "219148e92845a1b3650fec3c7b399b5151b104d65d9c7601e877cb066322529c",
+      "phase_json_sha256": "534183fee0cc48426daf089c992f4231bbc5c2ba3bdf2d08a490724fa2dbc94b",
+      "checks": {
+        "result": "PASS",
+        "old_session_after_restart": 200,
+        "expired": 410,
+        "swept": 404
+      }
+    }
+  },
+  "V12": {
+    "candidate_cells": 10080,
+    "http": {
+      "prepare_9999": 201,
+      "download_9999": 200,
+      "stale_at_10000": 409,
+      "prepare_10000": 201,
+      "download_10000": 200,
+      "stale_at_10001": 409,
+      "prepare_10001": 400,
+      "candidate_15120": 400
+    },
+    "csv_byte_bound": "query_too_large",
+    "json_byte_bound": "query_too_large"
+  },
+  "V14": {
+    "loopback_orders": 38,
+    "blocking_pids_observed": 34,
+    "http": {
+      "prepare": {
+        "reader": {
+          "deny": 201,
+          "disable": 201,
+          "fill": 201,
+          "logout": 201,
+          "password": 201,
+          "relocate": 201,
+          "remove_review": 201,
+          "revision": 201,
+          "withdraw": 201
+        },
+        "writer": {
+          "deny": 403,
+          "disable": 403,
+          "fill": 409,
+          "logout": 403,
+          "password": 403,
+          "relocate": 409,
+          "remove_review": 201,
+          "revision": 409,
+          "withdraw": 403
+        }
+      },
+      "download": {
+        "reader": {
+          "cancel": 200,
+          "deny": 200,
+          "disable": 200,
+          "fill": 200,
+          "logout": 200,
+          "password": 200,
+          "relocate": 200,
+          "remove_review": 200,
+          "revision": 200,
+          "withdraw": 200
+        },
+        "writer": {
+          "cancel": 404,
+          "deny": 403,
+          "disable": 403,
+          "fill": 409,
+          "logout": 403,
+          "password": 403,
+          "relocate": 409,
+          "remove_review": 200,
+          "revision": 409,
+          "withdraw": 403
+        }
+      }
+    },
+    "snapshot_reconciliation": [
+      {
+        "first": "reader",
+        "writer": "fill",
+        "fresh_http": null,
+        "checks": [
+          "input_version",
+          "grants",
+          "fields",
+          "lineage",
+          "rows",
+          "bytes",
+          "sha256",
+          "hmac"
+        ]
+      },
+      {
+        "first": "reader",
+        "writer": "revision",
+        "fresh_http": null,
+        "checks": [
+          "input_version",
+          "grants",
+          "fields",
+          "lineage",
+          "rows",
+          "bytes",
+          "sha256",
+          "hmac"
+        ]
+      },
+      {
+        "first": "writer",
+        "writer": "fill",
+        "fresh_http": 201,
+        "checks": [
+          "input_version",
+          "grants",
+          "fields",
+          "lineage",
+          "rows",
+          "bytes",
+          "sha256",
+          "hmac"
+        ]
+      },
+      {
+        "first": "writer",
+        "writer": "revision",
+        "fresh_http": 201,
+        "checks": [
+          "input_version",
+          "grants",
+          "fields",
+          "lineage",
+          "rows",
+          "bytes",
+          "sha256",
+          "hmac"
+        ]
+      }
+    ],
+    "timeout_checks": {
+      "download-encode-timeout": {
+        "http": 503,
+        "seconds": 10.047,
+        "tickets": 1
+      },
+      "download-lock-timeout": {
+        "http": 503,
+        "seconds": 1.024,
+        "tickets": 1
+      },
+      "download-statement-timeout": {
+        "http": 503,
+        "seconds": 5.023,
+        "tickets": 1
+      },
+      "prepare-encode-timeout": {
+        "http": 503,
+        "seconds": 10.041,
+        "tickets": 1
+      },
+      "prepare-lock-timeout": {
+        "http": 503,
+        "seconds": 1.022,
+        "tickets": 1
+      },
+      "prepare-statement-timeout": {
+        "http": 503,
+        "seconds": 5.021,
+        "tickets": 1
+      }
+    }
+  },
+  "V17": {
+    "machine": {
+      "cpu": "Intel(R) Core(TM) i7-14650HX",
+      "logical_cpus": 24,
+      "allowed_cpus": 24,
+      "ram": "16223924 kB",
+      "architecture": "x86_64",
+      "python": "3.13.18",
+      "postgres": "16.16",
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "concurrency": 1,
+      "cache_conditions": "First HTTP after seeding and ANALYZE, then repeated identical HTTP. Writes may populate PG/OS caches. No cache eviction or server restart.",
+      "source": "F templates via ingest_batch, PG bulk clones of key, revision and receipt"
+    },
+    "tiers": {
+      "small": {
+        "rows": {
+          "comparison": 120,
+          "annual": 720,
+          "csv": 280
+        },
+        "http": {
+          "single_24h": {
+            "sql": 17,
+            "bytes": 5915,
+            "first_ms": 41.3,
+            "mean_ms": 37.5,
+            "p95_ms": 40.2,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "detail_limit_100": {
+            "sql": 12,
+            "bytes": 14290,
+            "first_ms": 32.9,
+            "mean_ms": 30.7,
+            "p95_ms": 31.6,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "5_over_30d": {
+            "sql": 17,
+            "bytes": 214987,
+            "first_ms": 88.4,
+            "mean_ms": 84.9,
+            "p95_ms": 86.8,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "annual_months": {
+            "sql": 18,
+            "bytes": 266267,
+            "first_ms": 153.4,
+            "mean_ms": 155.0,
+            "p95_ms": 159.8,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "two_columns_paired": {
+            "sql": 17,
+            "bytes": 20516,
+            "first_ms": 40.1,
+            "mean_ms": 41.0,
+            "p95_ms": 42.9,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "csv_download": {
+            "sql": 25,
+            "bytes": 112566,
+            "first_ms": 50.8,
+            "mean_ms": 50.1,
+            "p95_ms": 52.1,
+            "warm_runs": 20,
+            "errors": 0
+          }
+        },
+        "csv_prepare": {
+          "sql": 30,
+          "ms": 54.7
+        },
+        "annual_statements": [
+          {
+            "index": 8,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 34.5,
+            "shared_hits": 2176,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 9,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 8.9,
+            "shared_hits": 2176,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 10,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 44.4,
+            "shared_hits": 2176,
+            "shared_reads": 0,
+            "temp_read_blocks": 684,
+            "temp_written_blocks": 692,
+            "disk_sort": true
+          },
+          {
+            "index": 11,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 6.0,
+            "shared_hits": 2176,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 12,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 7.0,
+            "shared_hits": 2176,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 13,
+            "grant_index": 7,
+            "root": "Sort",
+            "execution_ms": 10.4,
+            "shared_hits": 2176,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 14,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 6.0,
+            "shared_hits": 2176,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 15,
+            "grant_index": 7,
+            "root": "Limit",
+            "execution_ms": 8.0,
+            "shared_hits": 2176,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          }
+        ]
+      },
+      "large": {
+        "rows": {
+          "comparison": 3600,
+          "annual": 8784,
+          "csv": 10000
+        },
+        "http": {
+          "single_24h": {
+            "sql": 17,
+            "bytes": 5915,
+            "first_ms": 41.7,
+            "mean_ms": 40.1,
+            "p95_ms": 41.8,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "detail_limit_100": {
+            "sql": 12,
+            "bytes": 57355,
+            "first_ms": 40.7,
+            "mean_ms": 39.5,
+            "p95_ms": 41.4,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "5_over_30d": {
+            "sql": 18,
+            "bytes": 266551,
+            "first_ms": 197.9,
+            "mean_ms": 158.6,
+            "p95_ms": 162.0,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "annual_months": {
+            "sql": 19,
+            "bytes": 266424,
+            "first_ms": 406.1,
+            "mean_ms": 405.1,
+            "p95_ms": 410.0,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "two_columns_paired": {
+            "sql": 18,
+            "bytes": 22277,
+            "first_ms": 47.2,
+            "mean_ms": 47.4,
+            "p95_ms": 50.3,
+            "warm_runs": 20,
+            "errors": 0
+          },
+          "csv_download": {
+            "sql": 25,
+            "bytes": 4011672,
+            "first_ms": 396.6,
+            "mean_ms": 400.0,
+            "p95_ms": 434.1,
+            "warm_runs": 20,
+            "errors": 0
+          }
+        },
+        "csv_prepare": {
+          "sql": 30,
+          "ms": 369.4
+        },
+        "annual_statements": [
+          {
+            "index": 8,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 56.0,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 9,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 19.8,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 10,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 168.3,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 6509,
+            "temp_written_blocks": 6522,
+            "disk_sort": true
+          },
+          {
+            "index": 11,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 20.9,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 12,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 20.5,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 13,
+            "grant_index": 7,
+            "root": "CTE Scan",
+            "execution_ms": 34.3,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 14,
+            "grant_index": 7,
+            "root": "Sort",
+            "execution_ms": 25.4,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 15,
+            "grant_index": 7,
+            "root": "Aggregate",
+            "execution_ms": 18.2,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          },
+          {
+            "index": 16,
+            "grant_index": 7,
+            "root": "Limit",
+            "execution_ms": 21.2,
+            "shared_hits": 26522,
+            "shared_reads": 0,
+            "temp_read_blocks": 0,
+            "temp_written_blocks": 0,
+            "disk_sort": false
+          }
+        ]
+      }
+    },
+    "product_lock": {
+      "product_lock_statement_ms": 66.18500499462243,
+      "pg_blocking_pids_observed": true,
+      "http_ms": 112.78010898968205,
+      "sql_count": 24,
+      "status": 200
+    },
+    "raw_sha256": {
+      "csv-query-cost.json": "7ea4efdb4d2560b79b76bf0f13659e41e11746d84ddb6c2debb184d0e2095baf",
+      "query-cost.json": "d3a5309a10b5d31677e492056b80c6031e83abdd9390600ea4b1d4ca93d0edc5"
+    }
+  },
+  "operations_example": {
+    "run": "s05-3a5a927490",
+    "source_sha256": "7f828d02e1d0c3d721c3ada668bc60b393fa80c418f68d6e20e268cff5442dd3",
+    "result": {
+      "columns": [
+        [
+          24,
+          18,
+          18
+        ],
+        [
+          24,
+          18,
+          18
+        ]
+      ],
+      "E_common": 24,
+      "P": 12,
+      "ranking": null,
+      "paired_details": 24,
+      "detail": {
+        "prepare": 201,
+        "download": 200,
+        "data_rows": 36
+      },
+      "aggregate": {
+        "prepare": 201,
+        "download": 200,
+        "data_rows": 4
+      }
+    },
+    "evidence_sha256": "76518b67870dff44f2a4f92b279995fe90c29affeb30aeefe87df74396accc1e"
+  },
+  "static_checks": {
+    "ruff_lint": "PASS",
+    "ruff_formatted_python_files": 170,
+    "mypy_configured_files": 3,
+    "uv_lock_offline": "PASS",
+    "docker_compose_config": "PASS"
+  }
+}
