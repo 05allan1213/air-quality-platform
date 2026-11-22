@@ -30,23 +30,20 @@ def grant_bins(products):
     return bins
 
 
-def read_basis(product, scope, fields, now, grants, *, purpose="display", summary=False):
+def read_basis(
+    product, scope, fields, now, grants, *, purpose="display", audience=None, summary=False
+):
     if any(g.product_id != product.pk for g in grants):
         raise ValueError("grant bucket does not belong to the selected product")
     wanted = set(fields) or REQUIRED
     applicable(product, "retain_normalized", scope, wanted, now, grants)
-    basis = applicable(product, purpose, scope, wanted, now, grants)
+    basis = applicable(product, purpose, scope, wanted, now, grants, audience=audience)
     if summary:
         if wanted != REQUIRED:
             applicable(product, "retain_normalized", scope, REQUIRED, now, grants)
-            applicable(product, purpose, scope, REQUIRED, now, grants)
-        eligible = [
-            g
-            for g in grants
-            if g.effect == "deny" or g.restrictions or "overview_summary" in g.fields
-        ]
+            applicable(product, purpose, scope, REQUIRED, now, grants, audience=audience)
         for operation in ("process_local", "display"):
-            applicable(product, operation, scope, REQUIRED | {"overview_summary"}, now, eligible)
+            applicable(product, operation, scope, REQUIRED | {"overview_summary"}, now, grants)
     return basis
 
 
@@ -147,14 +144,14 @@ class ReadContext:
         self._identities = {}
         self._geographies = {}
 
-    def basis(self, product, scope, fields=(), *, summary=False):
-        key = (product.pk, scope, frozenset(fields), summary)
+    def basis(self, product, scope, fields=(), *, purpose="display", audience=None, summary=False):
+        key = (product.pk, scope, frozenset(fields), purpose, audience, summary)
         if key not in self._checks:
             self._checks[key] = self._decide(key, self.now)
         return self._checks[key]
 
     def _decide(self, key, now):
-        product_id, scope, fields, summary = key
+        product_id, scope, fields, purpose, audience, summary = key
         try:
             return read_basis(
                 self.products[product_id],
@@ -162,6 +159,8 @@ class ReadContext:
                 fields,
                 now,
                 self.grants[product_id],
+                purpose=purpose,
+                audience=audience,
                 summary=summary,
             )
         except Denied:
@@ -230,6 +229,8 @@ class ReadContext:
         end=None,
         window="hourly_label_unspecified",
         fields=(),
+        purpose="display",
+        audience=None,
         summary=False,
     ):
         rows = self.grants[product.pk]
@@ -253,7 +254,14 @@ class ReadContext:
                 if lo >= hi:
                     continue
                 for ind in indicators:
-                    if self.basis(product, Scope(geo, code, ind, a, b), fields, summary=summary):
+                    if self.basis(
+                        product,
+                        Scope(geo, code, ind, a, b),
+                        fields,
+                        purpose=purpose,
+                        audience=audience,
+                        summary=summary,
+                    ):
                         segments.append(Segment(entity, code, geo, ind, lo, hi, a, b))
         return Visibility(product, segments)
 

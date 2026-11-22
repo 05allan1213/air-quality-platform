@@ -1,7 +1,7 @@
 """Evaluate independent complete grants under the same product lock as data changes."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
@@ -25,8 +25,38 @@ OPERATIONS = {
     "screenshot": "operator",
     "export_aggregate": "operator",
 }
+LOCAL_AUTHENTICATED = "local_authenticated"
+OPERATION_AUDIENCES = frozenset(OPERATIONS.items()) | {
+    (operation, LOCAL_AUTHENTICATED) for operation in ("analyze", "export", "export_aggregate")
+}
 REQUIRED = {"normalized", "provenance"}
 RAW = REQUIRED | {"raw_field"}
+EXPLICIT_FIELDS = frozenset(
+    {
+        "overview_summary",
+        "research_coverage",
+        "research_summary",
+        "export_manifest",
+        "statistics_baseline",
+    }
+)
+
+
+def accepts_audience(operation, audience):
+    return (
+        isinstance(operation, str)
+        and isinstance(audience, str)
+        and (operation, audience) in OPERATION_AUDIENCES
+    )
+
+
+def covers_fields(granted, wanted):
+    granted = set(granted)
+    return all(
+        field in granted
+        or ("*" in granted and field not in EXPLICIT_FIELDS and not field.startswith("csv_"))
+        for field in wanted
+    )
 
 
 def batch_issue_fields(product):
@@ -74,7 +104,7 @@ class Scope:
 @dataclass(frozen=True)
 class Basis:
     ids: tuple
-    until: object
+    until: datetime | None
     attributions: tuple
 
 
@@ -120,22 +150,25 @@ def actor(actor_id, permission=None):
     return user
 
 
-def applicable(product, operation, scope, fields, now, rows=None):
+def applicable(product, operation, scope, fields, now, rows=None, *, audience=None):
     """One allow must cover the whole request. A partial intersecting deny vetoes it."""
     wanted = set(fields)
-    if not wanted or scope.start >= scope.end or operation not in OPERATIONS:
+    if audience is None and isinstance(operation, str):
+        audience = OPERATIONS.get(operation)
+    if not wanted or scope.start >= scope.end or not accepts_audience(operation, audience):
         raise Denied()
     if rows is None:
         rows = UseGrant.objects.filter(
-            product=product, operation=operation, revoked_at__isnull=True
-        )
+            product=product, operation=operation, audience=audience, revoked_at__isnull=True
+        ).order_by("pk")
     allows = []
     for grant in rows:
         if (
-            grant.operation != operation
+            grant.product_id != product.pk
+            or grant.operation != operation
             or grant.revoked_at
             or grant.valid_from > now
-            or grant.audience != OPERATIONS[operation]
+            or grant.audience != audience
             or (grant.valid_until and now >= grant.valid_until)
             or (grant.retain_until and now >= grant.retain_until)
         ):
@@ -157,7 +190,7 @@ def applicable(product, operation, scope, fields, now, rows=None):
             all(a == "*" or a == b for a, b in dimensions)
             and grant.data_from <= scope.start
             and grant.data_until >= scope.end
-            and ("*" in grant.fields or wanted <= set(grant.fields))
+            and covers_fields(grant.fields, wanted)
             and not grant.restrictions
         ):
             # A stopped local machine cannot enforce physical erasure at a hard deadline.
@@ -170,7 +203,7 @@ def applicable(product, operation, scope, fields, now, rows=None):
         raise Denied()
     return Basis(
         tuple(g.pk for g in allows),
-        min((g.valid_until for g in allows if g.valid_until), default=None),
+        min((t for g in allows for t in (g.valid_until, g.retain_until) if t), default=None),
         tuple(dict.fromkeys(g.attribution for g in allows if g.attribution)),
     )
 
@@ -231,8 +264,7 @@ def register_grant(actor_id, product_id, **terms):
     product, _ = locked_catalog_product(product_id)
     user = actor(actor_id, "manage_grants")
     if (
-        terms.get("operation") not in OPERATIONS
-        or terms.get("audience") != OPERATIONS[terms["operation"]]
+        not accepts_audience(terms.get("operation"), terms.get("audience"))
         or not terms.get("terms")
         or not terms.get("terms_version")
         or not isinstance(terms.get("fields"), list)
