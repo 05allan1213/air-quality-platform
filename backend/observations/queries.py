@@ -84,11 +84,21 @@ def project_revision(r):
     )
 
 
-def dimensions(product, entity_id, stamp):
+def dimensions(product, entity_id, stamp, start=None, end=None):
+    period_filters = {"active_period__contains": stamp}
+    if start is not None and end is not None:
+        from psycopg.types.range import Range
+
+        period_filters["active_period__contains"] = Range(start, end, "[)")
     if product.level == "station":
         epoch = (
             SiteEpoch.objects.select_related("city")
-            .filter(pk=entity_id, station__source=product.source, city__source=product.source)
+            .filter(
+                pk=entity_id,
+                station__source=product.source,
+                city__source=product.source,
+                **period_filters,
+            )
             .first()
         )
         if not epoch:
@@ -97,14 +107,14 @@ def dimensions(product, entity_id, stamp):
             source=product.source,
             station_id=epoch.station_id,
             kind="code",
-            active_period__contains=stamp,
+            **period_filters,
         )
         return epoch.city.geography, tuple(codes.order_by("pk").values_list("code", flat=True))
     city = City.objects.filter(pk=entity_id, source=product.source).first()
     if city is None:
         raise Denied()
     codes = CityIdentifier.objects.filter(
-        source=product.source, city=city, kind="code", active_period__contains=stamp
+        source=product.source, city=city, kind="code", **period_filters
     )
     return city.geography, tuple(codes.order_by("pk").values_list("code", flat=True))
 
@@ -150,10 +160,24 @@ def read_current(actor_id, params, purpose="display"):
             )
             condition = {anchor: day}
         next_day = day + timedelta(days=1)
-        directory_at = stamp - timedelta(microseconds=1) if WINDOWS[window][1] == "right" else stamp
+        hours, position = WINDOWS[window]
+        width = timedelta(hours=hours)
+        directory_at = stamp - timedelta(microseconds=1) if position == "right" else stamp
+        start, end = None, None
+        if position == "right":
+            start, end = stamp - width, stamp
+        elif position == "left":
+            start, end = stamp, stamp + width
+        elif position == "date":
+            start, end = (
+                stamp,
+                datetime.combine(next_day, time.min, ZoneInfo(product.source_timezone)).astimezone(
+                    UTC
+                ),
+            )
     except (ValueError, OverflowError, Rejected):
         raise Denied("invalid_request") from None
-    geo, codes = dimensions(product, ident, directory_at)
+    geo, codes = dimensions(product, ident, directory_at, start, end)
     grants = grant_bins({product.pk})[product.pk]
     extra_checks = []
 
@@ -163,7 +187,7 @@ def read_current(actor_id, params, purpose="display"):
 
     permitted = {}
     now = clock()
-    for code in codes or ("*",):
+    for code in codes:
         try:
             permitted[code] = permissions(code, now)
         except Denied:
@@ -240,7 +264,10 @@ def read_current(actor_id, params, purpose="display"):
     for field in extra_checks:
         read_basis(product, scope, (field,), end_clock, grants, purpose=purpose)
     for code in permitted:
-        permissions(code, end_clock)
+        permitted[code] = permissions(code, end_clock)
+    basis = permitted[key.object_code] if key else next(iter(permitted.values()))
+    if results:
+        results[0]["input_version"] = input_version(key, current, product, basis)
     actor(actor_id, "review_observation" if purpose == "analyze" else None)
     return dict(
         count=len(results),

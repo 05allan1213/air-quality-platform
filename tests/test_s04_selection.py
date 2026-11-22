@@ -348,3 +348,50 @@ def test_source_local_day_and_separate_rolling_window(catalog):
         )
         with pytest.raises(Denied, match="use_denied"):
             read_detail(reader.pk, options | {"start": local_midnight.isoformat()})
+
+
+def test_exact_recomputes_rights_attribution_when_one_of_two_bases_expires(catalog, monkeypatch):
+    from django.db import connection
+    from django.utils import timezone
+    from observations import queries
+
+    op, reader, p, site, _ = catalog
+    permanent = allow(op, p, "display", attribution="permanent F")
+    expires = allow(op, p, "display", attribution="temporary F")
+    ingest_fixture(op.pk, p.pk, "exact-clock", "F", [candidate(p)])
+    expires.valid_until = timezone.now() + timedelta(milliseconds=250)
+    expires.save(update_fields=["valid_until"])
+    original = queries.metadata
+
+    def delayed(*args):
+        fields = original(*args)
+        with connection.cursor() as cur:
+            cur.execute(
+                "SELECT pg_sleep(GREATEST(0, EXTRACT(EPOCH FROM (%s - clock_timestamp())) + 0.005))",
+                [expires.valid_until],
+            )
+        return fields
+
+    monkeypatch.setattr(queries, "metadata", delayed)
+    fresh = read_current(reader.pk, selector(p, site))
+    assert set(fresh["rights_attributions"]) == {"permanent F"}
+    assert fresh["results"][0]["input_version"]["grants"] == (permanent.pk,)
+
+
+def test_exact_and_range_deny_ended_station_epoch_even_with_active_code(catalog):
+    from observations.catalog import relocate
+
+    op, reader, p, old, q = catalog
+    allow(op, p, "display")
+    relocate(
+        old.station,
+        BOUNDARY,
+        city=old.city,
+        name="new F epoch",
+        location_evidence="F",
+        certainty="confirmed",
+    )
+    with pytest.raises(Denied, match="use_denied"):
+        read_current(reader.pk, selector(p, old, at=BOUNDARY))
+    with pytest.raises(Denied, match="use_denied"):
+        read_detail(reader.pk, q | {"start": BOUNDARY.isoformat()})

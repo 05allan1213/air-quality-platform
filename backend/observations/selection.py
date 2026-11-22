@@ -37,6 +37,9 @@ def read_basis(product, scope, fields, now, grants, *, purpose="display", summar
     applicable(product, "retain_normalized", scope, wanted, now, grants)
     basis = applicable(product, purpose, scope, wanted, now, grants)
     if summary:
+        if wanted != REQUIRED:
+            applicable(product, "retain_normalized", scope, REQUIRED, now, grants)
+            applicable(product, purpose, scope, REQUIRED, now, grants)
         eligible = [
             g
             for g in grants
