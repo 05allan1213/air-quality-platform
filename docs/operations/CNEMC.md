@@ -78,7 +78,7 @@ CNEMC 覆盖文件的默认项目名为 `cnemc-dedicated`。首次 A03 使用独
 | `cnemc-gateway` → 源服务 | HAProxy 仅监听私网地址 TCP 18007。收到 SNI 为 `air.cnemc.cn` 的 TLS ClientHello 后，才用 Docker DNS 查询固定上游 `air.cnemc.cn`，从 `cnemc-uplink` 走宿主既有 IPv4 出口到 TCP 18007。错误或缺失 SNI、明文、解析失败均拒绝。网关无宿主发布端口，关闭 IP 转发。 |
 | TLS 与 HTTP | 网关透传 TLS。Worker 的 HTTPX 使用原有证书链和主机名校验，客户端和传输层均为 `trust_env=False`。URL、路径与请求预算仍由原采集契约控制。 |
 
-运行 `python3.13 scripts/verify_cnemc_egress.py` 可复验。脚本新建一次性项目，把网关的上游 DNS 指向自有应答器，TLS 服务经 WSL 的另一张 Docker bridge 地址发布。证书只在测试进程内受信。测试项目和卷自动回收。真实目标的公网解析、TCP、证书和 HTTP 结果留到获准的首次请求。[网关规则](../../docker/cnemc-egress.cfg)
+`python3.13 scripts/verify_cnemc_egress.py` 使用自有应答器验证网络隔离，不请求 CNEMC。专用 Worker 对北京 A03 的真实 HTTP 200 和七项解析已单独验证，正式入库前不再消耗额度探路。[网关规则](../../docker/cnemc-egress.cfg)
 
 离线登记、联网和停用共用同一份网络定义，切换时保留 `backend` 和 PG 卷。`base` 使用 `off`，`once` 固定 `limited` 并将 Beat 副本设为 0。以下命令均在仓库根目录执行。
 
@@ -101,26 +101,38 @@ base exec -T web python backend/manage.py cnemc_register /dev/stdin \
   --actor "${ACTOR_ID:?}" < "${A03_MANIFEST:?}"
 ```
 
-核对单一 Job、单城七项、仅 A03、无排期、剩余本轮额度为 1 及实际出口规则。确认 Beat 已停止后才接入出网 Worker。
+核对单一 Job、单城七项、仅 A03、无排期、`max_total_requests=1`，以及本窗口七项的 `display` 和 `review` 权利。若先前的连通性请求与本轮共用许可额度，按条款扣除后仍须至少剩 1 次；PG 中零预留并不能证明这点。确认 Beat 已停止后才接入出网 Worker。
 
 ```sh
 other=$(base ps --status running -q beat worker) && [ -z "$other" ] && once up -d web worker-cnemc
 ```
 
-启动成功后复核 `once ps`，用管理 Session 对本 Job 执行前述 `resume`。选许可期内的当前整点（带时区），保存本次唯一的 UUID，显式提交一次。Session 密码由终端读取。
+启动成功后复核 `once ps`，用管理 Session 对本 Job 执行前述 `resume`。在预计已发布时选许可期内的当前整点（带时区），保存本次唯一的 UUID，显式提交一次。A03 只返回 latest；如果仍是上一小时，保留 `outside_target` 缺口，不改写时标，也不追加请求。Session 密码由终端读取。
 
 ```sh
 once exec web python backend/manage.py cnemc_verify_once --username USER --job JOB \
   --target APPROVED_SOURCE_HOUR --request-id MANUAL_UUID
 ```
 
-验收命令经同源 Session 查回七项，逐项核 PG 修订、数值、单位与该批回执。记录获准的 Run、Window 和字段数。返回异常或超时也应先暂停 Job、停止专用 Worker，核对原 Run 和额度。使用原卷在基础网络上重建 Web 后可只读复核。按条款保管收据，执行到期和撤权处置。
+验收命令逐项核 Session 返回值、PG 修订、单位和本批 Receipt；它本身不独立比对 HTTP 原包。按实际授权对照**同一次响应**：若已获单字段原值的留存和复核权，可从该 Batch 的 `GET /api/v1/admin/observation-evidence/` 读取；若原包只准瞬时处理，须在释放该响应之前在 Worker 内存中核对七个源字段与规范化投影。不再取第二包来对账。收据只记获准的运行标识、计数与核对结论，不复制响应或凭据。
+
+成功、超时或失败后均用管理 Session 对 Job 执行 `pause`，再停专用出口。核对原 Run、Batch、Receipt 及绑定授权的累计预留。下列冷读步骤**只用于独享的 `cnemc-a03-once` 项目**，不删卷，不启动 Beat。确认私有环境文件的常态值为 `CNEMC_MODE=off`；只重建 Web 不能证明数据库持久化。
 
 ```sh
 once stop worker-cnemc cnemc-gateway
+# 停用时让已停止的专用 Worker 也回到 off，不启动它或其依赖。
+base up --no-start --no-deps --no-build --pull never worker-cnemc
+pg_started() {
+  base exec -T db sh -ec 'PGPASSWORD="$APP_DB_PASSWORD" psql -XAtq -v ON_ERROR_STOP=1 \
+    -h 127.0.0.1 -U "$APP_DB_USER" -d "$POSTGRES_DB" -c "SELECT pg_postmaster_start_time()"'
+}
+before=$(pg_started) && base restart --no-deps db && base up -d --no-deps --wait db &&
+  after=$(pg_started) && test -n "$before" && test -n "$after" && test "$before" != "$after" || exit 1
 base up -d --no-deps --force-recreate web
 base exec web python backend/manage.py cnemc_verify_once --username USER --job JOB --read-run RUN_UUID
 ```
+
+冷读使用原 Run 而非 `--request-id`。再次核对七个精确键的修订 ID、Batch、七张 Receipt 和预留数均未变；准许查看的相邻空窗仍应为空。不要启动整个 Compose 项目。
 
 ### 本机网络验证 · 2026-11-22
 
@@ -130,7 +142,7 @@ base exec web python backend/manage.py cnemc_verify_once --username USER --job J
 | **PASS · 拒绝路径与停用** | 替身的 18007、18008 都有服务。专用 Worker 直连替身 IP、访问网关 18008 均失败。网关拒绝错误 SNI、缺失 SNI 和明文，上游目标 DNS 与 TCP 计数均为 0。注入 NXDOMAIN 后上游 TCP 计数也未增加。停网关后 Worker 连接失败。 |
 | **PASS · 默认隔离** | 基础 Worker 探针能连 PG/Redis，连不到网关和替身。PG/Redis 仅有内网路由，无宿主映射端口。离线登记、联网、停用三种配置运行在同一 PG/Redis 容器和 backend 网络上。Beat 启动次数为 0。 |
 | **PASS · 实际 WSL 出口** | A03 网关通过 Docker DNS `127.0.0.11` 查询 `example.org` 得到 `198.18.0.136`。同一 A03 uplink 上的一次性诊断容器直连 `registry-1.docker.io:443`（解析为 `198.18.0.137`），完成证书链及主机名验证的 TLS 1.3 握手。仅执行握手，保留宿主既有路由。 |
-| **NOT RUN · CNEMC 公网目标** | 源站 DNS、TCP 18007、证书链和 A03 请求留待获准的首次实源测试。本次实源请求数为 0。A03 的 `cnemc-egress`、`cnemc-uplink` 已创建，网关已停止。 |
+| **PASS · 真实 A03 连接与解析** | 2026-11-22 北京时间 16:08，`cnemc-a03-once` 的专用 Worker 经 HAProxy 对 `110000` 发出 1 次 HTTPX 请求，HTTP 200、1 个城市对象、7 项解析通过。该次是 Worker 容器内的连通性验证，没有提交 Celery 业务 Run，也没有入库。证据见本机 `tmp/a03-httpx-MCE5m0uW/{receipt,runtime}.json`。 |
 
 ## S04 已有读接口
 
