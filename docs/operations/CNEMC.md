@@ -16,7 +16,7 @@
 
 ## 登记与运行
 
-`python backend/manage.py cnemc_register /private/manifest.json --actor <用户主键>` 以一个事务登记来源、产品、许可、离线目录及禁用的 Job。操作者需要 `manage_grants` 和 `manage_collection`，执行身份需要 `run_collection`。命令返回产品和 Job 主键。配置文件中的许可条款使用可核的版本和私有材料引用。合成清单的可执行示例在 `tests/collection/test_cnemc_jobs.py` 的 `manifest()` 中。
+`python backend/manage.py cnemc_register /private/manifest.json --actor <用户主键>` 以一个事务登记来源、产品、用途声明、离线目录及禁用的 Job。操作者需要 `manage_grants` 和 `manage_collection`，执行身份需要 `run_collection`。命令返回产品和 Job 主键。个人本地单次测试的 `terms/terms_version` 可以如实记录操作者声明；不得将其描述为官方文件。其他实际适用限制仍须按请求范围落实。合成清单的可执行示例在 `tests/collection/test_cnemc_jobs.py` 的 `manifest()` 中。
 
 | 清单字段 | 用途 |
 |---|---|
@@ -55,21 +55,21 @@ python3.13 .tasks/cnemc-integration/evidence/window_boundaries.py
 
 ### 首次 A03 的许可输入
 
-可提供仓库外的许可文件路径，或附条款编号的摘录。登记方从材料中填写下表。产品固定为 `cnemc / city-live-hour`，入口为 `POST /CityData/GetAQIDataPublishLiveInfo?cityCode=…`。若许可覆盖北京，已有目录资料给出 `北京市`、`110000`，无需再查在线城市字典。
+针对个人开发环境的单次测试，项目操作者已声明取得数据使用许可并授权本次北京请求及规范化值留存。登记时把这项事实标为“项目操作者声明”，不得伪装成 CNEMC 出具的文件、条款或版本；不要求文件路径、官方条款编号或书面版本证明。该声明只覆盖此次 `cnemc / city-live-hour`、A03、北京市 `110000`、一次人工请求、规范化七项写入项目 PostgreSQL，以及认证 Session 的精确查询。它不自动开放其他城市/产品、周期采集、原始响应留存、导出、公开展示或再分发。若以后要扩大真实运行范围，按实际适用的外部限制重新确认。已有目录资料给出 `北京市`、`110000`，无需再查在线城市字典。
 
-| 需从许可确认的事实 | 私有登记清单中的位置与格式 |
+| 本地单次登记仍需明确的事实 | 私有登记清单中的位置与格式 |
 |---|---|
-| 可核的条款引用、版本、署名、生效与终止时间 | `products[].evidence/attribution` 和 `grants[].terms/terms_version/valid_from/valid_until`。引用和版本填文本，时间填带时区的 ISO 8601。限定获取授权必须有终点。 |
-| 获准城市、目录使用区间、这次人工触发的 Worker 是否可获取该城完整 latest 响应，以及可处理的观测日期 | `cities[].geography/from/until/evidence`、`grants[].geography/object_code/data_from/data_until`。`acquire_online/platform` 取 `endpoints=["A03"]`、`indicator="*"`、`fields=["*"]`，地域和城市码限定到获准的一城。数据日期用 `YYYY-MM-DD` 半开区间。A03 没有日期参数，现行获取检查覆盖该城所有可能返回日期（`0001-01-01` 至 `9999-12-31`）。若条款只许获取某日或裁剪后的字段，停在登记前。处理与展示仍可按日、按指标收窄。周期权限可记为未授予或未确认，本次仅登记人工任务。 |
-| 来源和 A03 的允许速率、并发、本轮剩余额度，额度是否与其他采集共享 | `collection_limits` 在清单顶层和获取授权各填一份，均为四个整数 `min_interval_seconds`、`max_concurrent`、`period_seconds`、`max_requests`。本次两层并发均取 1，获取授权 `max_total_requests=1`。共享时按原依据登记 `validation_allocation={"basis":…, "total":…}` 并核剩余份额。保留已用额度，包括发送结果不明的预留。 |
-| 七项规范化、溯源、目录与账本可保留到何时，许可允许的 PG 存放位置，到期及撤权后如何处置 | `process_local/platform` 需 `normalized`。`retain_normalized/platform` 需覆盖 `normalized`、`provenance`、`collection_ledger`。`catalog` 需取 `indicator="*"` 并覆盖该城目录期，`validation_ledger` 需覆盖获取授权的完整范围。可对账本单列授权。只有实际允许恢复后处置时才填 `expiry_mode="recoverable"`。现有判权会拒绝含 `retain_until` 的留存授权，也会拒绝带 `valid_until` 的硬截止留存。此类条款须先解决处置能力。 |
-| 谁可经 Session 查询七项、谁可核对回执，允许查看哪些字段 | `display/local_authenticated` 需 `normalized`、`provenance`，面向该实例全部已登录用户。若许可限于具名人员，须先确认该实例的访问及注册范围仅涵盖这些人员。`review/operator` 还需 `collection_ledger`。原值、原包、截图、分析、导出、公开展示、再分发、备份各按已确认条款登记，均非本次必填。 |
+| 声明内容与真实性 | `products[].evidence/attribution` 和各 `grants[].terms/terms_version` 写明“项目操作者声明”、声明日期和本次范围；例如 `terms_version=operator-declared-2026-11-22`。这只是操作者记录，不是外部条款引用。 |
+| 来源、产品、端点、地域、城市码及数据范围 | `namespace=cnemc`、`products[].code=city-live-hour`、`endpoints=["A03"]`，城市 `110000` / `北京市`。A03 没有日期参数，获取授权的日期边界覆盖可能返回日期；处理与展示仍限定为本城七项。目录和地理字段只记录身份，不虚构坐标或官方证据。 |
+| 请求频率、并发和本次绝对额度 | `collection_limits` 在来源与获取授权各填一份，均为四个整数 `min_interval_seconds`、`max_concurrent`、`period_seconds`、`max_requests`。本次两层并发均为 1，周期请求数为 1，获取授权 `max_total_requests=1`。来源累计额度不会因重试、重启或另建 Job 复原；不启动周期 Job。 |
+| 七项规范化、溯源、目录与账本的本地留存 | `process_local/platform` 需 `normalized`。`retain_normalized/platform` 需覆盖 `normalized`、`provenance`、`collection_ledger`、`validation_ledger` 及登记目录所需的 `catalog`。只持久化规范化观测和必要溯源/任务事实，不保存原始响应。 |
+| 谁能经 Session 查询和核对 | `display/local_authenticated` 需 `normalized`、`provenance`，本次只创建本地活动操作者账户。`review/operator` 需覆盖 `collection_ledger`，用于核同一个 Run 的 Window/Batch/Receipt。匿名读取和公开/导出用途不开放。 |
 
 `jobs[]` 只建一个 Job。`city_code` 用获准城市码，`selection.mode="include"`，`selection.objects` 仅为该码列 `AQI, PM2.5, PM10, SO2, NO2, CO, O3`。`executor` 用本地获准执行账号主键，`validation_terms_version` 对应上述一次获取授权，省略 `first_due`。登记命令会返回禁用的 Job 主键。
 
 ### 验收项目与出口
 
-CNEMC 覆盖文件的默认项目名为 `cnemc-dedicated`。首次 A03 使用独立项目 `cnemc-a03-once`。`CNEMC_EGRESS_NETWORK` 的实际值为 `cnemc-a03-once_cnemc-egress`，由 Compose 按项目名创建。私有环境文件只需按 `.env.example` 填本地秘密及可用的回环 `WEB_PORT`，旧文件中的出口名称会被忽略。保持验收项目独享 PG 卷和 Redis 队列，重启和回读沿用原卷。
+首次真实 A03 使用仓库标准 Compose 项目 `air-quality-platform` 的开发数据库与 Redis，PG 卷为 `air-quality-platform_pgdata`。用 `-p air-quality-platform` 覆盖 `compose.cnemc.once.yaml` 中为旧隔离验收预设的项目名；不得使用 `cnemc-a03-once_pgdata` 或 S03 验收卷代替。根目录 `.env` 按 `.env.example` 提供本地秘密及可用的回环 `WEB_PORT`，常态 `CNEMC_MODE=off`。本次网关名为 `air-quality-platform_cnemc-egress`，由 Compose 按项目名创建。
 
 | 网络路径 | 实际规则 |
 |---|---|
@@ -83,9 +83,9 @@ CNEMC 覆盖文件的默认项目名为 `cnemc-dedicated`。首次 A03 使用独
 离线登记、联网和停用共用同一份网络定义，切换时保留 `backend` 和 PG 卷。`base` 使用 `off`，`once` 固定 `limited` 并将 Beat 副本设为 0。以下命令均在仓库根目录执行。
 
 ```sh
-base() { CNEMC_MODE=off docker compose --env-file "${A03_ENV_FILE:?}" -p cnemc-a03-once \
+base() { CNEMC_MODE=off docker compose --env-file .env -p air-quality-platform \
   -f compose.yaml -f compose.cnemc.yaml "$@"; }
-once() { CNEMC_MODE=limited docker compose --env-file "${A03_ENV_FILE:?}" -p cnemc-a03-once \
+once() { CNEMC_MODE=limited docker compose --env-file .env -p air-quality-platform \
   -f compose.yaml -f compose.cnemc.yaml -f compose.cnemc.once.yaml "$@"; }
 base config -q
 once config -q
@@ -93,18 +93,18 @@ CNEMC_EGRESS_NETWORK=$(once config --format json | python3 -c 'import json,sys; 
 printf '%s\n' "$CNEMC_EGRESS_NETWORK"
 ```
 
-许可材料齐备且获准使用此库后，用 `base ps -a` 确认服务归属和当前运行状态。只在该验收项目停用采集进程后离线登记。新库先按项目账号流程建立本地活动身份。`ACTOR_ID` 需有 `manage_grants` 和 `manage_collection`，执行身份需有 `run_collection`，暂停和恢复 Job 的账号需有 `manage_collection`。Session 核验账号需有 `run_collection` 和 `review_observation`。
+按项目操作者声明登记，不要求另交许可材料。先用 `base ps -a` 和数据库只读查询确认标准项目身份、迁移及是否已有业务数据；不操作 S03 或旧隔离项目。新库先按项目账号流程建立本地活动身份。`ACTOR_ID` 需有 `manage_grants` 和 `manage_collection`，执行身份需有 `run_collection`，Session 核验账号需有 `run_collection` 和 `review_observation`。常规 `worker` 与 `beat` 只在确认归属本项目且不会影响已有工作后才可调整。
 
 ```sh
-base stop worker worker-cnemc beat cnemc-gateway && base up -d --build web redis
+base up -d --build db redis migrate web
 base exec -T web python backend/manage.py cnemc_register /dev/stdin \
   --actor "${ACTOR_ID:?}" < "${A03_MANIFEST:?}"
 ```
 
-核对单一 Job、单城七项、仅 A03、无排期、`max_total_requests=1`，以及本窗口七项的 `display` 和 `review` 权利。若先前的连通性请求与本轮共用许可额度，按条款扣除后仍须至少剩 1 次；PG 中零预留并不能证明这点。确认 Beat 已停止后才接入出网 Worker。
+核对单一 Job、单城七项、仅 A03、无排期、`max_total_requests=1`，以及本窗口七项的 `display` 和 `review` 权利。PG 额度账本绑定本 Job 的唯一预留；不得通过重建 Job 或重启服务恢复已用额度。确认 Beat 未运行后才接入出网 Worker。
 
 ```sh
-other=$(base ps --status running -q beat worker) && [ -z "$other" ] && once up -d web worker-cnemc
+other=$(once ps --status running -q beat worker) && [ -z "$other" ] && once up -d web worker-cnemc cnemc-gateway
 ```
 
 启动成功后复核 `once ps`，用管理 Session 对本 Job 执行前述 `resume`。在预计已发布时选许可期内的当前整点（带时区），保存本次唯一的 UUID，显式提交一次。A03 只返回 latest；如果仍是上一小时，保留 `outside_target` 缺口，不改写时标，也不追加请求。Session 密码由终端读取。
@@ -114,13 +114,13 @@ once exec web python backend/manage.py cnemc_verify_once --username USER --job J
   --target APPROVED_SOURCE_HOUR --request-id MANUAL_UUID
 ```
 
-验收命令逐项核 Session 返回值、PG 修订、单位和本批 Receipt；它本身不独立比对 HTTP 原包。按实际授权对照**同一次响应**：若已获单字段原值的留存和复核权，可从该 Batch 的 `GET /api/v1/admin/observation-evidence/` 读取；若原包只准瞬时处理，须在释放该响应之前在 Worker 内存中核对七个源字段与规范化投影。不再取第二包来对账。收据只记获准的运行标识、计数与核对结论，不复制响应或凭据。
+验收命令逐项通过真实 Session 查询 API，并核该 Run 的 Batch、七张 Receipt 与当前 Revision 的指标、值和单位；输出中列出七项值、单位、修订 ID 和 Window/Run/Batch 标识。Receipt 来自这一次 Worker HTTP 响应的规范化写入，因此对照的是同一响应处理所得的持久值，不另发第二个源请求，也不把原始响应存入日志或收据。
 
-成功、超时或失败后均用管理 Session 对 Job 执行 `pause`，再停专用出口。核对原 Run、Batch、Receipt 及绑定授权的累计预留。下列冷读步骤**只用于独享的 `cnemc-a03-once` 项目**，不删卷，不启动 Beat。确认私有环境文件的常态值为 `CNEMC_MODE=off`；只重建 Web 不能证明数据库持久化。
+成功、超时或失败后均用管理 Session 对 Job 执行 `pause`，再停专用 Worker 和网关。核对原 Run、Batch、Receipt 及绑定授权的累计预留。以下步骤只重启标准项目 PostgreSQL，不删卷，不启动 Beat；常态 `.env` 保持 `CNEMC_MODE=off`。只重建 Web 不能证明数据库持久化。
 
 ```sh
 once stop worker-cnemc cnemc-gateway
-# 停用时让已停止的专用 Worker 也回到 off，不启动它或其依赖。
+# 以 off 配置保持专用 Worker 停止，不启动它或其依赖。
 base up --no-start --no-deps --no-build --pull never worker-cnemc
 pg_started() {
   base exec -T db sh -ec 'PGPASSWORD="$APP_DB_PASSWORD" psql -XAtq -v ON_ERROR_STOP=1 \
