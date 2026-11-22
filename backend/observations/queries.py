@@ -28,7 +28,9 @@ from .policy import (
     clock,
     locked_product,
 )
+from .projection import metadata, originals
 from .revisions import key_scope, tables
+from .selection import grant_bins, read_basis
 
 
 def params_once(params):
@@ -152,12 +154,12 @@ def read_current(actor_id, params, purpose="display"):
     except (ValueError, OverflowError, Rejected):
         raise Denied("invalid_request") from None
     geo, codes = dimensions(product, ident, directory_at)
-    grants = list(product.usegrant_set.filter(revoked_at__isnull=True))
+    grants = grant_bins({product.pk})[product.pk]
+    extra_checks = []
 
     def permissions(code, now):
         scope = Scope(geo, code, ind, day, next_day)
-        applicable(product, "retain_normalized", scope, REQUIRED, now, grants)
-        return applicable(product, purpose, scope, REQUIRED, now, grants)
+        return read_basis(product, scope, (), now, grants, purpose=purpose)
 
     permitted = {}
     now = clock()
@@ -183,13 +185,41 @@ def read_current(actor_id, params, purpose="display"):
     results = []
     reason = "no_observation_at_time"
     if key and not key.retired:
-        current = key.revisions.filter(is_current=True).first()
+        current = key.revisions.filter(is_current=True, candidate=False).first()
         if key.disputed:
             reason = "unresolved_dispute"
         elif current and current.quality == "valid" and current.value is not None:
+            scope = Scope(geo, key.object_code, ind, day, next_day)
+
+            def allowed(field):
+                try:
+                    read_basis(product, scope, (field,), now, grants, purpose=purpose)
+                except Denied:
+                    return False
+                extra_checks.append(field)
+                return True
+
+            receipt = originals(product, [current]).get(current.pk)
+            fields = metadata(current, receipt, allowed)
+            projected = project_revision(current)
+            projected = {
+                k: projected[k]
+                for k in (
+                    "revision_id",
+                    "revision_no",
+                    "value",
+                    "unit",
+                    "quality",
+                    "censor_limit",
+                    "censor_direction",
+                )
+            }
+            projected.update(fields)
+            projected["source_time"] = fields["source_time"] or ""
+            projected["source_description"] = fields["source_description"] or ""
             results.append(
                 dict(
-                    **project_revision(current),
+                    **projected,
                     source=product.source.namespace,
                     product=product.pk,
                     synthetic=product.synthetic,
@@ -206,8 +236,12 @@ def read_current(actor_id, params, purpose="display"):
             reason = None
         elif current:
             reason = current.quality
+    end_clock = clock()
+    for field in extra_checks:
+        read_basis(product, scope, (field,), end_clock, grants, purpose=purpose)
     for code in permitted:
-        permissions(code, clock())
+        permissions(code, end_clock)
+    actor(actor_id, "review_observation" if purpose == "analyze" else None)
     return dict(
         count=len(results),
         results=results,

@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.urls import include, path
 from django.views.decorators.http import require_GET
 from observations import views as observation_views
+from observations.detail import read_detail
+from observations.s04_http import read_view
 from samples import views as sample_views
 
 
@@ -25,6 +27,7 @@ urlpatterns = [
     path("api/v1/admin/collection-jobs/<int:pk>/", collection_views.jobs),
     path("api/v1/admin/collection-windows/<int:pk>/", collection_views.windows),
     path("api/v1/admin/history-imports/", observation_views.history_imports),
+    path("api/v1/observations/query/", read_view(read_detail)),
     path("api/v1/observations/current/", observation_views.observations),
     path("api/v1/admin/observation-evidence/", observation_views.evidence),
     path("api/v1/auth/", include("accounts.urls")),
