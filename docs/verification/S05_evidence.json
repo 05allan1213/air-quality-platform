@@ -4,7 +4,31 @@
   "source_sha256": "7f828d02e1d0c3d721c3ada668bc60b393fa80c418f68d6e20e268cff5442dd3",
   "postgres_image": "sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857",
   "cnemc_mode": "off",
-  "stage_acceptance": "V01–V18 engineering PASS; submitted for independent GPT final stage review, decision pending",
+  "stage_acceptance": "PASS",
+  "formal_acceptance": {
+    "recorded_on": "2026-11-23",
+    "reviewed_commit": "a5ced8a922e9492c2aa3227036b2eeb89ba777ac",
+    "scope": "S05 P1–P8, V01–V18, C01–C03",
+    "seal_approved": true,
+    "s06_planning_allowed": true,
+    "t11_city_online": "NO-GO",
+    "report": "docs/verification/S05.md",
+    "independent_review": {
+      "result": "PASS",
+      "context": "/root/gpt_final_submission",
+      "receipt": "tmp/S05_V16_FINAL_REVIEW.receipt.md",
+      "submission_sha256": "e0f6a71c0f202b8ebe526b7836c233f9c7f5dc4019ae50aaa22bae8ba7b3ec8b",
+      "method": "Reviewed committed source, grant readback, run logs, machine receipts and aggregates. Recomputed all 12 V16 groups from the submitted archive.",
+      "independent_service_and_pytest_reruns": "NOT RUN",
+      "independent_source_redownload": "NOT RUN"
+    },
+    "regression_evidence": {
+      "prior_full": "runs.pytest",
+      "v16_targeted": "runs.V16_regression",
+      "full_rerun_for_v16": "NOT RUN"
+    },
+    "v16_h_authorization": "Short-lived grant limited to the disposable V16 verification environment. Verify applicable rights again for the actual deployment or demonstration use."
+  },
   "V16_execution": "PASS",
   "verification": {
     "V01": "PASS",
