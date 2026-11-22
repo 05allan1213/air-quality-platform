@@ -5,6 +5,7 @@ from math import ceil
 from django.db import transaction
 from django.db.models import Q
 
+from .coverage import outside_registered_epochs
 from .normalization import INDICATORS, LEVELS, REPORT_KIND, STANDARD_2012, STANDARD_2026, WINDOWS
 from .policy import Denied
 from .queries import pk
@@ -136,7 +137,21 @@ def read_detail(user_id, query):
         selection["as_of"] = anchor.isoformat()
     visible = ctx.scope(product, inds, ids, start=start, end=end, window=window)
     if not visible.permitted:
-        raise Denied()
+        if mode != "window" or not outside_registered_epochs(
+            ctx, product, ids, inds, window, start, end
+        ):
+            raise Denied()
+        if prior:
+            raise Denied("page_changed")
+        ctx.finish()
+        return dict(
+            selection=selection,
+            evaluated_at=ctx.now,
+            synthetic=product.synthetic,
+            state="no_coverage",
+            results=[],
+            page={"page_size": size, "next_cursor": None},
+        )
     selection[entity] = sorted({segment.entity_id for segment in visible.segments})
     selection["indicators"] = sorted({segment.indicator for segment in visible.segments})
     rows = visible.revisions(quality).filter(key__window_definition=window, key__report_kind=report)

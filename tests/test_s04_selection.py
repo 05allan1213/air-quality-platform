@@ -275,3 +275,76 @@ def test_product_lock_and_end_clock_cover_empty_pages(catalog):
         with pytest.raises(Denied, match="use_denied"):
             ctx.finish()
     assert not StationRevision.objects.filter(key__product=p).exists()
+
+
+def test_explicit_outside_epoch_needs_independent_disclosable_catalog(catalog):
+    op, reader, p, site, q = catalog
+    # Both directory and normalized privileges span the request day, but the confirmed site ended.
+    for operation in ("retain_normalized", "display"):
+        allow(
+            op, p, operation, fields=["*"], data_until=(END + 2 * HOUR).date() + timedelta(days=1)
+        )
+    outside = q | {"start": (END + HOUR).isoformat(), "end": (END + 2 * HOUR).isoformat()}
+    assert read_detail(reader.pk, outside)["state"] == "no_coverage"
+    allow(
+        op,
+        p,
+        "display",
+        effect="deny",
+        fields=["catalog"],
+        data_until=END.date() + timedelta(days=1),
+    )
+    with pytest.raises(Denied, match="use_denied"):
+        read_detail(reader.pk, outside)
+
+
+def test_source_local_day_and_separate_rolling_window(catalog):
+    from dataclasses import replace
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from django.utils import timezone
+    from observations.normalization import BatchContext, ProductProfile, normalize
+
+    op, reader, p, site, q = catalog
+    p.source_timezone = "Asia/Shanghai"
+    p.save(update_fields=["source_timezone"])
+    allow(op, p, "display", data_until=BOUNDARY.date())
+    zone = ZoneInfo(p.source_timezone)
+    local_midnight = datetime(2024, 1, 2, tzinfo=zone)
+    inputs = []
+    for window in ("hourly_right_label", "rolling_8h_right_label"):
+        for at in (local_midnight - HOUR, local_midnight):
+            sample = normalize(
+                ProductProfile("S", p.source_timezone, "F", window),
+                {
+                    "indicator": "O3",
+                    "object_code": "001",
+                    "source_time": at.isoformat(),
+                    "raw_value": "31",
+                    "raw_unit": "µg/m³",
+                    "row_locator": "F",
+                },
+                BatchContext(timezone.now()),
+            )
+            inputs.append(replace(candidate(p), data=sample))
+    ingest_fixture(op.pk, p.pk, "local-day", "F", inputs)
+    for mode, window in [
+        ("hourly", "hourly_right_label"),
+        ("rolling_8h", "rolling_8h_right_label"),
+    ]:
+        options = q | {
+            "indicators": "O3",
+            "report_kind": mode,
+            "window_definition": window,
+            "start": (local_midnight - HOUR).isoformat(),
+            "end": (local_midnight + HOUR).isoformat(),
+        }
+        rows = read_detail(reader.pk, options)["results"]
+        assert len(rows) == 1
+        assert (
+            rows[0]["observed_at"] == local_midnight - HOUR
+            and rows[0]["window_definition"] == window
+        )
+        with pytest.raises(Denied, match="use_denied"):
+            read_detail(reader.pk, options | {"start": local_midnight.isoformat()})
