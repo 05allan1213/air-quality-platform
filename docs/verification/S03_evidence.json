@@ -553,7 +553,7 @@
   },
   "remediation": {
     "scope": "S03 F01 / F02",
-    "stage_status": "in_progress; pending GPT targeted independent review",
+    "stage_status": "complete",
     "base_commit": "32abe4a11397ec1b6e828dd8053d50fbfb2fd22d",
     "base_source_sha256": "f8270973b72e0e28fde10b215e2c2d7d8f0caeca777fd6c85fa4a6ff2ff03479",
     "implementation_commit": "bd955c1636f8eb646b9a954793dd296bd71793f7",
@@ -970,7 +970,27 @@
       "admission": "/root/admission_review",
       "classification": "/root/quality_review",
       "independent_pg_rerun": "NOT RUN",
-      "formal_stage_verdict": "pending GPT"
+      "formal_stage_verdict": "PASS",
+      "formal_stage_acceptance": {
+        "date": "2026-11-22",
+        "reviewer": "GPT",
+        "handoff_commit": "746049b6e0b430eeba6729fe6479cda1d6b8497a",
+        "basis": ["independent static verification", "review of original runtime receipts"],
+        "outcomes": {
+          "P01-P08": "PASS",
+          "C01-C04": "PASS",
+          "F01": "PASS",
+          "F02": "PASS",
+          "V01-V19": "PASS",
+          "V20": {
+            "status": "PASS",
+            "basis": "first-freeze authorized real H receipts (runs.s02_H)",
+            "remediation_rerun": "NOT RUN"
+          },
+          "S01_regression": "PASS",
+          "F_PG_contract_checks": "PASS"
+        }
+      }
     }
   }
 }
