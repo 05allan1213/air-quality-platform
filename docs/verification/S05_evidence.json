@@ -1,11 +1,11 @@
 {
   "code_commit": "90e61e0351cba83c7527474f7b71814c1c663802",
-  "evidence_type": "Project-authored F; disposable PostgreSQL; isolated injected failure",
+  "evidence_type": "V01–V15, V17–V18: project-authored F and injected failure. V16: actual licensed UCI 501 H, disposable PostgreSQL, Redis/Worker and session HTTP.",
   "source_sha256": "7f828d02e1d0c3d721c3ada668bc60b393fa80c418f68d6e20e268cff5442dd3",
   "postgres_image": "sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857",
   "cnemc_mode": "off",
-  "stage_acceptance": "pending V16 and independent GPT stage acceptance",
-  "V16_execution": "NOT RUN",
+  "stage_acceptance": "V01–V18 engineering PASS; submitted for independent GPT final stage review, decision pending",
+  "V16_execution": "PASS",
   "verification": {
     "V01": "PASS",
     "V02": "PASS",
@@ -22,7 +22,7 @@
     "V13": "PASS",
     "V14": "PASS",
     "V15": "PASS",
-    "V16": "BLOCKED",
+    "V16": "PASS",
     "V17": "PASS",
     "V18": "PASS"
   },
@@ -165,6 +165,1060 @@
         "expired": 410,
         "swept": 404
       }
+    },
+    "V16_H": {
+      "code_commit": "270fa8feb7d8a7016d1ee2d5a6013b6b5739cb9d",
+      "baseline": "c50667faa7b2aebb77ed67eded94e8dedfa8d472",
+      "source_sha256": "575a400e610c7b9cfaae0387bdcfc7fcbcf4a83215636c133486bf728d1e005f",
+      "code_scope": "New verification scripts; backend tree identical to baseline. Top-level code_commit/source_sha256 identify the earlier F suite.",
+      "source_record": {
+        "title": "Beijing Multi-Site Air Quality",
+        "uci_id": 501,
+        "doi": "10.24432/C5RK5G",
+        "creator": "Song Chen",
+        "cited_as": "Chen, S. (2017)",
+        "publisher": "UCI Machine Learning Repository",
+        "dataset_page": "https://archive.ics.uci.edu/dataset/501/beijing%2Bmulti%2Bsite%2Bair%2Bquality%2Bdata",
+        "license": "CC BY 4.0",
+        "license_text": "https://creativecommons.org/licenses/by/4.0/legalcode.en",
+        "verified_utc": "2026-11-22T15:52:01Z",
+        "dataset_page_sha256": "550359d45ffde1d41f156a64d60039650c517fa1abead4b8d693155271eda51c",
+        "license_text_sha256": "0145a53ed209ac2d203f1bb3d774415576bad749074ce4bde0336afa074e6276",
+        "archive_download": "https://archive.ics.uci.edu/static/public/501/beijing%2Bmulti%2Bsite%2Bair%2Bquality%2Bdata.zip",
+        "outer_bytes": 8192212,
+        "outer_sha256": "b04da438b2f331ac0ffd45aebdfec0d20d2367feb5f6948c4b1f7ce1191e33c4",
+        "inner_member": "PRSA2017_Data_20130301-20170228.zip",
+        "station_csv_members": 12,
+        "source_station_hours": 420768,
+        "expanded_csv_bytes": 32508303
+      },
+      "run_json_sha256": "1c07d7674dd4f5c658842a88a5a3f3d73e50e64174b780220ea73cdb1a442bf1",
+      "h_reconcile_json_sha256": "f004ab46c51b62d5d377026ba795d219838f79265e7cb28e2b4c36120e9d770a",
+      "grant_readback_json_sha256": "085f15b9f3179dc0f726f7c4d700c3989f3a8340f139c98404003530f79b5e43",
+      "execution_log_sha256": "9269f0c6bc97372f3b3a67101d8f048339bcfb84bf90b8c0596645f41378ba4c",
+      "receipt_files": [
+        "tmp/s05-evidence/s05-f644974798/run.json",
+        "tmp/s05-evidence/s05-f644974798/V16/h-reconcile.json",
+        "tmp/s05-evidence/s05-f644974798/V16/use-grants.json",
+        "tmp/s05-evidence/s05-f644974798/V16/execution.log"
+      ],
+      "research_grant_shape": {
+        "issuer": "v16-operator",
+        "source_terms": "UCI dataset 501 https://doi.org/10.24432/C5RK5G | https://creativecommons.org/licenses/by/4.0/ | uci501-edges-v1",
+        "terms_version": "CC BY 4.0 / S05 V16 research v1",
+        "geography": "beijing",
+        "object_codes": [
+          "Aotizhongxin",
+          "Changping"
+        ],
+        "source_local_date_half_open": [
+          [
+            "2013-03-01",
+            "2013-03-03"
+          ],
+          [
+            "2017-02-27",
+            "2017-03-01"
+          ]
+        ],
+        "indicators": [
+          "PM2.5",
+          "PM10",
+          "SO2",
+          "NO2",
+          "CO",
+          "O3"
+        ],
+        "operations": {
+          "retain_normalized": {
+            "audience": "platform",
+            "fields": [
+              "normalized",
+              "provenance",
+              "catalog",
+              "research_coverage"
+            ],
+            "expiry_mode": "recoverable",
+            "count": 24
+          },
+          "analyze": {
+            "audience": "local_authenticated",
+            "fields": [
+              "normalized",
+              "provenance",
+              "catalog",
+              "research_coverage",
+              "research_summary"
+            ],
+            "expiry_mode": "hard",
+            "count": 24
+          },
+          "display": {
+            "audience": "local_authenticated",
+            "fields": [
+              "normalized",
+              "provenance",
+              "catalog",
+              "research_coverage",
+              "research_summary"
+            ],
+            "expiry_mode": "hard",
+            "count": 24
+          }
+        },
+        "grant_ids": [
+          21,
+          92
+        ],
+        "grant_ids_semantics": "inclusive range in this disposable database",
+        "detail_export_grants": 0,
+        "aggregate_export_grants": 0
+      },
+      "auth_checks": {
+        "missing_csrf": "403/csrf_failed",
+        "s02_only": "403/use_denied",
+        "gap_between_windows": "403/use_denied",
+        "default_operator_analyze": "use_denied",
+        "reader_on_operator_api": "permission_denied",
+        "detail_export": "403/use_denied",
+        "aggregate_export": "403/use_denied",
+        "issued_tickets": 0,
+        "mismatched_parent_version": "409/input_changed"
+      },
+      "comparison": {
+        "series": 12,
+        "single_station_statistics": 24,
+        "paired_hours_across_indicators": 554,
+        "support_pages": {
+          "observed": 48,
+          "effective": 48,
+          "paired": 48
+        },
+        "support_page_size": 25,
+        "tolerance": "Absolute 1e-9 for aggregate and JSON numeric comparisons. Exact slot membership, normalized support values, counts, keys and revisions.",
+        "columns": "For each window/indicator the top-level results are HTTP. csv.stations and postgresql.stations follow comparison_order."
+      },
+      "result": "PASS",
+      "run": "s05-f644974798",
+      "archive_sha256": "d1b9261c54132f04c374f762f1e5e512af19f95c95fd6bfa1e8ac7e927e3b0b8",
+      "archive_bytes": 7959991,
+      "profile": "uci501-edges-v1",
+      "source": "uci.501/uci501",
+      "attribution": [
+        "Chen, S. (2017). Beijing Multi-Site Air Quality [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5RK5G. CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Selected stations and hourly labels, CO converted from µg/m³ to mg/m³.",
+        "Chen, S. (2017). Beijing Multi-Site Air Quality [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5RK5G. CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Selected stations and hourly labels, CO converted from µg/m³ to mg/m³. Asia/Shanghai assumed, hourly label endpoints unspecified. Research coverage, reliable-hour concentration means and common-hour station differences."
+      ],
+      "importer_image": "sha256:08a91b4f18eb0e0d59b632575ebff5588b030731bd26616939a447a4dd8049af",
+      "grant_counts": {
+        "base": 20,
+        "research": 72
+      },
+      "grant_from": "2026-11-22 16:06:40.223343+00:00",
+      "grant_until": "2026-11-22 18:06:40.223343+00:00",
+      "attempt": "b5ee112f-689a-4597-8c44-5e30e787371b",
+      "dispatch": "sent",
+      "stage": "cleared",
+      "import_counts": {
+        "batches": 1,
+        "station_hours": 192,
+        "keys": 1152,
+        "revisions": 1152,
+        "receipts": 1152,
+        "valid": 1130,
+        "missing": 22
+      },
+      "comparison_order": [
+        "Aotizhongxin",
+        "Changping"
+      ],
+      "windows": [
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "PM2.5",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 48,
+          "mean_difference": -0.2708333333333333,
+          "compare_version": "323dc8c719e477e8070b94c315d84248268a3ec1a9e986e471807c070d62cf2e",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 18.9375,
+              "statistics_version": "e232dfb2b96b980087f195627b98c92033c8e237454ad42f38769669ee28573b"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 19.208333333333332,
+              "statistics_version": "22bdbb96008547b51db3ba706d8f807d4065a301208eb673bbd922269883916d"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "18.9375"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "19.20833333333333333333333333"
+              }
+            ],
+            "E_common": 48,
+            "P": 48,
+            "mean_difference": "-0.2708333333333333333333333333"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "18.9375000000000000"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "19.2083333333333333"
+              }
+            ],
+            "E_common": 48,
+            "P": 48,
+            "mean_difference": "-0.27083333333333333333"
+          }
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "PM10",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 48,
+          "mean_difference": -2.9791666666666665,
+          "compare_version": "673960dd391b189f670bbee7304c98ab7cbc33cc1fcc1ec158256026182598f1",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 26.416666666666668,
+              "statistics_version": "d6c1fbb8a368750f5a6ea6705044705f9009e4d2bec4c31cc56b03bc9f451058"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 29.395833333333332,
+              "statistics_version": "0004818953eedfa8fe2bb66d4b8e0afe2e27286fb09c998fddef9bdb65fd4c8d"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "26.41666666666666666666666667"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "29.39583333333333333333333333"
+              }
+            ],
+            "E_common": 48,
+            "P": 48,
+            "mean_difference": "-2.979166666666666666666666667"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "26.4166666666666667"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "29.3958333333333333"
+              }
+            ],
+            "E_common": 48,
+            "P": 48,
+            "mean_difference": "-2.9791666666666667"
+          }
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "SO2",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 47,
+          "mean_difference": -4.340425531914893,
+          "compare_version": "2c812cc59780f7f3609d932384f1481c10bb6794ea97335e774b899670fced37",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 24.166666666666668,
+              "statistics_version": "af5eba8724c718515840d61b4bb987cbae27c10fef2813f655f4b0c3a25c6f9b"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47,
+              "missing": 1,
+              "weighted_mean": 28.595744680851062,
+              "statistics_version": "b25c34c711402ee8ccaeac544b4bc9f3b0c18e96b0e02e6e54a03322b1822fcf"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "24.16666666666666666666666667"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "28.59574468085106382978723404"
+              }
+            ],
+            "E_common": 48,
+            "P": 47,
+            "mean_difference": "-4.340425531914893617021276596"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "24.1666666666666667"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "28.5957446808510638"
+              }
+            ],
+            "E_common": 48,
+            "P": 47,
+            "mean_difference": "-4.3404255319148936"
+          }
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "NO2",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 47,
+          "mean_difference": 7.085106382978723,
+          "compare_version": "d3cfea7427f2911065810a0fb278792a14bdf0f618218258a2c006aa2b08620c",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 44.625,
+              "statistics_version": "cb17fd4b27cc9818d630e3cbadd5b349d70ac75448a299ea9053195dcbfe05bf"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47,
+              "missing": 1,
+              "weighted_mean": 37.57446808510638,
+              "statistics_version": "e9ca67f0e9be48d3c5288bef19c70414dac5912ae0272ba24beb58beb295a713"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "44.625"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "37.57446808510638297872340426"
+              }
+            ],
+            "E_common": 48,
+            "P": 47,
+            "mean_difference": "7.085106382978723404255319149"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "44.6250000000000000"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "37.5744680851063830"
+              }
+            ],
+            "E_common": 48,
+            "P": 47,
+            "mean_difference": "7.0851063829787234"
+          }
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "CO",
+          "unit": "mg/m³",
+          "E_common": 48,
+          "P": 47,
+          "mean_difference": -0.04046808510638298,
+          "compare_version": "e2bdaacdd0d1150960b20974204dea4dd08c8c8007e4ee1a7567c25f8347b5f1",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 0.6270416666666667,
+              "statistics_version": "835f52203e4c71deb4279d08c262363d1b2f72ce72b4a13b8f3bad4fc619c197"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47,
+              "missing": 1,
+              "weighted_mean": 0.6723404255319149,
+              "statistics_version": "8f8da40249709f494467571d0ab9ffbe957b75e332cfa47834383af6b3f864dd"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "0.6270416666666666666666666667"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "0.6723404255319148936170212766"
+              }
+            ],
+            "E_common": 48,
+            "P": 47,
+            "mean_difference": "-0.04046808510638297872340425532"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "0.62704166666666666667"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "0.67234042553191489362"
+              }
+            ],
+            "E_common": 48,
+            "P": 47,
+            "mean_difference": "-0.04046808510638297872"
+          }
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "O3",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 47,
+          "mean_difference": -7.042553191489362,
+          "compare_version": "fde766f403a52d0bd1105aaa30b58f9139e1317e030cc2336999ed8bf64945a5",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 46.8125,
+              "statistics_version": "9345fc6131b0b1118933a328a4571545eb687353b7edc970f0a772209a0d0c24"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47,
+              "missing": 1,
+              "weighted_mean": 53.744680851063826,
+              "statistics_version": "55df0b03233a4cdffdc47493d5d6adb6a27ea1647262ae179ab17612ad75b39b"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "46.8125"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "53.74468085106382978723404255"
+              }
+            ],
+            "E_common": 48,
+            "P": 47,
+            "mean_difference": "-7.042553191489361702127659574"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "46.8125000000000000"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "53.7446808510638298"
+              }
+            ],
+            "E_common": 48,
+            "P": 47,
+            "mean_difference": "-7.0425531914893617"
+          }
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "PM2.5",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 46,
+          "mean_difference": 10.108695652173912,
+          "compare_version": "d1a3995b5ae4fc7b31da52b87e4ed767283624db7bd68800d362f5d22320914d",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 46,
+              "missing": 2,
+              "weighted_mean": 41.28260869565217,
+              "statistics_version": "88c6116c1a652f8b51260432bbf27c751c21c1b27f5cee2fa00fd0a5138fb29e"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 32.791666666666664,
+              "statistics_version": "16e70920c8fc1c605f5a0ba4308a21eaaf7f5c4cfb43e369042de32e69a241ff"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 46,
+                "weighted_mean": "41.28260869565217391304347826"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "32.79166666666666666666666667"
+              }
+            ],
+            "E_common": 48,
+            "P": 46,
+            "mean_difference": "10.10869565217391304347826087"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 46,
+                "weighted_mean": "41.2826086956521739"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "32.7916666666666667"
+              }
+            ],
+            "E_common": 48,
+            "P": 46,
+            "mean_difference": "10.1086956521739130"
+          }
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "PM10",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 46,
+          "mean_difference": 10.782608695652174,
+          "compare_version": "b126f6318b07fe6a461daa303121f444dc9c19ca07ae3389fb1a720756b8cd0a",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 46,
+              "missing": 2,
+              "weighted_mean": 57.52173913043478,
+              "statistics_version": "5aa90f7a8595532f9a2a0a32c3e3364f3925daa155b37836117ce3297c5450c4"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 48.604166666666664,
+              "statistics_version": "ba6f2c51160534353ad85bb5a7600e3b44580c01092dc0548d669248678ede36"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 46,
+                "weighted_mean": "57.52173913043478260869565217"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "48.60416666666666666666666667"
+              }
+            ],
+            "E_common": 48,
+            "P": 46,
+            "mean_difference": "10.78260869565217391304347826"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 46,
+                "weighted_mean": "57.5217391304347826"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "48.6041666666666667"
+              }
+            ],
+            "E_common": 48,
+            "P": 46,
+            "mean_difference": "10.7826086956521739"
+          }
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "SO2",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 44,
+          "mean_difference": 4.590909090909091,
+          "compare_version": "bb5abecac1dd741c063ab62ff704649b80873398222b56f024e50bdc9675968e",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 45,
+              "missing": 3,
+              "weighted_mean": 13.644444444444444,
+              "statistics_version": "8b615e0c1ab2d53d3183f0af5e08de2933892383ef0103dabb592e49f8a2f855"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47,
+              "missing": 1,
+              "weighted_mean": 9.957446808510639,
+              "statistics_version": "d0f2fdd1430af74a42b94928f6438a8ceb78a169c17a57b58f94767bcdb21622"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 45,
+                "weighted_mean": "13.64444444444444444444444444"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "9.957446808510638297872340426"
+              }
+            ],
+            "E_common": 48,
+            "P": 44,
+            "mean_difference": "4.590909090909090909090909091"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 45,
+                "weighted_mean": "13.6444444444444444"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "9.9574468085106383"
+              }
+            ],
+            "E_common": 48,
+            "P": 44,
+            "mean_difference": "4.5909090909090909"
+          }
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "NO2",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 45,
+          "mean_difference": 23.6,
+          "compare_version": "537879808a1995a4270141989e06bdb3f57a5221fb3203c20ee4e90bf88bb4f6",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 45,
+              "missing": 3,
+              "weighted_mean": 66.15555555555555,
+              "statistics_version": "9e99f8711aabc1576d054e86ddb8c0c9753d2b5a9ca29f5468b27532452088e6"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48,
+              "missing": 0,
+              "weighted_mean": 44.25,
+              "statistics_version": "37fd10f88db2a9c5d28eed70cd572d611fb4e13f55cfd6d207fb952e55e6b6bc"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 45,
+                "weighted_mean": "66.15555555555555555555555556"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "44.25"
+              }
+            ],
+            "E_common": 48,
+            "P": 45,
+            "mean_difference": "23.6"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 45,
+                "weighted_mean": "66.1555555555555556"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 48,
+                "weighted_mean": "44.2500000000000000"
+              }
+            ],
+            "E_common": 48,
+            "P": 45,
+            "mean_difference": "23.6000000000000000"
+          }
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "CO",
+          "unit": "mg/m³",
+          "E_common": 48,
+          "P": 44,
+          "mean_difference": 0.10227272727272728,
+          "compare_version": "e39e2550f1c4e770699f9609676009af934f17098373ee0004e49dda050e7524",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 45,
+              "missing": 3,
+              "weighted_mean": 0.8622222222222222,
+              "statistics_version": "2b50611fe2d42bd71a8a5a0f117877041f5909d037fc606e5a0992d7d964a967"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47,
+              "missing": 1,
+              "weighted_mean": 0.8042553191489362,
+              "statistics_version": "f8e86c2124941fe275d71ed8d6698c1e13852c2d5fec3e0b522cfe9e6c864779"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 45,
+                "weighted_mean": "0.8622222222222222222222222222"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "0.8042553191489361702127659574"
+              }
+            ],
+            "E_common": 48,
+            "P": 44,
+            "mean_difference": "0.1022727272727272727272727273"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 45,
+                "weighted_mean": "0.86222222222222222222"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "0.80425531914893617021"
+              }
+            ],
+            "E_common": 48,
+            "P": 44,
+            "mean_difference": "0.10227272727272727273"
+          }
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "O3",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 45,
+          "mean_difference": 20.466666666666665,
+          "compare_version": "b21d8706fd1de83f63058d4fabbdccc8b99f5f8dc24afbb4b7d51050608eb94e",
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 46,
+              "missing": 2,
+              "weighted_mean": 59.76086956521739,
+              "statistics_version": "fea11c962d2e91085cd5827a115a6eaec70c131cb0d56351d08918f13e9928ed"
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47,
+              "missing": 1,
+              "weighted_mean": 38.170212765957444,
+              "statistics_version": "de5e357318a0b1d988a3e8b53c63dd570364ec42b9b2fc855c4be82b33303a2a"
+            }
+          },
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "csv": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 46,
+                "weighted_mean": "59.76086956521739130434782609"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "38.17021276595744680851063830"
+              }
+            ],
+            "E_common": 48,
+            "P": 45,
+            "mean_difference": "20.46666666666666666666666667"
+          },
+          "postgresql": {
+            "stations": [
+              {
+                "E": 48,
+                "O": 48,
+                "V": 46,
+                "weighted_mean": "59.7608695652173913"
+              },
+              {
+                "E": 48,
+                "O": 48,
+                "V": 47,
+                "weighted_mean": "38.1702127659574468"
+              }
+            ],
+            "E_common": 48,
+            "P": 45,
+            "mean_difference": "20.4666666666666667"
+          }
+        }
+      ],
+      "engineering_review": {
+        "reviewer": "/root/v16_review",
+        "scope": "V16 delta on c50667f, scripts and receipts for 270fa8f",
+        "result": "PASS",
+        "independent_recalculation": "inner ZIP equality and digest, rational-arithmetic CSV aggregates for both stations, both windows and all six concentrations",
+        "finding": "S05-V16-R01 resolved/fixed and reverified by the same reviewer (receipt timestamp UTC+00:00 and Asia/Shanghai UTC+08:00)",
+        "independent_runtime_rerun": "NOT RUN"
+      }
+    },
+    "V16_regression": {
+      "run": "s05-c9bf5b42c6",
+      "code_commit": "270fa8feb7d8a7016d1ee2d5a6013b6b5739cb9d",
+      "source_sha256": "575a400e610c7b9cfaae0387bdcfc7fcbcf4a83215636c133486bf728d1e005f",
+      "returncode": 0,
+      "passed": 139,
+      "seconds": 37.98,
+      "tests": [
+        "tests/test_history_import.py",
+        "tests/test_history_policy.py",
+        "tests/test_observation_rules.py",
+        "tests/test_observation_access.py",
+        "tests/test_s04_selection.py",
+        "tests/test_s04_station.py",
+        "tests/test_s04_noninterference.py",
+        "tests/test_s05_rights.py",
+        "tests/test_s05_selection.py",
+        "tests/test_s05_statistics.py"
+      ],
+      "run_json_sha256": "f3abdf094415aed42707f728597ae68f9c8eb304dbf799974be07f0995a9b3fd",
+      "pytest_log_sha256": "fb2321db9ff07754a81a0db5fa83bfb678da840b7f2d4bd75e0604f4f8c7420b",
+      "receipt_files": [
+        "tmp/s05-evidence/s05-c9bf5b42c6/run.json",
+        "tmp/s05-evidence/s05-c9bf5b42c6/pytest.log"
+      ]
     }
   },
   "V12": {
