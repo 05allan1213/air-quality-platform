@@ -174,7 +174,7 @@ def _city_code(value):
     return code
 
 
-def _identity(shape, row, city_code, city_name):
+def _identity(shape, row, city_code, city_name, *, require_station_city=False, nationwide=False):
     area = _text(row.get("Area"))
     if city_name and city_name != area:
         raise Rejected("city_mismatch")
@@ -187,8 +187,10 @@ def _identity(shape, row, city_code, city_name):
             declared = _code(declared)
             if re.fullmatch(r"0+", declared):
                 declared = None
-            elif declared != city_code:
+            elif not nationwide and declared != city_code:
                 raise Rejected("city_mismatch")
+        if require_station_city and declared is None:
+            raise Rejected("invalid_city_code")
         return station, declared, area, name
     if "StationCode" in row or "PositionName" in row:
         raise Rejected("shape_mismatch")
@@ -207,7 +209,9 @@ def _source_time(profile, raw):
             local = (EPOCH + timedelta(milliseconds=int(match[1]))).astimezone(zone)
             if match[2] and match[2] != local.strftime("%z"):
                 raise Rejected("invalid_source_offset")
-            return local.isoformat(), replace(profile, timezone_basis="fixture_epoch_milliseconds")
+            if profile.rule_version == "s03.f.v1":
+                profile = replace(profile, timezone_basis="fixture_epoch_milliseconds")
+            return local.isoformat(), profile
         except (OverflowError, ZoneInfoNotFoundError):
             raise Rejected("invalid_time") from None
     return raw, profile
@@ -225,7 +229,7 @@ def _time(profile, row):
     return stamp, replace(observed, source_time=source_time), profile
 
 
-def _measurement(indicator, row, code, profile, stamp, observed, fetched_at):
+def _measurement(indicator, row, code, profile, stamp, observed, fetched_at, *, source_grade=None):
     wire_key = indicator.replace(".", "_")
     if wire_key not in row:
         return Measurement(indicator, None, "missing_key", False)
@@ -247,6 +251,7 @@ def _measurement(indicator, row, code, profile, stamp, observed, fetched_at):
                 "source_time": stamp,
                 "raw_value": raw,
                 "raw_unit": unit,
+                "source_grade": source_grade,
                 "source_description": (
                     _description(row.get("Quality"), 200) if indicator == "AQI" else ""
                 ),

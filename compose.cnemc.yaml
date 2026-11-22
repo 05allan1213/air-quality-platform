@@ -1,0 +1,17 @@
+# Use only with the operator's pre-existing, destination-filtered Worker egress network.
+x-cnemc-mode: &mode
+  CNEMC_MODE: ${CNEMC_MODE:?choose limited or approved periodic mode}
+services:
+  web:
+    environment: *mode
+  migrate:
+    environment: *mode
+  beat:
+    environment: *mode
+  worker:
+    environment: *mode
+    networks: [backend, cnemc-egress]
+networks:
+  cnemc-egress:
+    external: true
+    name: ${CNEMC_EGRESS_NETWORK:?provide the controlled Worker egress network name}

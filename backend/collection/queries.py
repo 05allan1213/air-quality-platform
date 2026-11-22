@@ -8,17 +8,18 @@ from zoneinfo import ZoneInfo
 from django.db import transaction
 from django.db.models import F
 from observations.catalog import resolve
-from observations.models import Receipt
+from observations.models import CityIdentifier, Receipt, SiteEpoch, StationIdentifier
 from observations.normalization import INDICATORS
 from observations.policy import Denied, Scope, actor, applicable, clock, locked_product
 from observations.queries import params_once
 from observations.revisions import tables
 
-from .admission import LEDGER, selected_scopes, selected_use
+from . import cnemc_jobs
+from .admission import LEDGER, data_scope, selected_scopes, selected_use
 from .models import WorkWindow
 
 
-def tally(window, object_code=None, indicator=None):
+def tally(window, object_code=None, indicator=None, *, allowed=None, full=True, indicators=None):
     expected = window.expected
 
     def included(code, ind):
@@ -35,13 +36,15 @@ def tally(window, object_code=None, indicator=None):
             reason="insufficient_evidence",
         )
         for k, (code, at, ind) in (expected or {}).items()
-        if included(code, ind)
+        if included(code, ind) and (allowed is None or k in allowed)
     }
     items = window.items.all()
     if object_code:
         items = items.filter(object_code=object_code)
     if indicator:
         items = items.filter(indicator=indicator)
+    if allowed is not None:
+        items = items.filter(item_key__in=allowed)
     attempts = 0
     slots = set()
     for i in items.values(
@@ -50,7 +53,8 @@ def tally(window, object_code=None, indicator=None):
         attempts += 1
         k = i["item_key"]
         at = i["observed_at"].isoformat()
-        slots.add(k.rsplit("/", 1)[0])
+        if expected is None or k in expected:
+            slots.add(k.rsplit("/", 1)[0])
         cell = cells.setdefault(
             k,
             dict(
@@ -101,10 +105,20 @@ def tally(window, object_code=None, indicator=None):
                 else quality
             ),
         )
-    total = len(cells) if expected is not None else None
-    received = sum(c["received"] for c in cells.values())
-    valid = sum(c["valid"] for c in cells.values())
-    causes = set(window.runs.exclude(error_code="").values_list("error_code", flat=True))
+    # A permitted observation outside the independent monitoring schedule still has
+    # receipts and an exact key. It cannot enlarge E or fill a different expected slot.
+    covered = cells if expected is None else {k: c for k, c in cells.items() if k in expected}
+    if expected is not None and window.profile == cnemc_jobs.PROFILE:
+        for k, cell in cells.items():
+            cell["expected"] = k in expected
+    total = len(covered) if expected is not None else None
+    received = sum(c["received"] for c in covered.values())
+    valid = sum(c["valid"] for c in covered.values())
+    causes = (
+        set(window.runs.exclude(error_code="").values_list("error_code", flat=True))
+        if full
+        else set()
+    )
     for c in cells.values():
         if c["reason"] == "insufficient_evidence" and causes.intersection(
             {"database_error", "timeout", "upstream_transient", "lease_expired"}
@@ -119,9 +133,9 @@ def tally(window, object_code=None, indicator=None):
     now = clock()
     by_indicator = {}
     for ind in INDICATORS[window.product.shape]:
-        if indicator and indicator != ind:
+        if indicator and indicator != ind or indicators is not None and ind not in indicators:
             continue
-        subset = [c for c in cells.values() if c["indicator"] == ind]
+        subset = [c for c in covered.values() if c["indicator"] == ind]
         by_indicator[ind] = dict(
             E=len(subset) if expected is not None else None,
             O=sum(c["received"] for c in subset),
@@ -131,9 +145,9 @@ def tally(window, object_code=None, indicator=None):
         E=total,
         O=received,
         V=valid,
-        accepted=sum(c["accepted"] for c in cells.values()),
+        accepted=sum(c["accepted"] for c in covered.values()),
         object_slots={
-            "E": len({k.rsplit("/", 1)[0] for k in cells}) if expected is not None else None,
+            "E": len({k.rsplit("/", 1)[0] for k in covered}) if expected is not None else None,
             "O": len(slots),
         },
         not_received=total - received if total is not None else None,
@@ -148,6 +162,119 @@ def tally(window, object_code=None, indicator=None):
         if latest
         else None,
     ), cells
+
+
+def catalogue_scopes(product, entries):
+    """Build exact scopes for the window cells using a bounded number of directory reads."""
+    by_hour = {}
+    for key, (code, at, indicator) in entries.items():
+        if isinstance(at, str):
+            at = datetime.fromisoformat(at)
+        by_hour.setdefault(at, []).append((key, code, indicator))
+    zone = ZoneInfo(product.source_timezone)
+    result = {}
+    for at, cells in by_hour.items():
+        filters = dict(
+            source_id=product.source_id,
+            code__in={code for _, code, _ in cells},
+            kind="code",
+            active_period__contains=at,
+        )
+        if product.level == "city":
+            locations = {
+                code: (city, geography)
+                for code, city, geography in CityIdentifier.objects.filter(
+                    city__source_id=product.source_id, **filters
+                ).values_list("code", "city_id", "city__geography")
+            }
+        else:
+            identifiers = dict(
+                StationIdentifier.objects.filter(
+                    station__source_id=product.source_id, **filters
+                ).values_list("code", "station_id")
+            )
+            cities = {
+                station: (epoch, geography)
+                for station, epoch, geography in SiteEpoch.objects.filter(
+                    station_id__in=identifiers.values(),
+                    city__source_id=product.source_id,
+                    active_period__contains=at,
+                ).values_list("station_id", "pk", "city__geography")
+            }
+            locations = {code: cities[sid] for code, sid in identifiers.items() if sid in cities}
+        local = at.astimezone(zone).date()
+        for key, code, indicator in cells:
+            if code in locations and key.split("/", 1)[0] == str(locations[code][0]):
+                result[key] = Scope(
+                    locations[code][1], code, indicator, local, local + timedelta(days=1)
+                )
+    return result
+
+
+def project_window(window, job, grant_rows, now, requested_code, indicator):
+    """Authorize the frozen projection and return only individually readable cells."""
+    selection = window.selection
+    objects = selection.get("objects", {})
+    mode = selection.get("mode")
+    entries = dict(window.expected or {})
+    if mode == "include":
+        entries = {
+            k: value for k, value in entries.items() if value[2] in objects.get(value[0], ())
+        }
+    elif mode != "all":
+        raise Denied()
+    for k, code, at, ind in window.items.values_list(
+        "item_key", "object_code", "observed_at", "indicator"
+    ):
+        if mode == "all" or ind in objects.get(code, ()):
+            entries[k] = (code, at, ind)
+    scopes = catalogue_scopes(window.product, entries)
+
+    def readable(scope):
+        for op in ("review", "retain_normalized"):
+            applicable(window.product, op, scope, LEDGER, now, grant_rows)
+
+    allowed = set()
+    for key, scope in scopes.items():
+        try:
+            readable(scope)
+        except Denied:
+            continue
+        allowed.add(key)
+
+    indicators = set(INDICATORS[window.product.shape])
+    full = False
+    if not window.disposed:
+        try:
+            if mode == "all":
+                readable(data_scope(job, window.target_start, window.target_end))
+            else:
+                frozen = copy(job)
+                frozen.selection = selection
+                for scope in cnemc_jobs.scopes(frozen, window.target_start, window.target_end):
+                    readable(scope)
+            full = len(allowed) == len(entries)
+        except Denied:
+            pass
+
+    if mode == "include":
+        indicators = {
+            ind
+            for code, inds in objects.items()
+            if not requested_code or code == requested_code
+            for ind in inds
+        }
+    if not full:
+        indicators &= {
+            scope.indicator
+            for key, scope in scopes.items()
+            if key in allowed and (not requested_code or scope.object_code == requested_code)
+        }
+        if not indicators or indicator and indicator not in indicators:
+            raise Denied()
+    elif requested_code and mode == "include" and not indicators:
+        raise Denied()
+    return full, allowed, indicators
 
 
 @transaction.atomic
@@ -181,12 +308,14 @@ def read_window(actor_id, window_id, params=None):
     def permit():
         actor(actor_id, "review_observation")
         now = clock()
+        if cnemc_jobs.managed(first.job):
+            return project_window(window, first.job, grant_rows, now, requested_code, indicator)
         try:
             for op in ("review", "retain_normalized"):
                 selected_use(
                     first.job, window.target_start, window.target_end, op, LEDGER, now, grant_rows
                 )
-            return True
+            return True, None, None
         except Denied:
             if not requested_code or (
                 first.job.expected_codes is not None
@@ -206,9 +335,10 @@ def read_window(actor_id, window_id, params=None):
         for scope in scopes:
             for op in ("review", "retain_normalized"):
                 applicable(product, op, scope, LEDGER, now, grant_rows)
-        return False
+        return False, None, None
 
-    full = permit()
+    projection = permit()
+    full, allowed, indicators = projection
     if window.disposed:
         survivors = window.items.all()
         if requested_code:
@@ -219,7 +349,9 @@ def read_window(actor_id, window_id, params=None):
             return dict(window_id=window.pk, state="disposed", coverage=None)
     if indicator and indicator not in INDICATORS[product.shape]:
         return dict(window_id=window.pk, state="not_applicable", coverage=None)
-    coverage, cells = tally(window, params.get("object_code"), indicator)
+    coverage, cells = tally(
+        window, requested_code, indicator, allowed=allowed, full=full, indicators=indicators
+    )
     # A mixed batch may survive partial erasure. Never project its original counts or
     # fetch history to a caller who may only see a subset of its item lineage.
     runs = (
@@ -248,6 +380,7 @@ def read_window(actor_id, window_id, params=None):
             "batch_id",
             "manifest_count",
             "next_retry_at",
+            *(["endpoint"] if cnemc_jobs.managed(first.job) else []),
         )[run_offset : run_offset + 51]
     )
     keys = sorted(cells)[offset : offset + 51]
@@ -292,7 +425,7 @@ def read_window(actor_id, window_id, params=None):
                     entry.setdefault("metadata", {})[field] = value
                     optional_checks.add((scope, field))
         receipts.append(entry)
-    if permit() != full:
+    if permit() != projection:
         raise Denied()
     now = clock()
     for scope, field in optional_checks:

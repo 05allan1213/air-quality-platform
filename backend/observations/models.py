@@ -78,6 +78,11 @@ class UseGrant(models.Model):
     attribution = models.TextField(blank=True)
     restrictions = models.JSONField(default=dict)
     collection_limits = models.JSONField(null=True, blank=True)
+    # Empty for legacy grants. CNEMC online allows must name the permitted endpoints.
+    endpoints = models.JSONField(default=list, blank=True)
+    validation_allocation = models.JSONField(default=dict, blank=True)
+    validation_disabled = models.BooleanField(default=False)
+    max_total_requests = models.PositiveIntegerField(null=True, blank=True)
     confirmed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
@@ -94,6 +99,11 @@ class UseGrant(models.Model):
 
     class Meta:
         constraints = [
+            models.CheckConstraint(
+                condition=Q(max_total_requests=None)
+                | Q(operation="acquire_online", max_total_requests__gte=1),
+                name="cnemc_positive_total",
+            ),
             models.CheckConstraint(
                 condition=Q(data_until__gt=F("data_from")), name="grant_data_span"
             ),

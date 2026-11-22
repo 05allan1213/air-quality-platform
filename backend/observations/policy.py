@@ -6,7 +6,7 @@ from datetime import date
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
 
-from .models import Change, Product, UseGrant
+from .models import Change, Product, Source, UseGrant
 
 OPERATIONS = {
     "acquire_file": "platform",
@@ -27,6 +27,12 @@ OPERATIONS = {
 }
 REQUIRED = {"normalized", "provenance"}
 RAW = REQUIRED | {"raw_field"}
+
+
+def batch_issue_fields(product):
+    if product.source.namespace in ("cnemc", "cnemc.fixture"):
+        return REQUIRED | {"collection_ledger"}
+    return REQUIRED
 
 
 class Denied(ValueError):
@@ -87,6 +93,24 @@ def locked_product(product_id):
         )
     except Product.DoesNotExist:
         raise Denied() from None
+
+
+def locked_catalog_product(product_id):
+    """Serialize directory retention and amendments with all jobs of a CNEMC source."""
+    source_id = (
+        Product.objects.filter(pk=product_id, source__namespace__in=("cnemc", "cnemc.fixture"))
+        .values_list("source_id", flat=True)
+        .first()
+    )
+    if source_id is None:
+        return locked_product(product_id), ()
+    source = Source.objects.select_for_update().get(pk=source_id)
+    siblings = list(Product.objects.select_for_update().filter(source=source).order_by("pk"))
+    for product in siblings:
+        product.source = source
+        if product.pk == product_id:
+            target = product
+    return target, siblings
 
 
 def actor(actor_id, permission=None):
@@ -172,11 +196,39 @@ def bump(product, kind):
     Change.objects.create(product=product, kind=kind, rights_version=product.rights_version)
 
 
+def check_allocation(product, terms):
+    """The caller holds the source lock. Previously assigned shares never replenish."""
+    share = terms["max_total_requests"]
+    allocation = terms.setdefault(
+        "validation_allocation", {"basis": terms["terms_version"], "total": share}
+    )
+    if not (
+        isinstance(allocation, dict)
+        and set(allocation) == {"basis", "total"}
+        and isinstance(allocation["basis"], str)
+        and 0 < len(allocation["basis"].strip()) <= 240
+        and allocation["basis"].isprintable()
+        and type(allocation["total"]) is int
+        and share <= allocation["total"] <= 2**31 - 1
+    ):
+        raise Denied("invalid_validation_allocation")
+    used = 0
+    for version, previous, size in UseGrant.objects.filter(
+        product__source_id=product.source_id, max_total_requests__isnull=False
+    ).values_list("terms_version", "validation_allocation", "max_total_requests"):
+        if version == terms["terms_version"] or previous.get("basis") == allocation["basis"]:
+            if previous != allocation:
+                raise Denied("invalid_validation_allocation")
+            used += size
+    if used + share > allocation["total"]:
+        raise Denied("invalid_validation_allocation")
+
+
 @transaction.atomic
 def register_grant(actor_id, product_id, **terms):
     from .disposition import schedule
 
-    product = locked_product(product_id)
+    product, _ = locked_catalog_product(product_id)
     user = actor(actor_id, "manage_grants")
     if (
         terms.get("operation") not in OPERATIONS
@@ -194,6 +246,45 @@ def register_grant(actor_id, product_id, **terms):
         if terms["operation"] != "acquire_online":
             raise Denied("invalid_grant")
         validate_limits(terms["collection_limits"])
+    endpoints = terms.get("endpoints", [])
+    maximum = terms.get("max_total_requests")
+    if (
+        not isinstance(endpoints, list)
+        or "validation_allocation" in terms
+        and maximum is None
+        or (endpoints or maximum is not None)
+        and (
+            terms["operation"] != "acquire_online"
+            or product.source.namespace not in ("cnemc", "cnemc.fixture")
+        )
+    ):
+        raise Denied("invalid_grant")
+    if terms["operation"] == "acquire_online" and product.source.namespace in (
+        "cnemc",
+        "cnemc.fixture",
+    ):
+        from collection.adapters.cnemc import PRODUCTS
+
+        allowed = {PRODUCTS.get(product.code)} - {None}
+        if product.code == "station-national-hour":
+            allowed.add("A10")
+        effect = terms.get("effect", "allow")
+        if (
+            any(not isinstance(endpoint, str) or endpoint not in allowed for endpoint in endpoints)
+            or effect == "allow"
+            and (not endpoints or terms.get("collection_limits") is None)
+            or maximum is not None
+            and (
+                type(maximum) is not int
+                or not 1 <= maximum <= 2**31 - 1
+                or effect != "allow"
+                or terms.get("valid_until") is None
+            )
+        ):
+            raise Denied("invalid_grant")
+        terms["endpoints"] = sorted(set(endpoints))
+        if maximum is not None:
+            check_allocation(product, terms)
     grant = UseGrant(product=product, confirmed_by=user, **terms)
     grant.full_clean(
         exclude=[
@@ -219,7 +310,9 @@ def register_grant(actor_id, product_id, **terms):
 def revoke_grant(actor_id, grant_id, reason):
     from .disposition import schedule
 
-    product = locked_product(UseGrant.objects.values_list("product_id", flat=True).get(pk=grant_id))
+    product, _ = locked_catalog_product(
+        UseGrant.objects.values_list("product_id", flat=True).get(pk=grant_id)
+    )
     user = actor(actor_id, "manage_grants")
     grant = UseGrant.objects.get(pk=grant_id)
     if not isinstance(reason, str) or not reason.strip() or len(reason) > 100:

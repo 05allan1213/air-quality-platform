@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from django.db import transaction
 from observations import revisions
-from observations.catalog import resolve
+from observations.catalog import resolve, resolve_city
 from observations.models import Batch, QualityIssue, Receipt
 from observations.policy import Denied, Scope, applicable, clock
 
@@ -33,6 +33,15 @@ def identify(run, row, *, for_write=False):
     )
     city = entity.city if p.level == "station" else entity
     if (run.job.city_id and city.pk != run.job.city_id) or city.name != row.area:
+        raise Denied("city_mismatch")
+    if (
+        run.endpoint in {"A07", "A10"}
+        and row.city_code is not None
+        and resolve_city(
+            p.source, row.city_code, t.observed_at_utc, t.window_start, t.window_end
+        ).pk
+        != city.pk
+    ):
         raise Denied("city_mismatch")
     if p.level == "station" and entity.name != row.station_name:
         raise Denied("station_mismatch")
@@ -73,8 +82,11 @@ def manifest(run_id, owner, parsed):
         for value in row.fields:
             key = cell_key(entity.pk, row.time.observed_at_utc, value.indicator)
             if run.window.expected is not None and key not in run.window.expected:
-                problems.add("outside_roster")
-                continue
+                # Legacy F profiles use the roster as their processing selector. CNEMC
+                # already projected the separate, frozen processing selection in parse().
+                if not run.endpoint:
+                    problems.add("outside_roster")
+                    continue
             selected = True
             if key not in cells:
                 cells[key] = Cell(key, entity.pk, row, [])
@@ -181,7 +193,9 @@ def write_cell(ctx, run, cell, ordinal):
             time=replace(
                 data.time,
                 source_time=data.time.observed_at_utc.isoformat(),
-                timezone_basis="fixture_source_label",
+                timezone_basis=(
+                    data.time.timezone_basis if run.endpoint else "fixture_source_label"
+                ),
             ),
         )
         ordinal += 1

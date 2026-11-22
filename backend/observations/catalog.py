@@ -7,52 +7,60 @@ from .models import CityIdentifier, SiteEpoch, Station, StationIdentifier
 from .policy import Denied
 
 
-def resolve(product, code, at, start=None, end=None, *, for_write=False):
+def identity_instant(at, end):
     # A known right-labelled window belongs to the interval immediately before its end.
-    if end is not None and at == end:
-        at = end - timedelta(microseconds=1)
+    return end - timedelta(microseconds=1) if end is not None and at == end else at
+
+
+def resolve_city(source, code, at, start=None, end=None):
+    found = (
+        CityIdentifier.objects.select_related("city")
+        .filter(
+            source=source,
+            kind="code",
+            code=code,
+            active_period__contains=identity_instant(at, end),
+            city__source=source,
+        )
+        .first()
+    )
+    if not found:
+        raise Denied("identity_unresolved")
+    if start and not covers(found.active_period, start, end):
+        raise Denied("identity_window_crossing")
+    return found.city
+
+
+def resolve(product, code, at, start=None, end=None, *, for_write=False):
     if product.level == "city":
-        found = (
-            CityIdentifier.objects.select_related("city")
+        city = resolve_city(product.source, code, at, start, end)
+        return city, city.geography
+    at = identity_instant(at, end)
+    ident = StationIdentifier.objects.filter(
+        source=product.source,
+        kind="code",
+        code=code,
+        active_period__contains=at,
+        station__source=product.source,
+    ).first()
+    if ident:
+        if for_write:
+            Station.objects.select_for_update().get(pk=ident.station_id)
+        epoch = (
+            SiteEpoch.objects.select_related("city")
             .filter(
-                source=product.source,
-                kind="code",
-                code=code,
-                active_period__contains=at,
+                station_id=ident.station_id,
                 city__source=product.source,
+                active_period__contains=at,
             )
             .first()
         )
-        if found:
-            if start and not covers(found.active_period, start, end):
+        if epoch:
+            if start and not all(
+                covers(p, start, end) for p in [ident.active_period, epoch.active_period]
+            ):
                 raise Denied("identity_window_crossing")
-            return found.city, found.city.geography
-    else:
-        ident = StationIdentifier.objects.filter(
-            source=product.source,
-            kind="code",
-            code=code,
-            active_period__contains=at,
-            station__source=product.source,
-        ).first()
-        if ident:
-            if for_write:
-                Station.objects.select_for_update().get(pk=ident.station_id)
-            epoch = (
-                SiteEpoch.objects.select_related("city")
-                .filter(
-                    station_id=ident.station_id,
-                    city__source=product.source,
-                    active_period__contains=at,
-                )
-                .first()
-            )
-            if epoch:
-                if start and not all(
-                    covers(p, start, end) for p in [ident.active_period, epoch.active_period]
-                ):
-                    raise Denied("identity_window_crossing")
-                return epoch, epoch.city.geography
+            return epoch, epoch.city.geography
     raise Denied("identity_unresolved")
 
 

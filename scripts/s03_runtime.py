@@ -226,7 +226,7 @@ def snapshot(p):
         SELECT jsonb_build_object(
           'keys', (SELECT jsonb_agg(to_jsonb(k) ORDER BY id) FROM observations_stationobservation k),
           'revisions', (SELECT jsonb_agg(to_jsonb(v) ORDER BY id) FROM observations_stationrevision v),
-          'grants', (SELECT jsonb_agg(to_jsonb(g)-'collection_limits' ORDER BY id) FROM observations_usegrant g),
+          'grants', (SELECT jsonb_agg(to_jsonb(g) ORDER BY id) FROM observations_usegrant g),
           'permissions', (SELECT jsonb_agg(to_jsonb(p) ORDER BY id) FROM auth_user_user_permissions p),
           'sessions', (SELECT count(*) FROM django_session)
         )
@@ -296,6 +296,16 @@ for version in (1,3,2):
             )
             p.compose("rm", "-f", "-s", "worker", "beat", "web", "migrate")
             old = snapshot(p)
+            # Keep every pre-upgrade column and verify each additive permission default.
+            for grant in old["grants"]:
+                for field, value in dict(
+                    collection_limits=None,
+                    endpoints=[],
+                    max_total_requests=None,
+                    validation_allocation={},
+                    validation_disabled=False,
+                ).items():
+                    grant.setdefault(field, value)
         finally:
             p.prefix = upgraded
     p.up(build=True)

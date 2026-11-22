@@ -90,6 +90,12 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 
 S03_FIXTURE_HTTP = os.environ.get("S03_FIXTURE_HTTP") == "1"
 
+# A test namespace can only reach the fixed internal origin. Real jobs have a separate gate.
+CNEMC_FIXTURE_HTTP = os.environ.get("CNEMC_FIXTURE_HTTP") == "1"
+CNEMC_MODE = os.environ.get("CNEMC_MODE", "off")
+if CNEMC_MODE not in {"off", "limited", "periodic"}:
+    raise ImproperlyConfigured("Invalid CNEMC_MODE")
+
 S02_STAGE_DIR = "/run/s02-history"
 CELERY_TASK_ROUTES = {
     "collection.execute_run": {"queue": "s03.collection"},

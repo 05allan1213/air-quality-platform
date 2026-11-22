@@ -10,6 +10,7 @@ from observations.models import CityIdentifier, Source
 from observations.normalization import INDICATORS
 from observations.policy import REQUIRED, Denied, Scope, actor, applicable, clock, locked_product
 
+from . import cnemc_jobs
 from .models import Job, Run
 
 HOUR = timedelta(hours=1)
@@ -48,7 +49,11 @@ def lock_job(job_id):
     return job
 
 
-def registry(job):
+def registry(job, endpoint="", *, registration=False):
+    if cnemc_jobs.managed(job):
+        return cnemc_jobs.registry(
+            job, endpoint or cnemc_jobs.endpoint_for(job, "manual"), registration=registration
+        )
     p = job.product
     if not (
         settings.S03_FIXTURE_HTTP
@@ -113,8 +118,9 @@ def data_scope(job, start, end):
     )
 
 
-def admission(job, actor_id, start, end, *, allow_paused=False):
-    registry(job)
+def admission(job, actor_id, start, end, *, allow_paused=False, endpoint="", registration=False):
+    endpoint = endpoint or cnemc_jobs.endpoint_for(job, "manual")
+    registry(job, endpoint, registration=registration)
     actor(actor_id, "run_collection")
     actor(job.executor_id, "run_collection")
     if not allow_paused and (
@@ -127,12 +133,16 @@ def admission(job, actor_id, start, end, *, allow_paused=False):
     p = job.product
     processing = data_scope(job, start, end)
     acquisition = processing
-    if job.profile == "f-latest-v1":
+    if job.profile == "f-latest-v1" or endpoint and endpoint != "A10":
         # The latest endpoint has no verified lower bound on publication dates.
         acquisition = Scope(processing.geography, processing.object_code, "*", date.min, date.max)
     now = clock()
     rows = list(p.usegrant_set.filter(revoked_at=None))
-    basis = applicable(p, "acquire_online", acquisition, {"*"}, now, rows)
+    if endpoint:
+        basis = cnemc_jobs.endpoint_grants(job, endpoint, acquisition, now, rows)
+        selected_use(job, start, end, "retain_normalized", cnemc_jobs.CATALOG, now, rows)
+    else:
+        basis = applicable(p, "acquire_online", acquisition, {"*"}, now, rows)
     selected_use(job, start, end, "process_local", {"normalized"}, now, rows)
     selected_use(job, start, end, "retain_normalized", LEDGER, now, rows)
     source_limits = validate_limits(p.source.collection_limits)
@@ -158,7 +168,9 @@ def admission(job, actor_id, start, end, *, allow_paused=False):
     return source_limits, caps, boundary
 
 
-def can_fetch(job, end, now):
+def can_fetch(job, end, now, endpoint=""):
+    if endpoint == "A10":
+        return cnemc_jobs.exact_available(job, end - HOUR, now)
     if end - HOUR > now:
         return False
     if job.profile == "f-exact-v1":
@@ -210,6 +222,8 @@ def cell_key(entity_id, observed_at, indicator):
 
 
 def expected(job, start, end):
+    if cnemc_jobs.managed(job):
+        return cnemc_jobs.expected(job, start, end)
     codes = job.expected_codes
     if codes is None:
         return None
@@ -241,6 +255,8 @@ def expected(job, start, end):
 
 def selected_scopes(job, start, end):
     """Explicit processing selection. Acquisition still covers the whole returned package."""
+    if cnemc_jobs.managed(job):
+        return cnemc_jobs.scopes(job, start, end)
     scope = data_scope(job, start, end)
     if job.expected_codes is None:
         return [replace(scope, indicator=ind) for ind in INDICATORS[job.product.shape]]

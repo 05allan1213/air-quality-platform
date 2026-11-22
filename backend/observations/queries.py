@@ -17,7 +17,17 @@ from .models import (
     StationIdentifier,
 )
 from .normalization import DAY, INDICATORS, REPORT_KIND, WINDOWS
-from .policy import RAW, REQUIRED, Denied, Scope, actor, applicable, clock, locked_product
+from .policy import (
+    RAW,
+    REQUIRED,
+    Denied,
+    Scope,
+    actor,
+    applicable,
+    batch_issue_fields,
+    clock,
+    locked_product,
+)
 from .revisions import key_scope, tables
 
 
@@ -241,6 +251,7 @@ def read_evidence(actor_id, params):
     grants = list(product.usegrant_set.filter(revoked_at__isnull=True))
     checks = {}
     issue_scopes = set()
+    issue_fields = batch_issue_fields(product)
 
     def permitted(key):
         review_scope(product, key, grants)
@@ -315,7 +326,7 @@ def read_evidence(actor_id, params):
             issue_scope = Scope.from_issue(issue.scope)
             try:
                 for operation in ("review", "retain_normalized"):
-                    applicable(product, operation, issue_scope, REQUIRED, clock(), grants)
+                    applicable(product, operation, issue_scope, issue_fields, clock(), grants)
             except Denied:
                 continue
             authorized = True
@@ -336,7 +347,7 @@ def read_evidence(actor_id, params):
         raise Denied("invalid_request")
     for issue_scope in issue_scopes:
         for op in ("review", "retain_normalized"):
-            applicable(product, op, issue_scope, REQUIRED, clock(), grants)
+            applicable(product, op, issue_scope, issue_fields, clock(), grants)
     for key, raw in checks.values():
         review_scope(product, key, grants, raw=raw)
     actor(actor_id, "review_observation")

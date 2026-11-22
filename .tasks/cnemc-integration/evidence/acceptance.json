@@ -1,0 +1,412 @@
+{
+  "base": "b8c30ae7bac22db03bc2d11ed27e4862b390571a",
+  "source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+  "cnemc": {
+    "pg": {
+      "case": "pg",
+      "status": "PASS",
+      "project": "s03vcf75f5703bcb",
+      "git_base": "b8c30ae7bac22db03bc2d11ed27e4862b390571a",
+      "worker_image_ids": {
+        "worker": "sha256:6648373423ef6eb8f0989e304a1a85a5dc1d6b50121ceb54b72e3203a4d4040e",
+        "worker-b": "sha256:6648373423ef6eb8f0989e304a1a85a5dc1d6b50121ceb54b72e3203a4d4040e"
+      },
+      "invocation_source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash_after": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_unchanged": true,
+      "evidence": "F/I",
+      "pytest_passed": 50,
+      "grade_conflict_run": {
+        "run_id": "b2a59f0b-d03b-4c6a-afcb-b88712a00a50",
+        "window_id": 1,
+        "dispatch": "sent"
+      },
+      "http": 1
+    },
+    "capacity": {
+      "case": "capacity",
+      "status": "PASS",
+      "project": "s03vcb65f8dfdcb1",
+      "git_base": "b8c30ae7bac22db03bc2d11ed27e4862b390571a",
+      "worker_image_ids": {
+        "worker": "sha256:4b8b664e595be475702cc786761eb0ccebd6e80dafafe7a36fe437cbacd1ed47",
+        "worker-b": "sha256:4b8b664e595be475702cc786761eb0ccebd6e80dafafe7a36fe437cbacd1ed47"
+      },
+      "invocation_source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash_after": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_unchanged": true,
+      "evidence": "F/I",
+      "exact_api_reads": 14,
+      "cold_disposal_seconds": 9.72,
+      "retained_reservations": 0,
+      "run_id": "3941a411-490a-4fcd-b160-cc890664ebfa",
+      "window": 1,
+      "payload_bytes": 1288805,
+      "http": 1,
+      "coverage": [
+        11207,
+        11207,
+        11207
+      ],
+      "blocks": 88,
+      "wall_seconds": 213.62,
+      "worker_cgroup_peak_bytes": {
+        "worker": 123473920,
+        "worker-b": 233877504
+      },
+      "postgres": {
+        "calls": 393943,
+        "directory_calls": 60946
+      },
+      "fence_updates": 92,
+      "max_tx_seconds": 6.445249,
+      "max_renewal_seconds": 6.747902
+    },
+    "partial": {
+      "case": "partial",
+      "status": "PASS",
+      "project": "s03v356f87b2ef35",
+      "git_base": "b8c30ae7bac22db03bc2d11ed27e4862b390571a",
+      "worker_image_ids": {
+        "worker": "sha256:d52f77fed437b609454549c4e51cfeef285ee18d21cf9c1923dc40a5696c2c54",
+        "worker-b": "sha256:d52f77fed437b609454549c4e51cfeef285ee18d21cf9c1923dc40a5696c2c54"
+      },
+      "invocation_source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash_after": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_unchanged": true,
+      "evidence": "F/I",
+      "exact_api_reads": 1,
+      "run_id": "ccd8aad2-77c3-4a4f-8c53-1e0d02c5dfcf",
+      "window": 1,
+      "payload_bytes": 1288805,
+      "http": 1,
+      "coverage": [
+        null,
+        1,
+        1
+      ],
+      "blocks": 1,
+      "wall_seconds": 1.39,
+      "worker_cgroup_peak_bytes": {
+        "worker": 157413376,
+        "worker-b": 122359808
+      },
+      "postgres": {
+        "calls": 344,
+        "directory_calls": 40
+      },
+      "fence_updates": 5,
+      "max_tx_seconds": 0.066103,
+      "max_renewal_seconds": 0.170419
+    },
+    "chain": {
+      "case": "chain",
+      "status": "PASS",
+      "project": "s03v0639562fc11f",
+      "git_base": "b8c30ae7bac22db03bc2d11ed27e4862b390571a",
+      "worker_image_ids": {
+        "worker": "sha256:2f6d521742347136f713a21ed276e569f379214d68da511ae3730843b892a207",
+        "worker-b": "sha256:2f6d521742347136f713a21ed276e569f379214d68da511ae3730843b892a207"
+      },
+      "invocation_source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash_after": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_unchanged": true,
+      "evidence": "F/I",
+      "products": {
+        "A03": [
+          {
+            "run_id": "7a9881b4-c9e4-4857-b32d-15438e1c901c",
+            "window_id": 1
+          },
+          5
+        ],
+        "A01": [
+          {
+            "run_id": "9cc07924-c8e7-4778-8d40-c414cb99470b",
+            "window_id": 2,
+            "dispatch": "sent"
+          },
+          6
+        ],
+        "A04": [
+          {
+            "run_id": "2035af52-cbed-4339-949a-fc1a99683ad2",
+            "window_id": 3,
+            "dispatch": "sent"
+          },
+          7
+        ],
+        "A05": [
+          {
+            "run_id": "e298faf7-9f08-48f3-8c01-079564055d9e",
+            "window_id": 4,
+            "dispatch": "sent"
+          },
+          8
+        ],
+        "A07": [
+          {
+            "run_id": "80aff33f-841c-40bf-abc3-30bcd61c5eca",
+            "window_id": 5,
+            "dispatch": "sent"
+          },
+          9
+        ],
+        "A10": [
+          {
+            "run_id": "b549f806-a877-4bfc-aed5-37030f663235",
+            "window_id": 5,
+            "dispatch": "sent"
+          },
+          9
+        ]
+      },
+      "observed_at": "2026-11-22T06:00:00+00:00",
+      "http": 6,
+      "cold_read": true
+    },
+    "quota": {
+      "case": "quota",
+      "status": "PASS",
+      "project": "s03vd5eddac48580",
+      "git_base": "b8c30ae7bac22db03bc2d11ed27e4862b390571a",
+      "worker_image_ids": {
+        "worker": "sha256:61b3753851b4ff1022c2c6613754795d713feb47a812907947f97014952ff1ac",
+        "worker-b": "sha256:61b3753851b4ff1022c2c6613754795d713feb47a812907947f97014952ff1ac"
+      },
+      "invocation_source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash_after": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_unchanged": true,
+      "evidence": "F/I",
+      "run": "4100cad4-14ae-4cf2-8843-56d57a640d90",
+      "successor": "68b2c664-45b2-423d-a79c-bad269fffbc1",
+      "new_uuid": "cbc712bc-956f-4ce5-a157-2fd7e75f1685",
+      "http": 1,
+      "reservations": 1,
+      "rolling_period_seconds": 5,
+      "old_uuid_completions": 2,
+      "validation_grant": 21
+    }
+  },
+  "privacy_and_quality": {
+    "project": "s03v2591b79fe28d",
+    "source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+    "probe_hash": "14273aa25f0094e3935592ce367e1c1b347b4e1bd12e99e3b2c2b9a96c99236a",
+    "status": "PASS",
+    "evidence": "F/I",
+    "station_run": "3b8d0e20-8832-482f-978d-5ba141a86fc6",
+    "empty_fill": "79325c66-3c10-4c22-bbcc-a294133f3413",
+    "empty_coverage": [
+      2,
+      1,
+      1
+    ],
+    "quality_run": "0e0b8986-e814-421b-ba09-d7571350dd87",
+    "conflict_run": "8580bcf4-5961-41ae-8122-077fd00cf6f2",
+    "quality_coverage": [
+      2,
+      2,
+      0
+    ],
+    "pg_matches": 0,
+    "broker_keys": 9,
+    "broker_matches": 0,
+    "log_matches": 0,
+    "receipt_file_matches": 0
+  },
+  "pytest": {
+    "command": "python -m pytest -q tests",
+    "passed": 311,
+    "seconds": 174.67,
+    "log_sha256": "c93d1e9e99835c7173c94ab5e58418884966203522efd39b5917761cef4ff292"
+  },
+  "static": {
+    "ruff": "PASS",
+    "ruff_format": "PASS",
+    "mypy_configured_files": 3,
+    "django_check": "PASS",
+    "makemigrations_check": "PASS",
+    "compose_worker_only_egress_config": "PASS",
+    "mypy": "PASS",
+    "uv_lock_check": "PASS",
+    "ruff_formatted_files": 121,
+    "compose_cnemc_sha256": "93b3094616908595df050726f77bf8056d4a13e39b7bf300904b4f264cd469eb"
+  },
+  "real_requests": 0,
+  "real_source": {
+    "limited_A03": "NOT RUN",
+    "http_requests": 0,
+    "three_regions_two_cycles": "NOT RUN",
+    "natural_168_hours": "NOT RUN",
+    "T11": "NO-GO"
+  },
+  "s03": {
+    "command": "python3.13 scripts/verify_s03.py",
+    "scope": "F/I",
+    "project": "s03v8a6e96ef4040",
+    "status": "PASS",
+    "matrix": {
+      "V01": "PASS",
+      "V02": "PASS",
+      "V03": "PASS",
+      "V04": "PASS",
+      "V05": "PASS",
+      "V06": "PASS",
+      "V07": "PASS",
+      "V08": "PASS",
+      "V09": "PASS",
+      "V10": "PASS",
+      "V11": "PASS",
+      "V12": "PASS",
+      "V13": "PASS",
+      "V14": "PASS",
+      "V15": "PASS",
+      "V16": "PASS",
+      "V17": "PASS",
+      "V18": "PASS",
+      "V19": "PASS",
+      "V20": "NOT RUN"
+    },
+    "completed_utc": "2026-11-22T06:36:27.486535+00:00",
+    "source_hash_before": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+    "source_hash_after": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+    "result_sha256": "6d5c88f700bfb4a53b8831d304cbb1bf694445022f79ea9a1a1015c7150158b7",
+    "checks_sha256": "158430ec7876e43f1fbce81511a5bf420223a4bcbe8c12bc75d8007fb71ab341",
+    "checks": 197,
+    "owned_resources_removed": true,
+    "git_base": "b8c30ae7bac22db03bc2d11ed27e4862b390571a",
+    "product_project": {
+      "project": "s03vb71ae3d99c90",
+      "status": "PASS",
+      "matrix": {
+        "V02": "PASS",
+        "V04": "PASS",
+        "V05": "PASS",
+        "V06": "PASS",
+        "V13": "PASS",
+        "V17": "PASS"
+      },
+      "completed_utc": "2026-11-22T06:36:17.997803+00:00",
+      "source_hash_before": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "source_hash_after": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+      "result_sha256": "564b83abd2c272436ab984bc39bff031f2d1b76f5fa5a203e80e86fa0c0b398f",
+      "checks_sha256": "4b3daa62b1d36e7051d1211d306c9df7fc55810981d9a4f4bf09f228511d9cb5",
+      "checks": 173,
+      "owned_resources_removed": true
+    },
+    "V20": "NOT RUN: the separate real H runner requires an operator-supplied authorized UCI archive."
+  },
+  "registration_cli": {
+    "status": "PASS",
+    "evidence": "F",
+    "migrations": "fresh PG",
+    "namespace": "cnemc.fixture",
+    "registrations": 2,
+    "distinct_jobs": 1,
+    "enabled": false,
+    "duplicate_manifest_keys": "invalid_manifest",
+    "verification_mode": "off",
+    "verification_refusal": "limited_mode_required",
+    "new_runs": 0,
+    "owned_database_removed": true
+  },
+  "window_boundaries": {
+    "project": "s03ve0c6422e2755",
+    "git_base": "b8c30ae7bac22db03bc2d11ed27e4862b390571a",
+    "source_hash": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4",
+    "probe_hash": "4717ac1ebdeda0db67b015ee7fb368addbffda39908b95f07823abd705974ded",
+    "evidence": "F/I",
+    "status": "PASS",
+    "worker_image_ids": {
+      "worker": "sha256:13f807a6e666b412baa3b674ec6b97a80069ac35407b197658a6165a4920604b",
+      "worker-b": "sha256:13f807a6e666b412baa3b674ec6b97a80069ac35407b197658a6165a4920604b"
+    },
+    "equivalent_jobs": {
+      "jobs": [
+        2,
+        3
+      ],
+      "runs": [
+        "a6c0d5cf-c837-4d1c-babf-c871fc1a626e",
+        "46f037fa-9507-4db8-9b21-204c0282b11c"
+      ],
+      "window": 2,
+      "product": 6,
+      "coverage": [
+        null,
+        1,
+        1
+      ],
+      "accepted": 1,
+      "http": 1,
+      "reservations": 1
+    },
+    "exact_refusals": {
+      "job": 4,
+      "anchor": "2026-11-22T06:00:00+00:00",
+      "lookback_hours": 2,
+      "operating_from": "2026-11-19T06:00:00+00:00",
+      "outside_target": "2026-11-22T03:00:00+00:00",
+      "outside_run": "bec7fe7b-733f-452f-807d-a24305dd8ba3",
+      "outside_reason": "backfill_unavailable",
+      "in_range_target": "2026-11-22T05:00:00+00:00",
+      "endpoints": [
+        "A07"
+      ],
+      "denied_status": 403,
+      "denied_reason": "use_denied",
+      "http_deltas": [
+        0,
+        0
+      ],
+      "reservation_deltas": [
+        0,
+        0
+      ]
+    },
+    "trend": {
+      "product": 5,
+      "city": 201,
+      "hours": [
+        "2026-11-22T06:00:00+00:00",
+        "2026-11-22T07:00:00+00:00"
+      ],
+      "hole": "2026-11-22T04:00:00+00:00",
+      "runs": [
+        "0f2d71c8-0bc6-4a05-bf09-d888856528e9",
+        "a1588246-54e0-4be8-be53-277cbb168139"
+      ],
+      "windows": [
+        1,
+        4
+      ],
+      "coverage": [
+        [
+          24,
+          23,
+          23
+        ],
+        [
+          24,
+          24,
+          24
+        ]
+      ],
+      "before_reason": "no_observation_at_time",
+      "after_value": 51,
+      "revision_id": 24,
+      "receipts_by_run": [
+        0,
+        1
+      ],
+      "keys": 25,
+      "http": 2
+    },
+    "source_hash_after": "15d62d2248e125fd22ac045ac1438e7aa2b72b6a2592cb13e822c93bbeec5ef4"
+  }
+}

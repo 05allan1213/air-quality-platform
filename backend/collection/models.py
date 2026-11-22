@@ -6,7 +6,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
-from observations.models import Batch, City, Product, text
+from observations.models import Batch, City, Product, UseGrant, text
 
 USER = settings.AUTH_USER_MODEL
 
@@ -18,6 +18,14 @@ class Job(models.Model):
     profile = text(32)
     expected_codes = models.JSONField(null=True)
     roster_basis = text(blank=True)
+    selection = models.JSONField(default=dict, blank=True)
+    standard = models.JSONField(default=dict, blank=True)
+    backfill_policy = models.JSONField(default=dict, blank=True)
+    backfill_cursor = models.DateTimeField(null=True)
+    validation_grant = models.ForeignKey(
+        UseGrant, null=True, on_delete=models.PROTECT, related_name="+"
+    )
+    disposed = models.BooleanField(default=False)
     cadence_seconds = models.PositiveIntegerField(default=3600)
     next_due_at = models.DateTimeField(null=True, db_index=True)
     enabled = models.BooleanField(default=False)
@@ -27,7 +35,22 @@ class Job(models.Model):
 
     class Meta:
         constraints = [
-            models.CheckConstraint(condition=Q(cadence_seconds__gte=1), name="s03_positive_cadence")
+            models.CheckConstraint(
+                condition=Q(cadence_seconds__gte=1), name="s03_positive_cadence"
+            ),
+            models.CheckConstraint(
+                condition=Q(disposed=False)
+                | Q(
+                    enabled=False,
+                    next_due_at=None,
+                    expected_codes=None,
+                    selection={},
+                    roster_basis="",
+                    standard={},
+                    backfill_policy={},
+                ),
+                name="cnemc_disposed_job_empty",
+            ),
         ]
 
 
@@ -40,6 +63,8 @@ class WorkWindow(models.Model):
     # An independently registered catalogue snapshot, never inferred from a response.
     expected = models.JSONField(null=True)
     roster_basis = text(blank=True)
+    selection = models.JSONField(default=dict, blank=True)
+    standard = models.JSONField(default=dict, blank=True)
     generation = models.PositiveBigIntegerField(default=0)
     owner = models.UUIDField(null=True)
     lease_until = models.DateTimeField(null=True, db_index=True)
@@ -89,6 +114,10 @@ class Run(models.Model):
     finished_at = models.DateTimeField(null=True)
     owner = models.UUIDField(null=True)
     generation = models.PositiveBigIntegerField(default=0)
+    endpoint = text(4, blank=True)
+    validation_grant = models.ForeignKey(
+        UseGrant, null=True, on_delete=models.PROTECT, related_name="+"
+    )
     request_state = text(16, default="unsent")
     reserved_at = models.DateTimeField(null=True, db_index=True)
     occupied_until = models.DateTimeField(null=True)
@@ -127,7 +156,17 @@ class Run(models.Model):
             ),
             models.CheckConstraint(
                 condition=Q(request_state="unsent", reserved_at=None)
-                | Q(request_state__in=["possible", "responded"], reserved_at__isnull=False),
+                | Q(request_state__in=["possible", "responded"], reserved_at__isnull=False)
+                | (
+                    Q(
+                        request_state="disposed",
+                        validation_grant=None,
+                        reserved_at=None,
+                        occupied_until=None,
+                    )
+                    & ~Q(endpoint="")
+                    & ~Q(status__in=["pending", "running"])
+                ),
                 name="s03_request_budget",
             ),
         ]
@@ -170,4 +209,7 @@ class ControlEvent(models.Model):
     actor = models.ForeignKey(USER, on_delete=models.PROTECT)
     action = text(24)
     occurred_at = models.DateTimeField(default=timezone.now)
+    # Half-open cadence range skipped after a long outage; no response or object identities.
+    slot_start = models.DateTimeField(null=True)
+    slot_end = models.DateTimeField(null=True)
     run = models.ForeignKey(Run, null=True, on_delete=models.PROTECT)

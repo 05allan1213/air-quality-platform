@@ -1,4 +1,4 @@
-"""One bounded, non-following HTTP attempt against the fixture origin."""
+"""One bounded, non-following HTTP attempt against a registered origin."""
 
 import asyncio
 import logging
@@ -88,7 +88,7 @@ def _tls_failure(exc):
     return False
 
 
-async def _fetch(contract, params, headers):
+async def _fetch(contract, origin, params, content, headers):
     received_headers = False
     transport = httpx.AsyncHTTPTransport(retries=0, verify=True, trust_env=False)
     try:
@@ -103,9 +103,9 @@ async def _fetch(contract, params, headers):
             ) as client,
             client.stream(
                 contract.method,
-                ORIGIN + contract.path,
+                origin + contract.path,
                 params=params,
-                content=b"",
+                content=content,
                 headers=headers,
             ) as response,
         ):
@@ -157,8 +157,12 @@ def fetch(shape, city_code, city_name, target, profile):
         if label.minute or label.second or label.microsecond:
             raise WireError("invalid_target")
         headers["X-S03-Target"] = label.isoformat()
+    return request(contract, ORIGIN, params, b"", headers)
+
+
+def request(contract, origin, params, content, headers):
     # HTTPX logs URLs and reason phrases, and httpcore can log response headers.
     # Collection diagnostics use fixed WireError codes instead.
     for name in ("httpx", "httpcore"):
         logging.getLogger(name).setLevel(logging.CRITICAL + 1)
-    return asyncio.run(_fetch(contract, params, headers))
+    return asyncio.run(_fetch(contract, origin, params, content, headers))

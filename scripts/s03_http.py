@@ -13,6 +13,17 @@ PATHS = {
     "/HourChangesPublish/GetCityRealTimeAqiHistoryByCondition": ("POST", "T", "citycode"),
     "/synthetic-redirect-target": ("GET", "redirect", None),
 }
+CNEMC_PATHS = {
+    **dict(zip(tuple(PATHS)[:4], ("A01", "A03", "A04", "A05"), strict=True)),
+    "/HourChangesPublish/GetAllAQIPublishLive": "A07",
+    "/HourChangesPublish/GetAQIHistoryByConditionHis": "A10",
+}
+PATHS.update(
+    {
+        "/HourChangesPublish/GetAllAQIPublishLive": ("POST", "A07", None),
+        "/HourChangesPublish/GetAQIHistoryByConditionHis": ("POST", "A10", None),
+    }
+)
 STATE = threading.Condition()
 SCRIPT = {}
 EVENTS = []
@@ -61,7 +72,7 @@ class Handler(BaseHTTPRequestHandler):
             return True
         if self.command == "POST" and path in {"/_script", "/_release"}:
             count = int(self.headers.get("Content-Length", 0))
-            if not 0 < count <= 2**20:
+            if not 0 < count <= 8 * 2**20:
                 self.json({}, 400)
                 return True
             payload = json.loads(self.rfile.read(count))
@@ -84,13 +95,28 @@ class Handler(BaseHTTPRequestHandler):
             return
         method, shape, query_key = PATHS[url.path]
         params = parse_qs(url.query, keep_blank_values=True)
+        length = int(self.headers.get("Content-Length", "0"))
+        form = {}
+        if shape == "A10" and 0 < length <= 128:
+            form = parse_qs(self.rfile.read(length).decode("ascii"), keep_blank_values=True)
         valid = (
             self.command == method
             and set(params) == ({query_key} if query_key else set())
             and all(len(v) == 1 and v[0] for v in params.values())
-            and self.headers.get("Content-Length", "0") == "0"
+            and (
+                self.headers.get("Content-Type") == "application/x-www-form-urlencoded"
+                and set(form) == {"date"}
+                and len(form["date"]) == 1
+                and bool(form["date"][0])
+                if shape == "A10"
+                else length == 0
+            )
         )
         with STATE:
+            if "X-S03-Target" not in self.headers and (endpoint := CNEMC_PATHS.get(url.path)):
+                # S03 latest retains its discriminator when no CNEMC event is scripted.
+                if shape == endpoint or endpoint in SCRIPT:
+                    shape = endpoint
             queue = SCRIPT.get(shape) or []
             script = queue.pop(0) if queue else {"status": 503}
             status = script.get("status", 200) if valid else 400
@@ -104,7 +130,9 @@ class Handler(BaseHTTPRequestHandler):
                     "window": self.headers.get("X-S03-Target"),
                     "status": status,
                     "gate": script.get("gate"),
-                    "empty_body": self.headers.get("Content-Length", "0") == "0",
+                    "empty_body": length == 0,
+                    "form": form,
+                    "encoding": self.headers.get("Accept-Encoding"),
                 }
             )
             if valid and (gate := script.get("gate")):
