@@ -103,3 +103,12 @@ CELERY_TASK_ROUTES = {
     "observations.import_history": {"queue": "s02.history"},
     "observations.dispose": {"queue": "s02.history"},
 }
+
+# Worker startup also runs dispose_due; this bounded sweep covers idle ticket expiry.
+CELERY_BEAT_SCHEDULE = {
+    "s05.expired-private-metadata": {
+        "task": "observations.expire_research",
+        "schedule": 60.0,
+        "options": {"queue": "s02.history"},
+    }
+}

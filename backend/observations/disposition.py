@@ -37,6 +37,7 @@ from .policy import (
     clock,
     locked_catalog_product,
 )
+from .research_disposition import cleanup_expired, reconcile_private
 from .revisions import key_scope, tables
 
 PACKAGE_SCOPE = Scope("beijing", "*", "*", date(2013, 3, 1), date(2017, 3, 1))
@@ -264,6 +265,8 @@ def reconcile_catalog(product, siblings, now):
                 product=sibling, kind="disposition", rights_version=sibling.rights_version
             )
 
+    reconcile_private(*siblings, now=now, lost_cities=lost_cities, lost_epochs=lost_epochs)
+
     StationIdentifier.objects.filter(pk__in=lost_station_ids).delete()
     SiteEpoch.objects.filter(pk__in=lost_epochs).delete()
     Station.objects.filter(pk__in={s.pk for s in stations} - keep_stations).delete()
@@ -286,6 +289,7 @@ def reconcile_product(product_id):
             reconcile_catalog(product, siblings, now)
         else:
             reconcile_data(product, grants, now)
+            reconcile_private(product, now=now)
             product.rights_version += 1
             product.save(update_fields=["rights_version"])
             Change.objects.create(
@@ -305,6 +309,8 @@ def reconcile_product(product_id):
 
 
 def dispose_due(product_id=None):
+    if product_id is None:
+        cleanup_expired()
     due = DispositionJob.objects.filter(completed_at=None, due_at__lte=clock())
     if product_id is not None:
         due = due.filter(product_id=product_id)

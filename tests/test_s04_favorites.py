@@ -297,13 +297,15 @@ def test_favorite_migration_preserves_existing_session_observations_and_window(s
     rollback = [("accounts", None)]
     executor = MigrationExecutor(connection)
     leaves = executor.loader.graph.leaf_nodes()
+    # The current registrar reconciles S05 private tables. Seed the grants before
+    # rolling back, then exercise the original observation, window and Session writes.
+    product = create_product("favorite-migration")
+    site = create_site(product)
+    allow(operator, product)
+    allow(operator, product, "display")
+    allow(operator, product, "process_local")
     try:
         executor.migrate(rollback)
-        product = create_product("favorite-migration")
-        site = create_site(product)
-        allow(operator, product)
-        allow(operator, product, "display")
-        allow(operator, product, "process_local")
         ingest_fixture(operator.pk, product.pk, "favorites-migration", "F", [candidate(product)])
         job = Job.objects.create(product=product, executor=operator, profile="s04-upgrade")
         window = WorkWindow.objects.create(

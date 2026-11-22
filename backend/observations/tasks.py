@@ -20,3 +20,10 @@ def process_history(attempt_id):
 def dispose(product_id=None):
     dispose_due(product_id)
     logger.info("disposition_end product=%s", product_id)
+
+
+@shared_task(name="observations.expire_research", ignore_result=True)
+def expire_research():
+    from .research_disposition import cleanup_expired
+
+    cleanup_expired()

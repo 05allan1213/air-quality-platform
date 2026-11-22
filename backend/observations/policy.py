@@ -329,6 +329,9 @@ def register_grant(actor_id, product_id, **terms):
     grant.save()
     bump(product, "grant_registered")
     now = clock()
+    from .research_disposition import reconcile_private
+
+    reconcile_private(product, now=now, change=grant)
     for cutoff in {
         grant.valid_until,
         grant.retain_until,
@@ -353,5 +356,8 @@ def revoke_grant(actor_id, grant_id, reason):
         grant.revoked_at, grant.revoked_by, grant.revoke_reason = clock(), user, reason
         grant.save(update_fields=["revoked_at", "revoked_by", "revoke_reason"])
         bump(product, "grant_revoked")
+        from .research_disposition import reconcile_private
+
+        reconcile_private(product, now=grant.revoked_at, change=grant)
         schedule(product, grant.revoked_at, "revocation")
     return product.pk
