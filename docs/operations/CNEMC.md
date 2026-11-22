@@ -69,28 +69,34 @@ python3.13 .tasks/cnemc-integration/evidence/window_boundaries.py
 
 ### 验收项目与出口
 
-使用独立项目 `cnemc-a03-once`，其 PG 卷、Redis 队列和单并发 Worker 仅供本次验收。先核对项目归属和存量预留，重启和回读沿用同一 PG 卷。`A03_ENV_FILE` 指向操作者的私有环境文件，按 `.env.example` 填本地秘密及可用的回环 `WEB_PORT`。正式出口名称写入该文件的 `CNEMC_EGRESS_NETWORK`。
+CNEMC 覆盖文件的默认项目名为 `cnemc-dedicated`。首次 A03 使用独立项目 `cnemc-a03-once`。`CNEMC_EGRESS_NETWORK` 的实际值为 `cnemc-a03-once_cnemc-egress`，由 Compose 按项目名创建。私有环境文件只需按 `.env.example` 填本地秘密及可用的回环 `WEB_PORT`，旧文件中的出口名称会被忽略。保持验收项目独享 PG 卷和 Redis 队列，重启和回读沿用原卷。
 
-网络管理员需确认出口对业务流量仅放行 `air.cnemc.cn` 的 TCP 18007，并允许 Worker 经获准的 DNS 解析器查询该域名。`external: true` 只引用 Docker 网络，目的地址与端口过滤由实际出口执行。HTTPX 直连并验证服务端证书链和主机名，`trust_env=False` 同时用于客户端与传输层。若组织要求显式代理，当前传输须等待获准的兼容出口。首次对目标的 DNS、TCP、TLS 和 HTTP 访问随获准的一次业务请求进行。
+| 网络路径 | 实际规则 |
+|---|---|
+| 默认 `worker`、PG、Redis | 只接 `backend`。验收项目中默认 Worker 副本为 0，专用 Worker 独占该项目的采集队列。 |
+| `worker-cnemc` → `cnemc-gateway` | Worker 的两张网 `backend`、`cnemc-egress` 都是 IPv4 内网，使用 `isolated` bridge 模式。Worker 没有默认路由。Docker 仅向这个 Worker 提供 `air.cnemc.cn` 的网关别名，数据库和 Redis 名称仍由 Docker 解析。 |
+| `cnemc-gateway` → 源服务 | HAProxy 仅监听私网地址 TCP 18007。收到 SNI 为 `air.cnemc.cn` 的 TLS ClientHello 后，才用 Docker DNS 查询固定上游 `air.cnemc.cn`，从 `cnemc-uplink` 走宿主既有 IPv4 出口到 TCP 18007。错误或缺失 SNI、明文、解析失败均拒绝。网关无宿主发布端口，关闭 IP 转发。 |
+| TLS 与 HTTP | 网关透传 TLS。Worker 的 HTTPX 使用原有证书链和主机名校验，客户端和传输层均为 `trust_env=False`。URL、路径与请求预算仍由原采集契约控制。 |
 
-在仓库根目录使用下列两套命令。`base` 用于离线登记。`once` 复用已有出网覆盖，并锁定 `limited`、Beat 副本数 0。独立项目名对两者相同。
+运行 `python3.13 scripts/verify_cnemc_egress.py` 可复验。脚本新建一次性项目，把网关的上游 DNS 指向自有应答器，TLS 服务经 WSL 的另一张 Docker bridge 地址发布。证书只在测试进程内受信。测试项目和卷自动回收。真实目标的公网解析、TCP、证书和 HTTP 结果留到获准的首次请求。[网关规则](../../docker/cnemc-egress.cfg)
+
+离线登记、联网和停用共用同一份网络定义，切换时保留 `backend` 和 PG 卷。`base` 使用 `off`，`once` 固定 `limited` 并将 Beat 副本设为 0。以下命令均在仓库根目录执行。
 
 ```sh
-base() { docker compose --env-file "${A03_ENV_FILE:?}" -p cnemc-a03-once -f compose.yaml "$@"; }
-once() (
-  unset CNEMC_EGRESS_NETWORK
-  CNEMC_MODE=limited docker compose --env-file "${A03_ENV_FILE:?}" -p cnemc-a03-once \
-    -f compose.yaml -f compose.cnemc.yaml -f compose.cnemc.once.yaml "$@"
-)
+base() { CNEMC_MODE=off docker compose --env-file "${A03_ENV_FILE:?}" -p cnemc-a03-once \
+  -f compose.yaml -f compose.cnemc.yaml "$@"; }
+once() { CNEMC_MODE=limited docker compose --env-file "${A03_ENV_FILE:?}" -p cnemc-a03-once \
+  -f compose.yaml -f compose.cnemc.yaml -f compose.cnemc.once.yaml "$@"; }
 base config -q
 once config -q
-once config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["networks"]["cnemc-egress"]["name"])'
+CNEMC_EGRESS_NETWORK=$(once config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["networks"]["cnemc-egress"]["name"])')
+printf '%s\n' "$CNEMC_EGRESS_NETWORK"
 ```
 
-将显示的网络名与管理员核准的出站规则对照。许可材料齐备且获准使用此库后，用 `base ps -a` 确认服务归属。在该验收项目停 Worker 和 Beat，再做离线登记。新库先按项目账号流程建立本地活动身份。`ACTOR_ID` 需有 `manage_grants` 和 `manage_collection`，执行身份需有 `run_collection`，暂停和恢复 Job 的账号需有 `manage_collection`。Session 核验账号需有 `run_collection` 和 `review_observation`。
+许可材料齐备且获准使用此库后，用 `base ps -a` 确认服务归属和当前运行状态。只在该验收项目停用采集进程后离线登记。新库先按项目账号流程建立本地活动身份。`ACTOR_ID` 需有 `manage_grants` 和 `manage_collection`，执行身份需有 `run_collection`，暂停和恢复 Job 的账号需有 `manage_collection`。Session 核验账号需有 `run_collection` 和 `review_observation`。
 
 ```sh
-base stop worker beat && base up -d --build web redis
+base stop worker worker-cnemc beat cnemc-gateway && base up -d --build web redis
 base exec -T web python backend/manage.py cnemc_register /dev/stdin \
   --actor "${ACTOR_ID:?}" < "${A03_MANIFEST:?}"
 ```
@@ -98,7 +104,7 @@ base exec -T web python backend/manage.py cnemc_register /dev/stdin \
 核对单一 Job、单城七项、仅 A03、无排期、剩余本轮额度为 1 及实际出口规则。确认 Beat 已停止后才接入出网 Worker。
 
 ```sh
-beat_id=$(base ps --status running -q beat) && [ -z "$beat_id" ] && once up -d web worker
+other=$(base ps --status running -q beat worker) && [ -z "$other" ] && once up -d web worker-cnemc
 ```
 
 启动成功后复核 `once ps`，用管理 Session 对本 Job 执行前述 `resume`。选许可期内的当前整点（带时区），保存本次唯一的 UUID，显式提交一次。Session 密码由终端读取。
@@ -111,10 +117,20 @@ once exec web python backend/manage.py cnemc_verify_once --username USER --job J
 验收命令经同源 Session 查回七项，逐项核 PG 修订、数值、单位与该批回执。记录获准的 Run、Window 和字段数。返回异常或超时也应先暂停 Job、停止专用 Worker，核对原 Run 和额度。使用原卷在基础网络上重建 Web 后可只读复核。按条款保管收据，执行到期和撤权处置。
 
 ```sh
-once stop worker
+once stop worker-cnemc cnemc-gateway
 base up -d --no-deps --force-recreate web
 base exec web python backend/manage.py cnemc_verify_once --username USER --job JOB --read-run RUN_UUID
 ```
+
+### 本机网络验证 · 2026-11-22
+
+| 结果 | 实测证据 |
+|---|---|
+| **PASS · 专用出口** | WSL2 mirrored、Docker Engine 29.9.3、Compose 5.7.0。一次性项目 `egressfcb8416256d96` 的 Worker 从冷缓存发起首次合法握手，经网关访问另一张 bridge 上的自有服务 `172.22.0.1:18007`。HTTPX 0.28.1 校验测试证书和主机名后，以 TLS 1.3 收到 HTTP 200。原采集传输对同一测试证书返回 `transport_security`。 |
+| **PASS · 拒绝路径与停用** | 替身的 18007、18008 都有服务。专用 Worker 直连替身 IP、访问网关 18008 均失败。网关拒绝错误 SNI、缺失 SNI 和明文，上游目标 DNS 与 TCP 计数均为 0。注入 NXDOMAIN 后上游 TCP 计数也未增加。停网关后 Worker 连接失败。 |
+| **PASS · 默认隔离** | 基础 Worker 探针能连 PG/Redis，连不到网关和替身。PG/Redis 仅有内网路由，无宿主映射端口。离线登记、联网、停用三种配置运行在同一 PG/Redis 容器和 backend 网络上。Beat 启动次数为 0。 |
+| **PASS · 实际 WSL 出口** | A03 网关通过 Docker DNS `127.0.0.11` 查询 `example.org` 得到 `198.18.0.136`。同一 A03 uplink 上的一次性诊断容器直连 `registry-1.docker.io:443`（解析为 `198.18.0.137`），完成证书链及主机名验证的 TLS 1.3 握手。仅执行握手，保留宿主既有路由。 |
+| **NOT RUN · CNEMC 公网目标** | 源站 DNS、TCP 18007、证书链和 A03 请求留待获准的首次实源测试。本次实源请求数为 0。A03 的 `cnemc-egress`、`cnemc-uplink` 已创建，网关已停止。 |
 
 ## S04 已有读接口
 

@@ -1,6 +1,7 @@
-# Use only with the operator's pre-existing, destination-filtered Worker egress network.
+# Use a separate Compose project/queue for real-source jobs (see docs/operations/CNEMC.md).
+name: cnemc-dedicated
 x-cnemc-mode: &mode
-  CNEMC_MODE: ${CNEMC_MODE:?choose limited or approved periodic mode}
+  CNEMC_MODE: ${CNEMC_MODE:?choose off, limited or approved periodic mode}
 services:
   web:
     environment: *mode
@@ -9,9 +10,45 @@ services:
   beat:
     environment: *mode
   worker:
+    scale: 0
+  worker-cnemc:
+    extends:
+      file: compose.yaml
+      service: worker
     environment: *mode
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     networks: [backend, cnemc-egress]
+    dns: [127.0.0.1]  # Docker service discovery only. The Worker has no upstream resolver.
+    # A client-scoped Docker DNS alias. The gateway itself resolves the upstream name normally.
+    links: ['cnemc-gateway:air.cnemc.cn']
+    depends_on:
+      cnemc-gateway: {condition: service_healthy}
+  cnemc-gateway:
+    image: haproxy:3.2.27-alpine@sha256:7816a9801a6846b912bc37e48529808e2fa87c3c47992441940f68e393ebcfeb
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    sysctls:
+      net.ipv4.ip_forward: 0
+    volumes:
+      - ./docker/cnemc-egress.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      cnemc-egress: {aliases: [cnemc-worker-listener]}
+      cnemc-uplink: {}
+    healthcheck:
+      # TCP only on the local listener. No ClientHello or upstream lookup/connection.
+      test: [CMD, nc, -z, -w, '1', cnemc-worker-listener, '18007']
+      interval: 5s
+      timeout: 2s
+      retries: 3
 networks:
+  backend:
+    enable_ipv6: false
+    driver_opts: &isolated
+      com.docker.network.bridge.gateway_mode_ipv4: isolated
   cnemc-egress:
-    external: true
-    name: ${CNEMC_EGRESS_NETWORK:?provide the controlled Worker egress network name}
+    enable_ipv6: false
+    internal: true
+    driver_opts: *isolated
+  cnemc-uplink: {enable_ipv6: false}

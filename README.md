@@ -184,7 +184,7 @@ python3.13 scripts/verify_s03.py --case V10       # 分块回滚、重新取得�
 
 默认 Compose 的 Worker 监听 `s01.fixture,s02.history,s03.collection`。排期、运行预算及完成事实在 PostgreSQL 中。空库的在线 Job 数为 0。原 S03 的四种 F 契约使用 `s03.fixture` 命名空间。`f-exact-v1` 的模拟来源能按原标签取数，`f-latest-v1` 仅能取当前包。真实来源的许可、回溯能力与联网验收单列在[验证报告](docs/verification/S03.md)。
 
-CNEMC 接入使用同一 Worker 和 PostgreSQL 账本。运行 `python3.13 scripts/verify_cnemc.py`，可用内网合成来源验证 L、C、按城 S、全国 S 和 T。正式访问默认关闭，实源登记、限定验证与 S04 精确读取参数见[操作说明](docs/operations/CNEMC.md)。
+CNEMC 接入复用采集 Worker 实现和 PostgreSQL 账本。首次实源 A03 使用独立验收项目和专用 TLS 出口。运行 `python3.13 scripts/verify_cnemc.py`，可用内网合成来源验证 L、C、按城 S、全国 S 和 T。正式访问默认关闭，实源登记、限定验证与 S04 精确读取参数见[操作说明](docs/operations/CNEMC.md)。
 
 ### 产品及时间
 
