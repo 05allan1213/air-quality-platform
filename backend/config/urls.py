@@ -1,3 +1,4 @@
+from accounts.profile import profile
 from collection import views as collection_views
 from django.db import DatabaseError, connection
 from django.http import JsonResponse
@@ -33,6 +34,7 @@ urlpatterns = [
     path("api/v1/observations/query/", read_view(read_detail)),
     path("api/v1/observations/current/", observation_views.observations),
     path("api/v1/admin/observation-evidence/", observation_views.evidence),
+    path("api/v1/me/", profile),
     path("api/v1/auth/", include("accounts.urls")),
     path("api/v1/admin/fixture-runs/", sample_views.fixture_runs),
     path("api/v1/fixtures/observations/", sample_views.observations),
