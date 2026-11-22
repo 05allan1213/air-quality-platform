@@ -70,3 +70,10 @@ Last checkpoint: 2026-11-22
 - Findings: F-CNEMC-R01 fixed，F-CNEMC-R02 fixed，F-CNEMC-R03 fixed，F-CNEMC-R04 fixed，F-CNEMC-R05 fixed，F-CNEMC-R06 fixed，F-CNEMC-R07 fixed，F-CNEMC-R08 fixed，F-CNEMC-R09 fixed。
 - Follow-up verification: 前六项的冻结测试、代码和原始收据已复核。最终补证项目 `s03ve0c6422e2755` 核实 A10 零预留拒绝、T 相邻发布窗精确回读、两个等价 Job 一次实际获取。
 - Uncovered: 真实 CNEMC 单次、三地区跨期、168 小时、独立 H 档案 V20 和可选第 7 步。
+
+## Git 检查点
+
+- 基线 `main@b8c30ae7bac22db03bc2d11ed27e4862b390571a`，启动时 index 为空。
+- 本地交付提交 `6395e3940b6c73f0c6fa06c7f1600eb73bfaa075`，`feat(collection): integrate governed CNEMC hourly acquisition into S03`。精确暂存 46 个任务文件，包含实现、迁移、测试、验收和独立审查记录。
+- 验证提交父节点为基线，树为 `ee49d4f49b8582649472602caf66503959f0f039`。提交前后补丁逐字节相同，SHA-256 为 `1da1cbc57261600f460f2ee6adde540ff6899194c7b1646dec67a453b2793ac9`。index 中受检源码与运行快照指纹一致。
+- 功能提交后的 index 与已跟踪文件均干净。启动时的四份未跟踪计划、端点映射、审查及工程核查文件保留原状。收尾检查点单独提交本记录。Push 未执行。
