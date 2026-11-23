@@ -1,0 +1,71 @@
+{
+  "dataset": {
+    "repository": "UCI Machine Learning Repository",
+    "id": 501,
+    "doi": "10.24432/C5RK5G",
+    "title": "Beijing Multi-Site Air Quality",
+    "creator": "Song Chen",
+    "publication_year": 2017,
+    "license_label": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+    "license_href_on_dataset": "https://creativecommons.org/licenses/by/4.0/legalcode",
+    "landing_page_archive_href": "/static/public/501/beijing+multi+site+air+quality+data.zip",
+    "scope_in_source": "12 Beijing monitoring sites, hourly, 2013-03-01 through 2017-02-28, 420768 records, NA denotes missing"
+  },
+  "snapshots": [
+    {
+      "kind": "publisher_page",
+      "locator": "https://archive.ics.uci.edu/dataset/501/beijing%2Bmulti%2Bsite%2Bair%2Bquality%2Bdata",
+      "bytes": 105561,
+      "sha256": "0d9f3a9366d58b2e5438317a83c9fd6589cb249dab153331c0760ed5984771a0",
+      "local_completed_utc": "2026-11-23T15:10:20.246458+00:00",
+      "private_file": "tmp/s07-h-supplement/run-RkaWkXwv/uci.html",
+      "http": 200
+    },
+    {
+      "kind": "license_legalcode",
+      "locator": "https://creativecommons.org/licenses/by/4.0/legalcode.en",
+      "bytes": 49582,
+      "sha256": "0145a53ed209ac2d203f1bb3d774415576bad749074ce4bde0336afa074e6276",
+      "local_completed_utc": "2026-11-23T15:10:05.436975+00:00",
+      "private_file": "tmp/s07-h-supplement/run-RkaWkXwv/license.html",
+      "http": 200
+    },
+    {
+      "kind": "doi_registry",
+      "locator": "https://api.datacite.org/dois/10.24432/C5RK5G",
+      "bytes": 3617,
+      "sha256": "db2d1d5f0ed9eaf42258ee97b156b63ee07b8fca75d6c9fa08622847ed99433e",
+      "local_completed_utc": "2026-11-23T15:10:01.459917+00:00",
+      "private_file": "tmp/s07-h-supplement/run-RkaWkXwv/datacite.json",
+      "http": 200
+    },
+    {
+      "kind": "publisher_archive",
+      "locator": "https://archive.ics.uci.edu/static/public/501/beijing%2Bmulti%2Bsite%2Bair%2Bquality%2Bdata.zip",
+      "bytes": 8192212,
+      "sha256": "b04da438b2f331ac0ffd45aebdfec0d20d2367feb5f6948c4b1f7ce1191e33c4",
+      "local_completed_utc": "2026-11-23T15:11:49.683033+00:00",
+      "private_file": "tmp/s07-h-supplement/run-RkaWkXwv/outer.zip",
+      "http": 200
+    },
+    {
+      "kind": "selected_inner_member",
+      "locator": "PRSA2017_Data_20130301-20170228.zip",
+      "bytes": 7959991,
+      "sha256": "d1b9261c54132f04c374f762f1e5e512af19f95c95fd6bfa1e8ac7e927e3b0b8",
+      "local_completed_utc": "2026-11-23T15:12:12.096872+00:00",
+      "private_file": "tmp/s07-h-supplement/run-RkaWkXwv/PRSA2017_Data_20130301-20170228.zip"
+    }
+  ],
+  "comparison": {
+    "historical_receipt": "docs/verification/S05.md (V16)",
+    "pinned_importer": "backend/observations/import_uci.py (ARCHIVE_BYTES, SHA256)",
+    "profile": "uci501-edges-v1",
+    "outer_and_inner_match": true,
+    "datacite_rightsList": []
+  },
+  "old_study_grants_utc": {
+    "from": "2026-11-22T16:06:40.223343Z",
+    "until": "2026-11-22T18:06:40.223343Z"
+  }
+}

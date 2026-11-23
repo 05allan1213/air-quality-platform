@@ -1,0 +1,1012 @@
+{
+  "input": "H",
+  "profile": "uci501-edges-v1",
+  "source_record": {
+    "path": "docs/verification/S07_H/source.json",
+    "sha256": "e648b750dd4e3f5e7e0f0ab167e4e6705a581131d0f06f122c99c93091a38643"
+  },
+  "previous_delivery": {
+    "path": "tmp/s07-handoff/1ddb3ed3bf15-xb5pscgj/S07.zip",
+    "sha256": "d9c2de122bda5751070708846852ad08256877b080ad7a2906e14c7e88763075",
+    "commit": "1ddb3ed3bf15c48da79f9547071583633f4cfd64",
+    "historical_index": {
+      "path": "docs/verification/S07_evidence.json",
+      "sha256": "26b0de6ba9b4e761e1dcb5feb7e6169172adeaa9dfd7eb52eb357e2f4f056f81"
+    },
+    "T09": {
+      "path": "docs/verification/S07_T09.json",
+      "sha256": "e0c6cec2c699a3f076505fb0f5e903a8123842858215a16c6780f02387641efc"
+    },
+    "L22": {
+      "path": "docs/verification/S07_V04.json",
+      "sha256": "ca9ce0a4560b4bd799942f1bb736f43b50d9002ac7f89d2bb9087c02eff3116e"
+    }
+  },
+  "application_source_sha256": "1258e04db92db956deef816b06cef660cbdefd677aef7994b263cbd24d85f6b8",
+  "previous_runs": [
+    {
+      "path": "tmp/s07-evidence/s07a-35af5eb1863f/h-compose.json",
+      "sha256": "8633c4f90c136140e45e016cf495ca1cc86d853ca83b5463a3ef5dfbb4e29b03",
+      "run": "s07a-35af5eb1863f",
+      "result": "FAIL",
+      "note": "old loopback address after restart"
+    },
+    {
+      "path": "tmp/s07-h-supplement/B-5v38wvyy/result.json",
+      "sha256": "6e84eb17dcc9548ea4c36e2acb1c8ae617eff379b461ac4f84a43e43fbed05e5",
+      "run": "s07-b-6ea975cd83c6",
+      "result": "FAIL",
+      "note": "stale PG connection after restart"
+    },
+    {
+      "path": "tmp/s07-h-supplement/R-s06-d37b08adbba8/restore.json",
+      "sha256": "0c9889b28d79537189e444a73cf32d17052b340e109b6bfecf9f813c26da785c",
+      "run": "s06-d37b08adbba8",
+      "result": "FAIL",
+      "note": "custody message size"
+    },
+    {
+      "path": "tmp/s07-h-supplement/R-s06-719977e9bf45/restore.json",
+      "sha256": "b6ba9de07ae9df4040f2468389dc9e3c8f0c2be10204f1df18b95e84c19c241d",
+      "run": "s06-719977e9bf45",
+      "result": "FAIL",
+      "note": "null filter in disposition check"
+    },
+    {
+      "path": "tmp/s07-h-supplement/R-s06-0d312c2a8e60/restore.json",
+      "sha256": "7dc84ed2eb4b3779375dd74e536eb96654ab3a9dada3f448d528dfad5509f3a4",
+      "run": "s06-0d312c2a8e60",
+      "result": "FAIL",
+      "note": "stage clearance race after worker commit"
+    },
+    {
+      "path": "tmp/s07-evidence/s07a-8c2a2ba7c6dd/h-compose.json",
+      "sha256": "63c349f854316b5427c0e14ece267a8d4dc793827a18a38606e3a0649ca19673",
+      "run": "s07a-8c2a2ba7c6dd",
+      "result": "PASS",
+      "note": "prior successful A before recording replay digests"
+    },
+    {
+      "path": "tmp/s07-h-supplement/B-dx0o5wdb/result.json",
+      "sha256": "630fa36e3c62028e21f01c499a9c0044f513c830f2d831a968b228f4cf54ec65",
+      "run": "s07-b-5970ca3f0d23",
+      "result": "PASS",
+      "note": "prior successful B with earlier shared helper"
+    },
+    {
+      "path": "tmp/s07-h-supplement/B-cynkze4u/result.json",
+      "sha256": "298752082157910c3501adad814f87db2b5fa55bd405f997cd9424d2080af4de",
+      "run": "s07-b-6fed591073a4",
+      "result": "PASS",
+      "note": "prior successful B before per-point cold chart checks"
+    },
+    {
+      "path": "tmp/s07-h-supplement/R-s06-d2b4536e4ecb/restore.json",
+      "sha256": "e1ecc8aceee6e860056087a1ff6f31698c71b04352fade8bd8f85352650ca21c",
+      "run": "s06-d2b4536e4ecb",
+      "result": "PASS",
+      "note": "post-run annotated copy; only the fresh R is used for signoff"
+    }
+  ],
+  "A": {
+    "run": "s07a-b517464d7343",
+    "status": "PASS",
+    "cases": [
+      "V05",
+      "V07",
+      "V11",
+      "V14",
+      "T10"
+    ],
+    "receipts": [
+      {
+        "path": "tmp/s07-evidence/s07a-b517464d7343/h-compose.json",
+        "sha256": "e6c6dd147009dd65e56302eebec081ecfba887650f0d16511d0640a40e7dfa74"
+      },
+      {
+        "path": "tmp/s07-evidence/s07a-b517464d7343/environment.json",
+        "sha256": "9d088425a98f46ffb9d973fd718e7854a1b5e53aa0d227c809841697b1c85b8c"
+      },
+      {
+        "path": "tmp/s07-evidence/s07a-b517464d7343/h-grants.json",
+        "sha256": "8da0c6eaf28f9be9f19f32a3c0a21ff0893e667b30c336b1698bd1aab26048c7"
+      }
+    ],
+    "replay_sha256": {
+      "h_compose.py": "8ff70fd02afa4f491e7fbf80f42be625b1d5d5b44a5726b593cf4724a51db37c",
+      "h_case.py": "3509df4535c9ee474eb4392208427d560af320b71e187d755a89b518805bfa98"
+    },
+    "registration": {
+      "count": 103,
+      "operations": {
+        "acquire_file": 1,
+        "analyze": 24,
+        "display": 24,
+        "process_local": 25,
+        "retain_normalized": 28,
+        "retain_raw": 1
+      },
+      "terms_versions": [
+        "CC BY 4.0 / S07 H supplement v1"
+      ],
+      "first_valid_from": "2026-11-23 15:57:38.616896+00:00",
+      "last_valid_from": "2026-11-23 15:57:41.547347+00:00",
+      "valid_until": "2026-11-23 17:57:38.616709+00:00"
+    },
+    "started_utc": "2026-11-23T15:52:55.930043+00:00",
+    "finished_utc": "2026-11-23T15:58:46.927339+00:00",
+    "import": {
+      "dispatch": "sent",
+      "worker_deliveries": 1,
+      "state": "succeeded",
+      "stage": "cleared"
+    },
+    "navigation": {
+      "catalog_pages": 2,
+      "named_sites": [
+        "Aotizhongxin",
+        "Changping"
+      ],
+      "site_and_history_links": 4,
+      "favorite": 200
+    },
+    "withdrawal": {
+      "display_revoked": {
+        "read": 403,
+        "PG_keys_retained": 48
+      },
+      "retain_revoked": {
+        "read": 403,
+        "PG_keys_after_disposition": 0
+      },
+      "sibling": {
+        "HTTP": 200,
+        "PG_keys": 48
+      },
+      "hidden_equals_absent": true
+    },
+    "all_stopped": {
+      "web": false,
+      "worker": false,
+      "beat": false,
+      "redis": false,
+      "pg": false
+    },
+    "network_before": {
+      "web": {
+        "AF_INET": false,
+        "AF_INET6": false,
+        "proxy_variables": [],
+        "dns_upstream": [
+          "127.0.0.1"
+        ]
+      },
+      "worker": {
+        "AF_INET": false,
+        "AF_INET6": false,
+        "proxy_variables": [],
+        "dns_upstream": [
+          "127.0.0.1"
+        ]
+      },
+      "beat": {
+        "AF_INET": false,
+        "AF_INET6": false,
+        "proxy_variables": [],
+        "dns_upstream": [
+          "127.0.0.1"
+        ]
+      }
+    },
+    "network_after": {
+      "web": {
+        "AF_INET": false,
+        "AF_INET6": false,
+        "proxy_variables": [],
+        "dns_upstream": [
+          "127.0.0.1"
+        ]
+      },
+      "worker": {
+        "AF_INET": false,
+        "AF_INET6": false,
+        "proxy_variables": [],
+        "dns_upstream": [
+          "127.0.0.1"
+        ]
+      },
+      "beat": {
+        "AF_INET": false,
+        "AF_INET6": false,
+        "proxy_variables": [],
+        "dns_upstream": [
+          "127.0.0.1"
+        ]
+      }
+    },
+    "source_access": "0|0",
+    "cleanup": {
+      "containers": [],
+      "networks": [],
+      "volumes": []
+    },
+    "research": {
+      "keys": 1152,
+      "valid": 1130,
+      "missing": 22,
+      "gap": 403,
+      "export_detail": 403,
+      "export_aggregate": 403,
+      "tickets": 0,
+      "comparisons": [
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "PM2.5",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 48,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "PM10",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 48,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "SO2",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 47,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "NO2",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 47,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "CO",
+          "unit": "mg/m³",
+          "E_common": 48,
+          "P": 47,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2013-03-01T00:00:00+08:00",
+          "window_end": "2013-03-03T00:00:00+08:00",
+          "indicator": "O3",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 47,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "PM2.5",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 46,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 46
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "PM10",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 46,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 46
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "SO2",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 44,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 45
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "NO2",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 45,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 45
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 48
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "CO",
+          "unit": "mg/m³",
+          "E_common": 48,
+          "P": 44,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 45
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47
+            }
+          },
+          "csv_pg_http_agree": true
+        },
+        {
+          "window_start": "2017-02-27T00:00:00+08:00",
+          "window_end": "2017-03-01T00:00:00+08:00",
+          "indicator": "O3",
+          "unit": "µg/m³",
+          "E_common": 48,
+          "P": 45,
+          "support_pages": {
+            "paired": 4,
+            "observed": 4,
+            "effective": 4
+          },
+          "stations": {
+            "Aotizhongxin": {
+              "E": 48,
+              "O": 48,
+              "V": 46
+            },
+            "Changping": {
+              "E": 48,
+              "O": 48,
+              "V": 47
+            }
+          },
+          "csv_pg_http_agree": true
+        }
+      ]
+    },
+    "cold": {
+      "new_broker": true,
+      "old_session": 200,
+      "new_session": 200,
+      "same_volume": true,
+      "co": {
+        "window_start": "2013-03-01T00:00:00+08:00",
+        "window_end": "2013-03-03T00:00:00+08:00",
+        "indicator": "CO",
+        "unit": "mg/m³",
+        "E_common": 48,
+        "P": 47,
+        "support_pages": {
+          "paired": 4,
+          "observed": 4,
+          "effective": 4
+        },
+        "stations": {
+          "Aotizhongxin": {
+            "E": 48,
+            "O": 48,
+            "V": 48
+          },
+          "Changping": {
+            "E": 48,
+            "O": 48,
+            "V": 47
+          }
+        },
+        "csv_pg_http_agree": true
+      }
+    }
+  },
+  "B": {
+    "run": "s07-b-2e635f488607",
+    "status": "PASS",
+    "cases": [
+      "V05-H",
+      "V14-H",
+      "T10-H-B"
+    ],
+    "receipts": [
+      {
+        "path": "tmp/s07-h-supplement/B-bw6cwibr/result.json",
+        "sha256": "5cffbb00be9a6b5dcc1f24cbb015200182679fe7495cd004ca30c1a196714112"
+      }
+    ],
+    "replay_sha256": {
+      "h_case.py": "3509df4535c9ee474eb4392208427d560af320b71e187d755a89b518805bfa98",
+      "h_host.py": "3d343461ec952f65bb5a82a89fa34a77e8c55916fb23f4e140c14635599ebaac"
+    },
+    "started_utc": "2026-11-23T16:15:31.119827+00:00",
+    "finished_utc": "2026-11-23T16:16:18.923200+00:00",
+    "cleanup": true,
+    "sandbox_exit": 0,
+    "use_grants": {
+      "count": 103,
+      "terms_version": "CC BY 4.0 / S07 H supplement v1",
+      "first_valid_from": "2026-11-23 16:15:39.246793+00:00",
+      "valid_until": "2026-11-23 18:15:39.246640+00:00",
+      "audiences": [
+        "local_authenticated",
+        "platform"
+      ],
+      "operations": [
+        "acquire_file",
+        "analyze",
+        "display",
+        "process_local",
+        "retain_normalized",
+        "retain_raw"
+      ]
+    },
+    "database_before_cold": {
+      "batches": 1,
+      "station_hours": 192,
+      "keys": 1152,
+      "revisions": 1152,
+      "observed_receipts": 1152,
+      "valid": 1130,
+      "missing": 22,
+      "collection_runs": 0,
+      "source_requests": 0
+    },
+    "database_after_cold": {
+      "batches": 1,
+      "station_hours": 192,
+      "keys": 1152,
+      "revisions": 1152,
+      "observed_receipts": 1152,
+      "valid": 1130,
+      "missing": 22,
+      "collection_runs": 0,
+      "source_requests": 0
+    },
+    "redis_pushes_during_import": 1,
+    "stage_after": {
+      "raw_files": 0,
+      "import_attempts": 1
+    },
+    "all_stopped": {
+      "pg": false,
+      "redis": false,
+      "web": false,
+      "worker": false,
+      "beat": false
+    },
+    "same_session_and_distinct_new_session": true,
+    "same_volume": true,
+    "new_broker": true,
+    "before_after_external_route": [
+      false,
+      false
+    ],
+    "original_and_new_sessions": [
+      "PASS",
+      "PASS"
+    ],
+    "representative_co": {
+      "window_start": "2013-03-01T00:00:00+08:00",
+      "window_end": "2013-03-03T00:00:00+08:00",
+      "indicator": "CO",
+      "unit": "mg/m³",
+      "E_common": 48,
+      "P": 47,
+      "support_pages": {
+        "paired": 4,
+        "observed": 4,
+        "effective": 4
+      },
+      "stations": {
+        "Aotizhongxin": {
+          "E": 48,
+          "O": 48,
+          "V": 48
+        },
+        "Changping": {
+          "E": 48,
+          "O": 48,
+          "V": 47
+        }
+      },
+      "csv_pg_http_agree": true
+    },
+    "cold_charts": {
+      "original_session": {
+        "resolution": "exact",
+        "http": 200,
+        "csv_pg_http_match": true,
+        "stations": {
+          "Aotizhongxin": {
+            "points": 48,
+            "nulls": 0
+          },
+          "Changping": {
+            "points": 48,
+            "nulls": 1
+          }
+        }
+      },
+      "new_session": {
+        "resolution": "exact",
+        "http": 200,
+        "csv_pg_http_match": true,
+        "stations": {
+          "Aotizhongxin": {
+            "points": 48,
+            "nulls": 0
+          },
+          "Changping": {
+            "points": 48,
+            "nulls": 1
+          }
+        }
+      }
+    },
+    "denials": {
+      "ungranted_window": 403,
+      "export_detail": 403,
+      "export_aggregate": 403,
+      "export_tickets": 0
+    }
+  },
+  "R": {
+    "run": "s06-91ab1e38511a",
+    "status": "PASS",
+    "cases": [
+      "V11",
+      "V14 (segment recovery)",
+      "T10"
+    ],
+    "receipts": [
+      {
+        "path": "tmp/s07-h-supplement/R-s06-91ab1e38511a/restore.json",
+        "sha256": "11a4ee96c1c4d724c4ffb03cf637aaf93e5b5c3c6a81c950ae8f322faee1eb46"
+      }
+    ],
+    "replay_sha256": {
+      "h_case.py": "3509df4535c9ee474eb4392208427d560af320b71e187d755a89b518805bfa98",
+      "h_restore.py": "e954573794f8c6b7afcc3cdf5a5d79b05d06ffdac1c1de64df8b87538c0539c1",
+      "h_restore_case.py": "34f6a0fef57d41e76104e0662ec4391a1fc0f19b83759f3a4d448da952956bd0",
+      "h_restore_custody.py": "719b351411455bd57a0970a6afe073a03846192f30240c76987a197201d3b982"
+    },
+    "guard": "PASS",
+    "network": "none",
+    "child_exit": 0,
+    "restore_target": {
+      "databases": 2,
+      "separate_role": true,
+      "socket_only": true
+    },
+    "remaining_containers": 0,
+    "runtime_root_cleared": true,
+    "custody_media_cleared": true,
+    "initial_grants": {
+      "operations": {
+        "acquire_file": 1,
+        "analyze": 24,
+        "backup": 6,
+        "display": 24,
+        "process_local": 25,
+        "restore": 6,
+        "retain_normalized": 31,
+        "retain_raw": 1
+      },
+      "audiences": [
+        "local_authenticated",
+        "platform"
+      ],
+      "first_valid_from": "2026-11-23T15:53:01.806413+00:00",
+      "last_valid_from": "2026-11-23T15:53:04.943756+00:00",
+      "valid_until": "2026-11-23T17:53:01.806257+00:00",
+      "terms_versions": [
+        "CC BY 4.0 / S07 H supplement v1"
+      ]
+    },
+    "custody_mount": {
+      "readonly": true,
+      "key_visible": false,
+      "separate_session_role": true
+    },
+    "input": {
+      "class": "H",
+      "keys": 1152,
+      "stations": 2,
+      "windows": 2,
+      "csv_pg_reconciled": true
+    },
+    "import": {
+      "dispatch": "sent",
+      "worker_deliveries": 1,
+      "state": "succeeded",
+      "stage": "cleared"
+    },
+    "published_segments": 3,
+    "restore_success": {
+      "http": [
+        403,
+        204,
+        200,
+        403
+      ],
+      "keys": 48,
+      "revisions": 48,
+      "verified": true,
+      "probe": [
+        {
+          "http": 403,
+          "bytes": 0
+        },
+        {
+          "http": 204,
+          "bytes": 0
+        },
+        {
+          "http": 200,
+          "bytes": 42
+        },
+        {
+          "http": 403,
+          "bytes": 0
+        }
+      ],
+      "before": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "replay_rejected": true
+    },
+    "withdraw_restore": {
+      "loaded_in_transaction": [
+        1,
+        1,
+        48,
+        48,
+        1,
+        0
+      ],
+      "parallel_target_connection": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "withdrawn_rights_version": 119,
+      "probe": [
+        {
+          "http": 403,
+          "bytes": 0
+        },
+        {
+          "http": 204,
+          "bytes": 0
+        },
+        {
+          "http": 403,
+          "bytes": 0
+        },
+        {
+          "http": 403,
+          "bytes": 0
+        }
+      ],
+      "after": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "segment_state": "available",
+      "intent_http": 403,
+      "intent_code": "use_denied",
+      "durable_claim": true
+    },
+    "withdraw_backup": {
+      "loaded_in_transaction": [
+        1,
+        1,
+        48,
+        48,
+        1,
+        0
+      ],
+      "parallel_target_connection": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "withdrawn_rights_version": 120,
+      "probe": [
+        {
+          "http": 403,
+          "bytes": 0
+        },
+        {
+          "http": 204,
+          "bytes": 0
+        },
+        {
+          "http": 403,
+          "bytes": 0
+        },
+        {
+          "http": 403,
+          "bytes": 0
+        }
+      ],
+      "after": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "segment_state": "blocked",
+      "intent_http": 409,
+      "intent_code": "precondition_conflict",
+      "durable_claim": true
+    },
+    "regrant_old_segment": 409,
+    "disposition": {
+      "jobs_completed": 2,
+      "rights_version": 122,
+      "affected_files": 0,
+      "lawful_segment_files": 2,
+      "legal_source_keys": 1152
+    },
+    "legal_sibling_restore": {
+      "keys": 48,
+      "revisions": 48,
+      "verified": true,
+      "http": [
+        403,
+        204,
+        200,
+        403
+      ],
+      "probe": [
+        {
+          "http": 403,
+          "bytes": 0
+        },
+        {
+          "http": 204,
+          "bytes": 0
+        },
+        {
+          "http": 200,
+          "bytes": 42
+        },
+        {
+          "http": 403,
+          "bytes": 0
+        }
+      ],
+      "before": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "after": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "replay_rejected": true
+    },
+    "online_collection_runs": 0,
+    "child_processes_remaining": 0
+  }
+}

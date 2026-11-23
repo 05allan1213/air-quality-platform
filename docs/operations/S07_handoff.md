@@ -64,7 +64,7 @@ A 和 B 在这个新目录通过提取后的清单核对候选提交和源码。
 python3.13 -B scripts/s07_v12_index.py | cmp docs/verification/S07_V12.json -
 ```
 
-独立报告记录实际提交、ZIP 摘要、成员复核、两入口的结果、配置指纹及热测成绩。按真实收据登记 PASS / FAIL / BLOCKED / NOT RUN，列出发现编号、复验位置及外部项。本轮真实 H 按现行授权单独核定。T11 继续 NO-GO，S07 封版及 S08 启动以 GPT 的独立阶段验收为前置条件。
+独立报告记录实际提交、ZIP 摘要、成员复核、两入口的结果、配置指纹及热测成绩。按真实收据登记 PASS / FAIL / BLOCKED / NOT RUN，列出发现编号、复验位置及外部项。真实 H 补充包须与原包一同核对，见[送审说明与校验命令](../verification/S07_H/REVIEW_HANDOFF.md)。T11 继续 NO-GO，S07 封版及 S08 启动以 GPT 的独立阶段验收为前置条件。
 
 ## 受控备份和隔离恢复
 
@@ -75,7 +75,7 @@ python3.13 -B scripts/s07_v12_index.py | cmp docs/verification/S07_V12.json -
 3. 恢复须使用新建的、单独标记的空目标库。持 `accounts.restore_backup` 的操作者使用自己的有效 Session，向 `/api/v1/admin/backup-segments/<segment_id>/restore-intents/` POST `{"target":"<本次空目标 UUID>"}`。`201` 返回短期 `operation_id`。保管人从 `/api/v1/admin/backup-authority/restore/<operation_id>/` 复核并为本次意图签认。在守卫核准的环境执行 `python backend/manage.py s06_restore "$S06_RESTORE_OPERATION"`。命令核目标、主体、原 Session、当前授权和段依赖，意图仅可消费一次。
 4. 现行撤权先提交时，一次性读取被拒。合法读取先持锁时，权威事务将锁持至回环正文写完，撤权随后生效。最后核权或写入失败时检查原意图是否已消费和目标库是否回滚。仍有资格的操作者用空目标及新意图重试。留存或备份权中断、发布缺标记、证明过期或段依赖失配时，按 PG 的处置待办定位原卷与副本，核实删除后再核销。仅丧失展示权按受影响展示与导出失效处理，按各自仍有效的依据核留存和备份。其他合法独立段继续单独核权。
 
-可从包内运行下列专项。运行器在 R 的隔离边界内创建 F 保管材料和空目标，验证真实 Session、PG 提交顺序、撤权拒绝、恢复清空及本轮资源清理。机器收据在 `tmp/s06-evidence/<run>/`。本轮真实 H 的取得及恢复仍需来源保管人授权。
+可从包内运行下列专项。运行器在 R 的隔离边界内创建 F 保管材料和空目标，验证真实 Session、PG 提交顺序、撤权拒绝、恢复清空及本轮资源清理。机器收据在 `tmp/s06-evidence/<run>/`。本次 UCI H 的依据、受控恢复及再次运行的前提见 [H 权利记录](../verification/S07_H/RIGHTS.md)。
 
 ```sh
 .venv/bin/python -B scripts/verify_s07_host.py restore
