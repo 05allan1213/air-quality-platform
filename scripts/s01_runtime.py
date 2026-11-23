@@ -4,7 +4,9 @@ import hashlib
 import http.cookiejar
 import json
 import os
+import re
 import secrets
+import stat
 import subprocess
 import time
 import uuid
@@ -21,6 +23,12 @@ OBS = "/api/v1/fixtures/observations/?product=F&observed_at=2001-02-03T00:00:00Z
 
 
 CONTRACT_SPEC = Path("docs/api/openapi.v1.json")
+BROKER_MARKER = "airquality:s07:instance"
+WORKER_BINDINGS = {"_kombu.binding_deadlines"} | {
+    f"_kombu.{kind}.{exchange}"
+    for kind in ("binding", "binding_permanent")
+    for exchange in ("s01.fixture", "s02.history", "s03.collection", "celery.pidbox", "celeryev")
+}
 
 
 def source_hash():
@@ -136,6 +144,8 @@ class Project:
             self.name,
         ]
         self.owned = False
+        self.beat_lock = self.beat_binding = None
+        self.pg_generation = self.redis_generation = None
         self.events = []
         self.base = None
 
@@ -213,6 +223,11 @@ class Project:
             raise AssertionError(f"{section} {check}: expected {expected!r}, got {actual!r}")
 
     def claim(self):
+        if not re.fullmatch(r"s0[13]v[0-9a-f]{12}", self.name) or self.prefix[-2:] != [
+            "-p",
+            self.name,
+        ]:
+            raise ValueError("Expected a generated S01/S02/S03 test project")
         host = self.env.get("DOCKER_HOST")
         if self.env.get("DOCKER_CONTEXT") or not host:
             host = self.cmd(
@@ -225,16 +240,170 @@ class Project:
             ["docker", "network", "ls"],
             ["docker", "volume", "ls"],
         ):
-            assert not self.cmd(
+            if self.cmd(
                 [*resource, "-q", "--filter", f"label=com.docker.compose.project={self.name}"]
-            )
+            ):
+                raise RuntimeError("Test project already exists")
         for kind, name in [("volume", "pgdata"), ("network", "backend"), ("network", "front")]:
-            assert (
+            if (
                 self.name + "_" + name
-                not in self.cmd(["docker", kind, "ls", "--format", "{{.Name}}"]).splitlines()
-            )
-        assert not self.cmd(["docker", "image", "ls", "-q", self.name + "-app:local"])
+                in self.cmd(["docker", kind, "ls", "--format", "{{.Name}}"]).splitlines()
+            ):
+                raise RuntimeError("Test project resource already exists")
+        if self.cmd(["docker", "image", "ls", "-q", self.name + "-app:local"]):
+            raise RuntimeError("Test project image already exists")
+        if self.beat_lock is None:
+            lock = self.evidence.resolve(strict=True) / "beat.lock"
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o444)
+            try:
+                os.fchmod(fd, 0o444)
+            finally:
+                os.close(fd)
+            self.beat_lock = lock
+            self.beat_binding = self.lock_identity()
+        self.env.update(AQ_INSTANCE_ID=self.name, AQ_BEAT_LOCK_SOURCE=str(self.beat_lock))
+        self.pg_generation = self.redis_generation = None
         self.owned = True
+
+    def lock_identity(self):
+        info = self.beat_lock.lstat()
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or info.st_mode & 0o022:
+            raise RuntimeError("Invalid test Beat lock file")
+        boot = uuid.UUID(Path("/proc/sys/kernel/random/boot_id").read_text().strip())
+        return f"{boot}:{info.st_dev}:{info.st_ino}:{info.st_uid}"
+
+    def infrastructure_id(self, service):
+        if not self.owned:
+            raise RuntimeError("Claim the disposable test project before registration")
+        cid = self.compose("ps", "-q", service)
+        if not re.fullmatch(r"[a-f0-9]{64}", cid):
+            raise RuntimeError("Expected one healthy test infrastructure container")
+        (info,) = json.loads(self.cmd(["docker", "container", "inspect", cid]))
+        labels = info["Config"]["Labels"]
+        label = "com.docker.compose."
+        backend = f"{self.name}_backend"
+        volume_name = f"{self.name}_pgdata"
+        mounts = {
+            (m["Type"], m.get("Name", m.get("Source", "")), m["Destination"], m["RW"])
+            for m in info["Mounts"]
+        }
+        compose_root = Path(self.prefix[self.prefix.index("-f") + 1]).parent
+        init_sql = str(compose_root / "docker" / "10-app-role.sql")
+        expected = (
+            {
+                ("volume", volume_name, "/var/lib/postgresql/data", True),
+                ("bind", init_sql, "/docker-entrypoint-initdb.d/10-app-role.sql", False),
+            }
+            if service == "db"
+            else {("tmpfs", "", "/data", True)}
+        )
+        if (
+            info["Id"] != cid
+            or labels.get(label + "project") != self.name
+            or labels.get(label + "service") != service
+            or info["State"]["Health"]["Status"] != "healthy"
+            or set(info["NetworkSettings"]["Networks"]) != {backend}
+            or info["HostConfig"]["Privileged"]
+            or info["HostConfig"]["PortBindings"]
+            or mounts != expected
+        ):
+            raise RuntimeError("Unexpected test infrastructure ownership or storage")
+        (network,) = json.loads(self.cmd(["docker", "network", "inspect", backend]))
+        if not network["Internal"] or network["Labels"].get(label + "project") != self.name:
+            raise RuntimeError("Expected an internal test project network")
+        if service == "db":
+            (volume,) = json.loads(self.cmd(["docker", "volume", "inspect", volume_name]))
+            if (
+                volume["Labels"].get(label + "project") != self.name
+                or volume["Driver"] != "local"
+                or volume["Options"]
+            ):
+                raise RuntimeError("Expected a local test project volume")
+        return cid
+
+    def register_database(self):
+        cid = self.infrastructure_id("db")
+
+        def local_sql(sql):
+            return self.cmd(
+                [
+                    "docker",
+                    "exec",
+                    "-i",
+                    cid,
+                    "psql",
+                    "-XAtq",
+                    "-v",
+                    "ON_ERROR_STOP=1",
+                    "-h",
+                    "/var/run/postgresql",
+                    "-U",
+                    "postgres",
+                    "-d",
+                    "s01",
+                ],
+                stdin=sql,
+            )
+
+        identity = """
+            SELECT current_database(), r.rolname, r.rolsuper, system_identifier,
+                   coalesce(current_setting('airquality.s07_instance', true), ''),
+                   coalesce(current_setting('airquality.beat_lock', true), ''),
+                   coalesce(current_setting('airquality.beat_mode', true), ''),
+                   (SELECT count(*) FROM pg_tables
+                    WHERE schemaname NOT IN ('pg_catalog', 'information_schema'))
+            FROM pg_control_system(), pg_database d JOIN pg_roles r ON r.oid=d.datdba
+            WHERE d.datname=current_database();
+        """
+        database, owner, superuser, generation, *registration = local_sql(identity).split("|")
+        if [database, owner, superuser] != ["s01", "s01_app", "f"]:
+            raise RuntimeError("Unexpected test database or role")
+        expected = [self.name, self.beat_binding, "compose"]
+        if self.pg_generation is not None:
+            if generation != self.pg_generation or registration[:3] != expected:
+                raise RuntimeError("Test database registration changed")
+            return
+        if registration != ["", "", "", "0"]:
+            raise RuntimeError("Test Beat registration requires a new empty database")
+        local_sql(f"""
+            BEGIN;
+            ALTER DATABASE s01 SET airquality.s07_instance='{self.name}';
+            ALTER DATABASE s01 SET airquality.beat_lock='{self.beat_binding}';
+            ALTER DATABASE s01 SET airquality.beat_mode='compose';
+            COMMIT;
+        """)
+        self.pg_generation = generation
+
+    def register_broker(self, *, reconnecting=False):
+        cid = self.infrastructure_id("redis")
+
+        def redis(*args):
+            return self.cmd(["docker", "exec", cid, "redis-cli", "--raw", "-n", "0", *args])
+
+        generation = re.search(r"^run_id:([0-9a-f]{40})$", redis("INFO", "server"), re.MULTILINE)
+        if not generation:
+            raise RuntimeError("Could not identify test Redis generation")
+        run_id = generation[1]
+        marker = redis("GET", BROKER_MARKER)
+        if run_id == self.redis_generation:
+            if marker != self.name:
+                raise RuntimeError("Test Redis registration changed")
+            return
+        allowed = WORKER_BINDINGS if reconnecting and self.redis_generation else set()
+        if (
+            marker
+            or int(redis("DBSIZE")) > len(allowed)
+            or set(redis("KEYS", "*").splitlines()) - allowed
+            or redis("SET", BROKER_MARKER, self.name, "NX") != "OK"
+        ):
+            raise RuntimeError("Test Beat registration requires a fresh Redis generation")
+        self.redis_generation = run_id
+
+    def start_redis(self):
+        if not self.owned or self.pg_generation is None:
+            raise RuntimeError("Claim and start a disposable test project before restarting Redis")
+        self.compose("up", "-d", "--wait", "redis")
+        self.register_broker(reconnecting=bool(self.compose("ps", "-q", "worker")))
 
     def cleanup(self):
         if self.owned:
@@ -245,6 +414,12 @@ class Project:
                 self.cmd(["docker", "image", "rm", tag])
 
     def up(self, build=False):
+        if not self.owned or self.lock_identity() != self.beat_binding:
+            raise RuntimeError("Claim the disposable project and retain its registered Beat lock")
+        # Register before migrations, including when the first app image is a sealed S01/S02 tree.
+        self.compose("up", "-d", "--wait", "db", "redis", timeout=150)
+        self.register_database()
+        self.register_broker()
         self.compose("up", "-d", *(["--build"] if build else []), timeout=1800)
         self.base = "http://" + self.compose("port", "web", "8000")
         self.wait_ready()

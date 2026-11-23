@@ -155,7 +155,8 @@ def verify(args):
             ("V01",),
             lambda: (
                 verify_upgrade(project),
-                project.compose("down", "--volumes", "--timeout", "5", timeout=100),
+                project.cleanup(),
+                project.claim(),
                 fresh(project),
             ),
         )

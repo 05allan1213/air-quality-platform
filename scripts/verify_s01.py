@@ -52,7 +52,7 @@ def deployment(p):
     assert "samples.process_fixture" in registered and "1 node online" in registered
     p.record("V01", "registered Worker", registered)
     beat = p.compose("logs", "--no-color", "beat")
-    assert "DatabaseScheduler" in beat
+    assert "config.scheduler.ObservedScheduler" in beat
     p.record(
         "V01", "one Beat scheduler", [line for line in beat.splitlines() if "scheduler ->" in line]
     )
@@ -644,7 +644,7 @@ def broker_outage(p, reader, operator, run):
         (item,) = http_case(p, "V08", "stored F without Redis", reader.call(OBS), 200)["results"]
         p.equal("V08", "unaffected read", item["id"], run["observation_id"])
     finally:
-        p.compose("start", "redis")
+        p.start_redis()
 
     def connection_logs():
         lines = p.compose("logs", "--no-color", "worker").splitlines()[offset:]
@@ -703,7 +703,22 @@ def read_denials(p, reader, operator):
     ).splitlines()
     p.record("V09", "enabled periodic tasks", tasks)
     assert set(tasks) <= {"celery.backend_cleanup"}
-    http_case(p, "V09", "no admin CRUD route", operator.call("/admin/"), 404)
+    p.equal(
+        "V09",
+        "restricted admin has no generic account add/change/delete/history routes",
+        p.shell("""
+from django.urls import NoReverseMatch, reverse
+
+routes = []
+for action in ('add', 'change', 'delete', 'history'):
+    try:
+        routes.append(reverse(f'admin:auth_user_{action}', args=() if action == 'add' else (1,)))
+    except NoReverseMatch:
+        pass
+print(routes)
+"""),
+        "[]",
+    )
     routes = p.shell(
         "from django.urls import get_resolver; print([str(p.pattern) for p in get_resolver().url_patterns])"
     )

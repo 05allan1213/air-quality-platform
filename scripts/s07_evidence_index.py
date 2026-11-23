@@ -10,7 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 INPUTS = ROOT / "docs/verification/S07_evidence.args"
 RECEIPT = re.compile(
-    r"(s06|s07)-evidence/(s06-|s07a-|s07-b-|s07-static-)[a-f0-9]{12}/(?:V(?:01|02|03|12|14)/|performance/)?[a-zA-Z0-9-]+\.json"
+    r"(?:s01-evidence/s01v[a-f0-9]{12}/s07-legacy\.json|"
+    r"(?:s06|s07)-evidence/(?:s06-|s07a-|s07-b-|s07-static-)[a-f0-9]{12}/"
+    r"(?:V(?:01|02|03|12|14)/|performance/)?[a-zA-Z0-9-]+\.json)"
 )
 NODE = re.compile(r"tests/[\w./-]+\.py::[\w.:-]+(?:\[[^\r\n/]{1,200}\])?")
 

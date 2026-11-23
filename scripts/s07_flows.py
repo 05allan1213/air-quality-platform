@@ -64,25 +64,24 @@ class FlowChecks(S03Project):
             extra_env={"PGPASSWORD": p.values["POSTGRES_PASSWORD"]},
         )
 
+    def start_redis(self):
+        p = self.project
+        cid = p.containers["redis"]
+        p.owned_container("redis", cid)
+        p.docker("start", cid)
+        wait_for(
+            "flow broker restart",
+            lambda: p.owned_container("redis", cid)["State"]["Health"]["Status"] == "healthy",
+        )
+        require(p.docker("exec", cid, "redis-cli", "DBSIZE") == "0", "restarted_broker_not_empty")
+        require(
+            p.docker("exec", cid, "redis-cli", "SET", "airquality:s07:instance", p.name, "NX")
+            == "OK",
+            "restarted_broker_marker",
+        )
+
     def compose(self, *args, **kwargs):
         p = self.project
-        if args == ("up", "-d", "--wait", "redis"):
-            cid = p.containers["redis"]
-            p.owned_container("redis", cid)
-            p.docker("start", cid)
-            wait_for(
-                "flow broker restart",
-                lambda: p.owned_container("redis", cid)["State"]["Health"]["Status"] == "healthy",
-            )
-            require(
-                p.docker("exec", cid, "redis-cli", "DBSIZE") == "0", "restarted_broker_not_empty"
-            )
-            require(
-                p.docker("exec", cid, "redis-cli", "SET", "airquality:s07:instance", p.name, "NX")
-                == "OK",
-                "restarted_broker_marker",
-            )
-            return ""
         require(args[0] in {"exec", "logs", "start", "stop"}, "unsupported_flow_command")
         # No commands are supplied by HTTP clients. Every fixture target must still be ours.
         for service in set(args).intersection(self.apps.ids):

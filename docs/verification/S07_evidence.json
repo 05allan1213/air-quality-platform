@@ -617,6 +617,250 @@
       "receipt": "tmp/s07-evidence/s07-b-93e54b2a8ad6/V14/host.json",
       "sha256": "a87d2017ee981e439011d440ff95b7f1cf405162fb6dbd577947dfd660896f8b",
       "status": "PASS"
+    },
+    {
+      "cases": [
+        "V02"
+      ],
+      "label": "legacy-manual",
+      "receipt": "tmp/s01-evidence/s01v11d54bc30e04/s07-legacy.json",
+      "sha256": "7ae9dbc2dc1607fbe2bf1c6e297f4a3b8320d50030ccfb12c306e8ee6fafdb20",
+      "status": "PASS",
+      "source_sha256": "0be16cc9103d9ec06f172c3ca46c2f085a5b95b5d139bd92e2ba9d8d7c9900a4"
+    },
+    {
+      "cases": [
+        "V06",
+        "V10"
+      ],
+      "label": "mixed-windows-fixture-red",
+      "receipt": "tmp/s06-evidence/s06-1ee8ff27de21/pytest.json",
+      "sha256": "d9ef954eed8b5e28be7ba3f8b1866c5436156d652cfa9d656d837c6b29ebdcf1",
+      "status": "FAIL",
+      "source_sha256": "f5bc559aecfe145d6b62de5f0aeb63c2113675a72f3d71c0e1a141e29e102183",
+      "nodes": {
+        "PASS": 3,
+        "FAIL": 3,
+        "NOT RUN": 0
+      },
+      "not_passed": {
+        "FAIL": [
+          "tests/test_s07_catalog.py::test_source_status_uses_the_receipt_key_before_ordering_events",
+          "tests/test_s07_catalog.py::test_source_status_without_receipt_requires_frozen_series[case-1]",
+          "tests/test_s07_catalog.py::test_source_status_without_receipt_requires_frozen_series[case-2]"
+        ]
+      }
+    },
+    {
+      "cases": [
+        "V06",
+        "V10"
+      ],
+      "label": "mixed-windows-red",
+      "receipt": "tmp/s06-evidence/s06-80b42120c9f5/pytest.json",
+      "sha256": "3448fe70c3140c1c23f0d45e3400a6b76cf5189aa3cf0fa0e772697e585b9e81",
+      "status": "FAIL",
+      "source_sha256": "8f7c8b7dc49c3bae70f26758cff267fe8d16ea720f914985accc5f72e6027760",
+      "nodes": {
+        "PASS": 3,
+        "FAIL": 3,
+        "NOT RUN": 0
+      },
+      "not_passed": {
+        "FAIL": [
+          "tests/test_s07_catalog.py::test_source_status_uses_the_receipt_key_before_ordering_events",
+          "tests/test_s07_catalog.py::test_source_status_without_receipt_requires_frozen_series[case-1]",
+          "tests/test_s07_catalog.py::test_source_status_without_receipt_requires_frozen_series[case-2]"
+        ]
+      }
+    },
+    {
+      "cases": [
+        "V06",
+        "V10"
+      ],
+      "label": "mixed-windows-green",
+      "receipt": "tmp/s06-evidence/s06-62fbc887042c/pytest.json",
+      "sha256": "cab73bf2844a5999741031cc553f512b9f6ec65fecf63790a4064b91b59cfe73",
+      "status": "PASS",
+      "source_sha256": "d7c67037d0fb1d02d46e6419745930afc27f885b95b5fcb40bedf234466cd97d",
+      "nodes": {
+        "PASS": 40,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "not_passed": {}
+    },
+    {
+      "cases": [
+        "V13"
+      ],
+      "label": "candidate-heat-guard",
+      "receipt": "tmp/s07-evidence/s07a-d398bea62bfe/environment.json",
+      "sha256": "36353c0d90712c550482b992eb10c1923c68272349a64f56e415c6d39d0c39f1",
+      "status": "PASS",
+      "source_sha256": "92f1ed695ac8222a592037ed4683344a8a15407104b6af49f46d8c5a9316b3bf"
+    },
+    {
+      "cases": [
+        "V13"
+      ],
+      "label": "candidate-heat",
+      "receipt": "tmp/s07-evidence/s07a-d398bea62bfe/performance/4-R4.json",
+      "sha256": "7c1dbf113d79c374d9ef4e82cddd69fe824817a8940c468ba5b9c6aa8b3d0b30",
+      "status": "PASS"
+    },
+    {
+      "cases": [
+        "V13"
+      ],
+      "label": "candidate-stability",
+      "receipt": "tmp/s07-evidence/s07a-d398bea62bfe/performance/stability.json",
+      "sha256": "f9620d0de66892f60864e1bd3f8ea7da1dee1f316fbf93ff4d6c99653776023c",
+      "status": "PASS"
+    },
+    {
+      "cases": [
+        "V13"
+      ],
+      "label": "candidate-cold-last-batch",
+      "receipt": "tmp/s07-evidence/s07a-d398bea62bfe/performance/cold-R4-3.json",
+      "sha256": "d3e99e83d5d370fc6cff1af6c055951b2ad7c665230a788a57c116d44c67672d",
+      "status": "PASS"
+    },
+    {
+      "cases": [
+        "V13"
+      ],
+      "label": "candidate-reverse-guard",
+      "receipt": "tmp/s07-evidence/s07a-4198282398f2/environment.json",
+      "sha256": "eb4c3d24c620fe5473c874eea892038b5210f0cd93ad2e746d6ea67289eeabc5",
+      "status": "PASS",
+      "source_sha256": "92f1ed695ac8222a592037ed4683344a8a15407104b6af49f46d8c5a9316b3bf"
+    },
+    {
+      "cases": [
+        "V13"
+      ],
+      "label": "candidate-reverse",
+      "receipt": "tmp/s07-evidence/s07a-4198282398f2/performance/1-R4.json",
+      "sha256": "af373c62c9a2fd55160edf11deba3d60d49d85f7d49a031c5a2f35c6c9e43f87",
+      "status": "PASS"
+    },
+    {
+      "cases": [
+        "V13"
+      ],
+      "label": "candidate-diagnostic",
+      "receipt": "tmp/s07-evidence/s07a-4fa9b9d4c51b/performance/diagnostics.json",
+      "sha256": "ae3983ec334f74781ae4c3afa1dbad980edce92c64490e2b57bb1953b2d3ec56"
+    },
+    {
+      "cases": [
+        "V15"
+      ],
+      "label": "a-source-drift",
+      "receipt": "tmp/s07-evidence/s07a-4c71e1568918/regression.json",
+      "sha256": "d9425a8f95b5be8c544f5c4ad2be62eacd6679c0a3d5abb29d9feba16ab73022",
+      "status": "FAIL",
+      "nodes": {
+        "PASS": 559,
+        "FAIL": 0,
+        "NOT RUN": 38
+      },
+      "not_passed": {
+        "NOT RUN": [
+          "tests/test_s05_cost.py::test_v17_research_and_drilldown_cost",
+          "tests/test_s05_cost.py::test_v12_json_response_budget_is_independent_of_candidate_cells",
+          "tests/test_s05_cost.py::test_v12_csv_rows_hidden_records_and_new_input",
+          "tests/test_s05_cost.py::test_v12_csv_byte_budget_at_low_row_count",
+          "tests/test_s05_cost.py::test_v17_detail_csv_cost",
+          "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+          "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+          "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+          "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+          "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+          "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+          "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+          "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+          "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+          "tests/test_s06_backup.py::test_v13_catalog_dependency_never_partially_archives",
+          "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+          "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+          "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+          "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+          "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+          "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+          "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
+          "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+          "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+          "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+          "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+          "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected"
+        ]
+      }
+    },
+    {
+      "cases": [
+        "V02"
+      ],
+      "label": "legacy-registered",
+      "receipt": "tmp/s01-evidence/s01v3c8868847cf1/s07-legacy.json",
+      "sha256": "cb23d38f821e92b9240494a472d3cdc98df704fcef701234dfd45cc6329dbeb6",
+      "status": "PASS",
+      "source_sha256": "d7c67037d0fb1d02d46e6419745930afc27f885b95b5fcb40bedf234466cd97d"
+    },
+    {
+      "cases": [
+        "V15"
+      ],
+      "label": "static-pre-handoff",
+      "receipt": "tmp/s07-evidence/s07-static-6ce7120f5c4d/regression.json",
+      "sha256": "367b53881ed81ff45fd0b82cb3904d708fee63510bd7aa504819903238f6be2f",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a"
+    },
+    {
+      "cases": [
+        "V08"
+      ],
+      "label": "post-review-flows",
+      "receipt": "tmp/s07-evidence/s07a-817c145247d6/flows.json",
+      "sha256": "2562523d67b365ac39ea8285125ef516ed9bf0b68bf98591879fbd67759f81cf",
+      "status": "PASS"
+    },
+    {
+      "cases": [
+        "V05",
+        "V06",
+        "V07",
+        "V10"
+      ],
+      "label": "post-review-participant",
+      "receipt": "tmp/s07-evidence/s07a-817c145247d6/participant.json",
+      "sha256": "112ed37706dc9a72d2782c816138f48eaac733d6ffd6f978b44da8824f83fea2",
+      "status": "PASS"
+    },
+    {
+      "cases": [
+        "V01"
+      ],
+      "label": "post-review-flow-cleanup",
+      "receipt": "tmp/s07-evidence/s07a-817c145247d6/environment.json",
+      "sha256": "a7718f835e4dbab956624e2ae16af51f024119e47883c60d6fcc91772923bd45",
+      "status": "PASS",
+      "source_sha256": "28932126d450314f1564a380ffdc6b320413b60591aa996aedcf69f431eb7372"
     }
   ]
 }

@@ -37,12 +37,12 @@ with os.fdopen(os.open('.env', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w'
     file.write(text)
 PY
 docker compose config -q
-docker compose up -d --build
+docker compose up -d --build web worker
 docker compose ps -a
 curl --fail --retry 10 --retry-connrefused http://127.0.0.1:8000/health/ready/
 ```
 
-如果 8000 已占用，修改 `.env` 的 `WEB_PORT` 并对下文示例使用同一端口。PG 和 Redis 仅使用内部网络。`migrate` 退出码应为 `0`，其余五个服务保持运行。`{"web":"ok","pg":"ok"}` 表示 Web 可读 PG。迁移只预置三项 F 许可，观测表初始为零行。
+如果 8000 已占用，修改 `.env` 的 `WEB_PORT` 并对下文示例使用同一端口。PG 和 Redis 仅使用内部网络。`migrate` 退出码应为 `0`，Web、Worker、PostgreSQL 和 Redis 四个服务保持运行。手工投递 F 的示例只启动这四个常驻服务。基础或正式 Compose 需要 Beat 时，先在该独立实例登记 PG、Redis 与锁文件，再启动整组。见 [S07 运维手册](docs/operations/S07.md#4-compose-与-beat-切换)。`{"web":"ok","pg":"ok"}` 表示 Web 可读 PG。迁移只预置三项 F 许可，观测表初始为零行。
 
 PG 初始化密码和应用角色密码独立。首次初始化时，应用角色获得本应用库的所有权。已有卷保留原角色和密码，重建时继续使用原 `.env` 和同一 Compose 项目名。Web、Worker、Beat 和迁移共用同一镜像。此基础配置的 Web 是单进程 Django 开发服务，`DEBUG=False`。默认回环 HTTP 使用 `COOKIE_SECURE=0`，HTTPS 环境应设为 `1`。
 
@@ -121,11 +121,13 @@ FixtureRun.objects.values("id", "dispatch", "state", "error_code", "observation_
 
 ```bash
 docker compose down
-docker compose up -d
+docker compose up -d web worker
 docker compose port web 8000
 ```
 
 ## 运行 S01 自检
+
+当前脚本验证现版本的 F/I、`ObservedScheduler` 和受控 Admin。复现封存的 S01 原始结果时，在 `0656071655247fd7db250dc00e4b50e34b7a18c3` 的独立检出中运行该版本的同名脚本。
 
 ```bash
 python3.13 scripts/verify_s01.py

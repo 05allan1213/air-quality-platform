@@ -689,7 +689,7 @@ def broker_recovery(p, archive, operator, product, batch):
         )
         p.equal("V16", "no writes without Worker delivery", counts(p, product), before)
     finally:
-        p.compose("start", "redis")
+        p.start_redis()
     p.equal(
         "V16",
         "recovered broker accepts original attempt UUID",

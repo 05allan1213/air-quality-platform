@@ -158,7 +158,7 @@ def lost_delivery(p, account, job):
         ["pending", "unsent", None],
     )
     p.record(tag, "broker outage dispatch state", row["dispatch"])
-    p.compose("up", "-d", "--wait", "redis")
+    p.start_redis()
     p.sql(f"UPDATE collection_run SET dispatch_due=clock_timestamp() WHERE id='{run}'")
     p.reconcile()
     p.equal(tag, "Redis has message, PG still unsent", p.row(run)["request_state"], "unsent")
