@@ -3,16 +3,16 @@
   "origin": "F/I",
   "status": "PASS",
   "candidate": {
-    "head": "bec88f468030deb3ea900d5ef07cef6f548d8d6b",
+    "head": "5c2073eeefca01fcc004010534b65e8da67bace7",
     "dirty_paths": 0,
     "origin": "git"
   },
-  "source": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a",
+  "source": "1258e04db92db956deef816b06cef660cbdefd677aef7994b263cbd24d85f6b8",
   "runtime_files": 307,
   "static": {
-    "receipt": "tmp/s07-evidence/s07-static-b61e7d9ccdb2/regression.json",
-    "sha256": "c6686d14b86708d2b033ac11acbf0c4663b6635ba66ca41285ad882ea60b35ba",
-    "run": "s07-static-b61e7d9ccdb2",
+    "receipt": "tmp/s07-evidence/s07-static-d90616ca2292/regression.json",
+    "sha256": "4f2fd8fd117886f309b4a9c9f9d68c663725f7a534ef61b7640b3e022d61a599",
+    "run": "s07-static-d90616ca2292",
     "checks": [
       {
         "command": [
@@ -98,7 +98,7 @@
         ],
         "exit_code": 0,
         "stdout": "",
-        "stderr": "Resolved 67 packages in 0.73ms\n"
+        "stderr": "Resolved 67 packages in 0.78ms\n"
       },
       {
         "command": [
@@ -162,250 +162,250 @@
     }
   ],
   "a_r_reconciliation": {
-    "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/reconciliation.json",
-    "sha256": "da798fc5d17f83f05a59f49dd66eaa635c81467d6786ffcef4e9b731fe60c5ba",
+    "receipt": "tmp/s07-evidence/s07a-1772967855ad/reconciliation.json",
+    "sha256": "2dd4110168ee3c8e7d79ff88880c2a90cde017f641dd8557eafd5135ae185ebd",
     "scope": "V15-A/R",
     "origin": "F/I",
     "status": "PASS",
     "candidate": {
-      "head": "bec88f468030deb3ea900d5ef07cef6f548d8d6b",
+      "head": "5c2073eeefca01fcc004010534b65e8da67bace7",
       "dirty_paths": 0,
       "origin": "git"
     },
-    "source": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a",
+    "source": "1258e04db92db956deef816b06cef660cbdefd677aef7994b263cbd24d85f6b8",
     "a": {
-      "run": "s07a-f94afbce4d21",
+      "run": "s07a-1772967855ad",
       "counts": {
         "PASS": 562,
         "FAIL": 0,
         "NOT RUN": 38
       },
-      "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/regression.json",
-      "sha256": "caf129e8384f9f09f7daa9303be7bcde26efa33b5ae4905a1cedd62a33664aa8"
+      "receipt": "tmp/s07-evidence/s07a-1772967855ad/regression.json",
+      "sha256": "88ca83561bca64e9b81a191dda858f4c778f09d6f93ae809cb341f4fdcca2d4a"
     },
     "r_full": {
-      "run": "s06-c08f218dfb4e",
+      "run": "s06-0d8287278ce3",
       "counts": {
         "PASS": 567,
         "FAIL": 0,
         "NOT RUN": 33
       },
-      "receipt": "tmp/s06-evidence/s06-c08f218dfb4e/pytest.json",
-      "sha256": "98114b435f007d834db9d239ae68563579ac29dfb17fb64e9fac2af8223a2f18"
+      "receipt": "tmp/s06-evidence/s06-0d8287278ce3/pytest.json",
+      "sha256": "7c7a4541bb0de891979e02d41b8f47b8202d9ad33865393d69508c22cccf5125"
     },
     "r_restore": {
-      "run": "s06-ddb85d54bf28",
+      "run": "s06-a748f47e1f50",
       "counts": {
         "PASS": 33,
         "FAIL": 0,
         "NOT RUN": 0
       },
-      "receipt": "tmp/s06-evidence/s06-ddb85d54bf28/pytest.json",
-      "sha256": "8e2fcc47b9979333798dc0f0796b621cc93fbace59bbc077b30017ce104b8b80"
+      "receipt": "tmp/s06-evidence/s06-a748f47e1f50/pytest.json",
+      "sha256": "dac29b0981e4032b551ca8403e3e23f713235c456242142af2b6c3f33d69ece2"
     },
     "guard_receipts": {
       "a": {
-        "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/environment.json",
-        "sha256": "3692a8931a0eba5687d10940b163306d02e4685e5b6e9a80d698d3520e98da8d"
+        "receipt": "tmp/s07-evidence/s07a-1772967855ad/environment.json",
+        "sha256": "d8eddd546faca41ad3b0550dd00fc32e96cf048e09c27c248ffdccab58b5a15d"
       },
       "r_full": {
-        "receipt": "tmp/s06-evidence/s06-c08f218dfb4e/V01/result.json",
-        "sha256": "fb6dd905e07b66cc4b4158be4040c47d84847a39a8c222dea8f8fa610ef445ed"
+        "receipt": "tmp/s06-evidence/s06-0d8287278ce3/V01/result.json",
+        "sha256": "bdb73ed528b6e6cd4fd052aa40d366d9a3e1756ec628479bde4fb2e83cef88c9"
       },
       "r_restore": {
-        "receipt": "tmp/s06-evidence/s06-ddb85d54bf28/V01/result.json",
-        "sha256": "88bc6fe6f8bf6a258793ebba02b1bc243d63c08b1d57bf4333934b7b96d90ca0"
+        "receipt": "tmp/s06-evidence/s06-a748f47e1f50/V01/result.json",
+        "sha256": "8f6915298ae059dcdf2545128e78442d704083c65a494b089df834eaf2c02059"
       }
     },
     "a_skip_resolution": [
       {
         "nodeid": "tests/test_s05_cost.py::test_v12_csv_byte_budget_at_low_row_count",
-        "sat_by": "s06-c08f218dfb4e",
+        "sat_by": "s06-0d8287278ce3",
         "reason": "volume fixtures require the R socket guard"
       },
       {
         "nodeid": "tests/test_s05_cost.py::test_v12_csv_rows_hidden_records_and_new_input",
-        "sat_by": "s06-c08f218dfb4e",
+        "sat_by": "s06-0d8287278ce3",
         "reason": "volume fixtures require the R socket guard"
       },
       {
         "nodeid": "tests/test_s05_cost.py::test_v12_json_response_budget_is_independent_of_candidate_cells",
-        "sat_by": "s06-c08f218dfb4e",
+        "sat_by": "s06-0d8287278ce3",
         "reason": "volume fixtures require the R socket guard"
       },
       {
         "nodeid": "tests/test_s05_cost.py::test_v17_detail_csv_cost",
-        "sat_by": "s06-c08f218dfb4e",
+        "sat_by": "s06-0d8287278ce3",
         "reason": "volume fixtures require the R socket guard"
       },
       {
         "nodeid": "tests/test_s05_cost.py::test_v17_research_and_drilldown_cost",
-        "sat_by": "s06-c08f218dfb4e",
+        "sat_by": "s06-0d8287278ce3",
         "reason": "volume fixtures require the R socket guard"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v13_catalog_dependency_never_partially_archives",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       },
       {
         "nodeid": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
-        "sat_by": "s06-ddb85d54bf28",
+        "sat_by": "s06-a748f47e1f50",
         "reason": "requires the independently owned R restoration targets"
       }
     ],
@@ -413,12 +413,12 @@
     "unmatched_nodes": []
   },
   "forward_upgrade": {
-    "receipt": "tmp/s06-evidence/s06-8aa4169af989/upgrade.json",
+    "receipt": "tmp/s06-evidence/s06-ddd07cc83576/upgrade.json",
     "sha256": "2f1185a22447bf1e488035aaf8a868d8daa81aec37f1eade115cc97e4f1bcd98",
-    "run": "s06-8aa4169af989",
+    "run": "s06-ddd07cc83576",
     "guard": {
-      "receipt": "tmp/s06-evidence/s06-8aa4169af989/V01/result.json",
-      "sha256": "5e24164c4b1f901e373dd36c732a64900c2fc9400daf72634784f6389afb1b1d"
+      "receipt": "tmp/s06-evidence/s06-ddd07cc83576/V01/result.json",
+      "sha256": "a53e9359063a21dcf3455e75c26122e26c4dacae4fb84de43c723c1c9ae9dca8"
     },
     "baseline": {
       "commit": "8de867853c470393617bc7ee14bb692a97fe8c5c",
@@ -898,12 +898,12 @@
     "old_session_http": 200
   },
   "trends": {
-    "receipt": "tmp/s07-evidence/s07a-8b0166a03e62/admin-trends.json",
-    "sha256": "970bf9ccc040ea01b22b4d6a07a5987aa4fd117d25afdbacf8b9e945884dcbb6",
-    "run": "s07a-8b0166a03e62",
+    "receipt": "tmp/s07-evidence/s07a-455ec621f23d/admin-trends.json",
+    "sha256": "dbd95623a5d75dad4968adc938bf0f97c7d98dae185218861473c778d523b565",
+    "run": "s07a-455ec621f23d",
     "guard": {
-      "receipt": "tmp/s07-evidence/s07a-8b0166a03e62/environment.json",
-      "sha256": "01e66bc12916a5adc6d739d1ad4980beb598145724a30d722c942370cb8f868a"
+      "receipt": "tmp/s07-evidence/s07a-455ec621f23d/environment.json",
+      "sha256": "f4f230b3ed5b2a79e51c2c51f08194b4afaf9e00ba80104d9e4f66ff1bc66357"
     },
     "scope": "P05/V17-A",
     "origins": [
@@ -911,7 +911,7 @@
       "I"
     ],
     "result": "PASS",
-    "image": "sha256:def88d0823c20f5186859f7d85e87f10a43665744fed5e65e7b9b6787a43e7af",
+    "image": "sha256:b8fc8842aad6d52a17d2fbe31acc34c8925d25a55aefa9b142d5b8406f63e380",
     "suite": {
       "exit_code": 0,
       "counts": {
@@ -923,7 +923,7 @@
         {
           "nodeid": "tests/test_s07_operations.py::test_v17_trends_match_independent_sql",
           "status": "PASS",
-          "duration_seconds": 6.49,
+          "duration_seconds": 6.414,
           "http_contract": [
             {
               "operation": "readOperationsTrend",
@@ -945,7 +945,7 @@
         {
           "nodeid": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
           "status": "PASS",
-          "duration_seconds": 3.209,
+          "duration_seconds": 3.118,
           "http_contract": [
             {
               "operation": "listCollectionJobs",
@@ -997,7 +997,7 @@
         {
           "nodeid": "tests/test_s07_operations.py::test_history_status_is_owned_or_reviewed_and_does_not_expose_staging",
           "status": "PASS",
-          "duration_seconds": 4.199,
+          "duration_seconds": 4.115,
           "http_contract": [
             {
               "operation": "listHistoryImports",
@@ -1034,17 +1034,17 @@
         {
           "nodeid": "tests/test_s07_operations.py::test_history_enqueue_rechecks_winning_pg_commit[case-1]",
           "status": "PASS",
-          "duration_seconds": 2.027,
+          "duration_seconds": 1.516,
           "observed": {
-            "pg_utc": "2026-11-23T10:18:28.363668+00:00"
+            "pg_utc": "2026-11-23T13:24:08.787365+00:00"
           }
         },
         {
           "nodeid": "tests/test_s07_operations.py::test_history_enqueue_rechecks_winning_pg_commit[case-2]",
           "status": "PASS",
-          "duration_seconds": 1.975,
+          "duration_seconds": 1.976,
           "observed": {
-            "pg_utc": "2026-11-23T10:18:30.343013+00:00"
+            "pg_utc": "2026-11-23T13:24:10.758927+00:00"
           }
         }
       ],
@@ -1361,7 +1361,7 @@
           }
         ],
         "withdrawn": 403,
-        "pg_utc": "2026-11-23T10:18:18.442822+00:00"
+        "pg_utc": "2026-11-23T13:23:59.548134+00:00"
       }
     }
   }

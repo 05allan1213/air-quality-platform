@@ -2,7 +2,7 @@
 
 ## 1. 从候选提交生成交付包
 
-在项目根目录用 Python 3.13 指定待审 Git 提交的完整 SHA。生成器读取该提交的普通 Git blob，按源码、配置、锁、测试、F 样例及具名公开文档白名单组装 ZIP。`.git`、私有归档、原始收据、真实 H 和本机密钥保存在各自受控位置。提交者在生成前核定列入白名单的文档与证据摘要具备分发权。
+在项目根目录用 Python 3.13 指定待审 Git 提交的完整 SHA。生成器读取该提交的普通 Git blob，按源码、配置、锁、测试、F 样例及具名公开文档白名单组装 ZIP。`.git`、私有归档、原始收据、真实 H 和本机密钥保存在各自受控位置。提交者在生成前核定列入白名单的文档与证据摘要具备分发权。 `README`、S07 运维、v1 API 和本轮验收步骤的相对链接在包内可用。`S07_PRECHECK.md` 保留指向完整仓库旧阶段材料的历史链接，总体实施方案保留指向原设计审查材料的引用。
 
 ```sh
 python3.13 -B scripts/s07_handoff_checks.py
@@ -10,6 +10,8 @@ python3.13 -B scripts/s07_handoff.py build --commit "$(git rev-parse HEAD)"
 ```
 
 构建输出位于 `tmp/s07-handoff/<commit>-<随机后缀>/`。`S07.zip` 内的 `S07_HANDOFF_MANIFEST.json` 记录提交、成员路径、大小、SHA-256 与 Git 模式。相邻的 `verification.json` 记录 ZIP 和清单摘要，用于向复核者登记预期值。签收时对照从可信渠道取得的提交和摘要。
+
+正式测量后，性能报告、收据索引和独立复核报告随一次文档提交进入交付包。验收人从 `S07_HANDOFF_MANIFEST.json` 取得报告版提交，从 `docs/verification/S07_T09.json` 的 `modes.heat.extraction` 取得实测提交和包摘要。两者的全部运行文件、模式与字节在包外签收时逐项核对，最终 ZIP 的摘要随包单独交付。在含对应 Git 对象的完整仓库中可用 `git diff --name-status <实测提交> <交付提交>` 核对文档变更。
 
 ## 2. 校验并提取
 
@@ -43,6 +45,12 @@ A 和 B 在这个新目录通过提取后的清单核对候选提交和源码。
 .venv/bin/python -B scripts/verify_s07_host.py offline
 .venv/bin/python -B scripts/verify_s07.py offline
 .venv/bin/python -B scripts/verify_s07.py performance reverse
+```
+
+复验四入口 Beat 竞争时使用 `singleton-compose`。B 运行器给公开源码制作临时镜像快照。一次 `umask 077` 包装运行在基础 Beat 获取 PG 锁前超时。以下执行条件通过了四入口竞争、Worker 消费和窗口对账。该 subshell 只为本次验证设置文件创建掩码。实例根目录仍为 `0700`，宿主私有配置仍为 `0600`。
+
+```sh
+(umask 022 && .venv/bin/python -B scripts/verify_s07_host.py singleton-compose)
 ```
 
 - B 的 `startup` 验证实际 `python main.py`、独立进程、拒绝场景与就绪恢复。日常启动、人工迁移和分组件恢复遵循宿主运维手册。 [S07 宿主启动与运维](S07.md)
