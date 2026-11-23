@@ -4,30 +4,20 @@ from copy import copy
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from django.db.models import Q
 from observations.disposition import covers, lost_at
 from observations.models import Batch, QualityIssue, Receipt
 from observations.policy import Denied, Scope
+from observations.quality_events import QUALITY_DETAIL
 
-from . import cnemc_jobs
+from . import cnemc_jobs, control
 from .admission import LEDGER, bounds, selected_use
-from .models import Job, Run, WorkWindow
+from .models import Job, Run, RunItem, WorkWindow
 from .queries import catalogue_scopes
 
 
 def dispose_jobs(ids, now):
-    Job.objects.filter(pk__in=ids, disposed=False).update(
-        disposed=True,
-        enabled=False,
-        next_due_at=None,
-        expected_codes=None,
-        selection={},
-        standard={},
-        backfill_policy={},
-        backfill_cursor=None,
-        roster_basis="",
-        pause_reason="permission_lost",
-        changed_at=now,
-    )
+    control.dispose_jobs(ids, now)
     Run.objects.filter(job_id__in=ids, status__in=["running", "pending"]).update(
         status="paused",
         error_code="permission_lost",
@@ -59,7 +49,12 @@ def dispose_window(window, batches, now, *, selection=None):
     window.runs.filter(status__in=["running", "pending"]).update(
         status="paused", error_code="permission_lost", finished_at=now
     )
-    QualityIssue.objects.filter(batch_id__in=batches, city_key=None, station_key=None).delete()
+    QualityIssue.objects.filter(
+        Q(run__window=window) | Q(batch_id__in=batches),
+        run_item=None,
+        city_key=None,
+        station_key=None,
+    ).delete()
     empty = Batch.objects.filter(pk__in=batches, receipts__isnull=True)
     QualityIssue.objects.filter(batch__in=empty).update(batch=None)
     empty.delete()
@@ -108,14 +103,27 @@ def retire_validation_ledgers(product, grants, now):
 
 
 def erase_reservations(product, used, now):
-    if used.filter(reserved_at__isnull=False).exists():
+    origin = used.filter(reserved_at__isnull=False).order_by("job_id").first()
+    if origin:
         # A new grant can tighten a rolling period to the supported maximum (24 h).
         # This operational stop covers the erased reservations without retaining their times.
         source = product.source
+        before = control.state("source", source)
         after = now + timedelta(days=1)
         source.collection_resume_after = max(after, source.collection_resume_after or after)
         source.collection_pause = "validation_ledger_disposed"
         source.save(update_fields=["collection_resume_after", "collection_pause"])
+        version = control.bump_shared("source", source)
+        control.automatic(
+            origin.job,
+            "source",
+            source,
+            before,
+            "paused",
+            version - 1,
+            version,
+            "validation_ledger_disposed",
+        )
     used.update(
         validation_grant=None,
         reserved_at=None,
@@ -206,6 +214,10 @@ def reconcile_cnemc(product, grants, now, *, lost_cities=(), lost_epochs=(), los
                 continue
             survivors.setdefault(item.object_code, set()).add(item.indicator)
             scope = scopes[item.item_key]
+            if item.reason and not covers(
+                product, "retain_normalized", scope, QUALITY_DETAIL, now, grants
+            ):
+                RunItem.objects.filter(pk=item.pk).update(reason="")
             for receipt in receipts:
                 if receipt.collection_metadata:
                     metadata = {
@@ -292,6 +304,10 @@ def reconcile(product, grants, now, **directory_loss):
                 item.receipts.all().delete()
                 item.delete()
                 continue
+            if item.reason and not covers(
+                product, "retain_normalized", scope, QUALITY_DETAIL, now, grants
+            ):
+                RunItem.objects.filter(pk=item.pk).update(reason="")
             for receipt in item.receipts.exclude(collection_metadata=None):
                 metadata = {
                     k: v

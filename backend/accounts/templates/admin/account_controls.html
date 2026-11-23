@@ -1,0 +1,11 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>账号 {{ account }}</h1>
+<p>当前状态：{{ active|yesno:"启用,停用" }}。操作版本 {{ version }}。</p>
+<form method="post">{% csrf_token %}
+<input type="hidden" name="expected_version" value="{{ version }}">
+<input type="hidden" name="reason_code" value="account_review">
+<input type="hidden" name="request_id" value="{{ request_id }}">
+{% if active %}<button name="action" value="disable">停用账号</button>{% else %}<button name="action" value="enable">启用账号</button>{% endif %}
+</form>
+{% endblock %}

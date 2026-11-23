@@ -1383,9 +1383,28 @@ def test_f02_response_classification_and_coverage(operator, source, upstream, sh
         1,
     )
     assert (
-        set(QualityIssue.objects.filter(batch_id=run.batch_id).values_list("code", flat=True))
+        set(QualityIssue.objects.filter(run=run, run_item=None).values_list("code", flat=True))
         == codes
     )
+    expected_item_issues = {
+        "missing": ("missing_key", field_count),
+        "invalid": ("invalid_value", field_count),
+        "duplicate": ("invalid_value", 1),
+    }
+    item_issues = QualityIssue.objects.filter(run=run, run_item__isnull=False)
+    if case in expected_item_issues:
+        code, count = expected_item_issues[case]
+        assert (
+            item_issues.count()
+            == item_issues.filter(
+                code=code,
+                batch_id=run.batch_id,
+                run_item__window=run.window,
+            ).count()
+            == count
+        )
+    else:
+        assert not item_issues.exists()
     expected_count = 24 if shape == "T" else field_count
     valid_count = expected_count if mixed else 0
     received = field_count if case == "invalid" else valid_count
@@ -1533,6 +1552,7 @@ def test_l2_followup_02_optional_metadata_expiry_during_final_tally(
         fields=["normalized", "provenance", "collection_ledger"],
     )
     revoke_grant(operator.pk, broad.pk, "replace broad evidence grant")
+    dispose_due(job.product_id)
     expires = clock() + timedelta(seconds=2)
     metadata_fields = {"source_description", "primary_pollutant", "source_grade"}
     grant(
@@ -1770,10 +1790,14 @@ def test_v12_real_refusal_pauses_source(response, operator, job, monkeypatch):
         tls = response == "bad_certificate"
         if tls:
             key, cert = [str(Path(ram) / name) for name in ("key", "crt")]
+            config = Path(ram) / "openssl.cnf"
+            config.write_text("[req]\ndistinguished_name=dn\n[dn]\n")
             subprocess.run(
                 [
                     "openssl",
                     "req",
+                    "-config",
+                    str(config),
                     "-x509",
                     "-newkey",
                     "rsa:2048",

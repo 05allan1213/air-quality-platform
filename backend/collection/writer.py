@@ -7,10 +7,11 @@ from django.db import transaction
 from observations import revisions
 from observations.catalog import resolve, resolve_city
 from observations.models import Batch, QualityIssue, Receipt
-from observations.policy import Denied, Scope, applicable, clock
+from observations.policy import Denied, Scope, clock
+from observations.quality_events import QUALITY_DETAIL, check_detail, record_run_issue
 
 from .adapters import WireError
-from .admission import LEDGER, cell_key, data_scope
+from .admission import cell_key, data_scope
 from .models import RunItem
 from .services import LEASE, authorized, fence, guard_update, locked, terminal
 
@@ -100,23 +101,20 @@ def manifest(run_id, owner, parsed):
     if problems:
         scope = data_scope(run.job, run.window.target_start, run.window.target_end)
         try:
-            applicable(run.job.product, "retain_normalized", scope, LEDGER, clock())
+            check_detail(run.job.product, scope, clock())
         except Denied:
             pass
         else:
             for code in sorted(problems):
-                QualityIssue.objects.create(
-                    product=run.job.product,
-                    batch=batch_for(run),
-                    code=code,
-                    scope=scope.serialize(),
-                )
-            applicable(run.job.product, "retain_normalized", scope, LEDGER, clock())
+                record_run_issue(run, code, scope, batch=batch_for(run), rule=1)
+            check_detail(run.job.product, scope, clock())
     authorized(run)
     if caps[2]:
         run.rights_boundary = min(caps[2], run.rights_boundary or caps[2])
     guard_update(run, owner, lease_until=clock() + LEASE)
-    anomaly = bool(problems - {"outside_target", "outside_roster"})
+    anomaly = bool(problems - {"outside_target", "outside_roster"}) or any(
+        measurement.issue for cell in cells.values() for _, measurement in cell.values
+    )
     return [cells[key] for key in sorted(cells)], anomaly
 
 
@@ -168,6 +166,14 @@ def write_cell(ctx, run, cell, ordinal):
     status = (
         ("accepted" if accepted else "reread") if good else ("rejected" if rejected else "absent")
     )
+    day = row.time.source_local_date
+    scope = Scope(geo, row.object_code, field.indicator, day, day + timedelta(days=1))
+    try:
+        revisions.check(ctx, "retain_normalized", scope, QUALITY_DETAIL)
+    except Denied:
+        detailed = False
+    else:
+        detailed = True
     item = RunItem.objects.create(
         run=run,
         window=run.window,
@@ -179,8 +185,11 @@ def write_cell(ctx, run, cell, ordinal):
         generation=run.generation,
         accepted=accepted,
         status=status,
-        reason=rejected or ("" if good else field.issue),
+        reason=(rejected or ("" if good else field.issue)) if detailed else "",
     )
+    if detailed:
+        for code in sorted({m.issue for _, m in cell.values if m.data is None and m.issue}):
+            record_run_issue(run, code, scope, item=item, batch=ctx.batch, rule=1)
     for r, data in good:
         if r != row and identify(run, r, for_write=True)[0].pk != cell.entity_id:
             raise Denied("identity_changed")
@@ -199,14 +208,26 @@ def write_cell(ctx, run, cell, ordinal):
             ),
         )
         ordinal += 1
-        revisions.apply_observation(ctx, revisions.Candidate(data), ordinal)
-        if (
-            Receipt.objects.filter(
-                batch=ctx.batch, ordinal=ordinal, rule_version=1, collection_item=None
-            ).update(collection_item=item, collection_metadata=details)
-            != 1
-        ):
+        key, _, outcome = revisions.apply_observation(ctx, revisions.Candidate(data), ordinal)
+        receipt = Receipt.objects.get(batch=ctx.batch, ordinal=ordinal, rule_version=1)
+        if receipt.collection_item_id is not None:
             raise Denied("invalid_receipt_lineage")
+        receipt.collection_item = item
+        receipt.collection_metadata = details
+        receipt.save(update_fields=["collection_item", "collection_metadata"])
+        if detailed and (
+            data.issue or outcome in {"late", "same_version_conflict", "unordered_conflict"}
+        ):
+            key_field = revisions.tables(ctx.product.level)[3]
+            linked = QualityIssue.objects.filter(
+                batch=ctx.batch, run=None, run_item=None, **{key_field: key}
+            )
+            attributable = linked.filter(receipt=receipt)
+            if data.issue and outcome not in {"late", "retired_mapping"}:
+                attributable |= linked.filter(code=data.issue, receipt=None)
+            if outcome == "late":
+                attributable |= linked.filter(code="late", receipt=None)
+            attributable.update(run=run, run_item=item, receipt=receipt)
     return ordinal
 
 
@@ -259,6 +280,7 @@ def commit_chunk(run_id, owner, cells, ordinal, last, *, response_anomaly):
             batch_for(run),
             list(run.job.product.usegrant_set.filter(revoked_at=None)),
             set(),
+            collection=True,
         )
         revisions.lock_stations(
             ctx.product,

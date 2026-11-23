@@ -4,21 +4,25 @@ from datetime import timedelta
 from random import SystemRandom
 from uuid import UUID, uuid4
 
+from django.conf import settings
 from django.db import DatabaseError, transaction
 from django.db.models import BooleanField
 from django.db.models.expressions import RawSQL
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from kombu.exceptions import OperationalError
-from observations.policy import Denied, actor, clock
+from observations.policy import Denied, actor, applicable, clock
+from observations.quality_events import check_detail, record_run_issue
 
-from . import cnemc_jobs
+from . import cnemc_jobs, control
 from .admission import (
     HOUR,
+    LEDGER,
     BudgetExhausted,
     admission,
     bounds,
     budget,
     can_fetch,
+    data_scope,
     expected,
     lock_job,
     parse_hour,
@@ -30,6 +34,32 @@ LEASE = timedelta(seconds=60)
 MAX_EXECUTION = timedelta(minutes=10)
 MAX_ATTEMPTS = 3
 MAX_DELIVERIES = 8
+WIRE_QUALITY_CODES = frozenset(
+    {
+        "invalid_body",
+        "invalid_shape",
+        "invalid_row",
+        "duplicate_json_key",
+        "response_too_large",
+        "response_too_deep",
+        "response_too_many_fields",
+        "response_field_too_long",
+        "response_too_many_rows",
+        "response_too_many_hours",
+        "invalid_identity",
+        "identity_unresolved",
+        "invalid_identifier",
+        "invalid_city_code",
+        "invalid_time",
+        "invalid_source_offset",
+        "source_time_conflict",
+        "city_mismatch",
+        "station_mismatch",
+        "identity_window_crossing",
+        "exact_target_mismatch",
+        "too_many_duplicates",
+    }
+)
 PAGE = 64
 
 
@@ -38,7 +68,10 @@ def wake_scanner():
     PeriodicTask.objects.update_or_create(
         name="s03.reconcile",
         defaults=dict(
-            interval=interval, task="collection.reconcile_due", queue="s03.collection", enabled=True
+            interval=interval,
+            task="collection.reconcile_due",
+            queue=settings.CELERY_TASK_ROUTES["collection.reconcile_due"]["queue"],
+            enabled=True,
         ),
     )
 
@@ -164,7 +197,7 @@ def register(job, actor_id, target, reason, *, request_id=None, scheduled_for=No
 
 
 @transaction.atomic
-def submit(actor_id, data):
+def submit(actor_id, data, *, request=None):
     if (
         not isinstance(data, dict)
         or set(data) != {"job", "request_id", "reason", "target"}
@@ -178,9 +211,13 @@ def submit(actor_id, data):
     except (ValueError, TypeError):
         raise Denied("invalid_request") from None
     job = lock_job(data["job"])
-    return register(
-        job, actor_id, parse_hour(data["target"]), data["reason"], request_id=request_id
-    )
+    session = control.lock_principals(request, {job.executor_id}) if request else None
+    target = parse_hour(data["target"])
+    run = register(job, actor_id, target, data["reason"], request_id=request_id)
+    if session:
+        admission(job, actor_id, *bounds(job, target), endpoint=run.endpoint)
+        session.finish(())
+    return run
 
 
 def terminal(run, status, code=""):
@@ -237,6 +274,9 @@ def publish(run_id):
             or run.request_state != "unsent"
             or run.next_retry_at is not None
             or run.deliveries >= MAX_DELIVERIES
+            or run.dispatch not in {"pending", "unconfirmed", "sent"}
+            or run.dispatch_due is None
+            or run.dispatch_due > clock()
         ):
             return
         try:
@@ -459,14 +499,39 @@ def record_failure(run_id, owner, code, *, action="fail", responded=False, retry
         run.request_state = "responded"
         release_slot(run, now)
         run.save(update_fields=["request_state", "occupied_until"])
-    if action == "source":
-        src = run.job.product.source
-        src.collection_pause = code
-        src.collection_resume_after = retry_after
-        src.save(update_fields=["collection_pause", "collection_resume_after"])
-    elif action == "product":
-        run.job.product.collection_pause = code
-        run.job.product.save(update_fields=["collection_pause"])
+    event = None
+    if action != "deny" and responded and code in WIRE_QUALITY_CODES:
+        try:
+            scope = data_scope(run.job, w.target_start, w.target_end)
+            applicable(run.job.product, "retain_normalized", scope, LEDGER, clock())
+        except Denied:
+            pass
+        else:
+            event = record_run_issue(run, code, scope, rule=1)
+    if action in {"source", "product"}:
+        target = run.job.product.source if action == "source" else run.job.product
+        before = control.state(action, target)
+        target.collection_pause = code
+        fields = ["collection_pause"]
+        if action == "source":
+            # A later event cannot shorten an existing cooldown.
+            if retry_after and target.collection_resume_after:
+                retry_after = max(retry_after, target.collection_resume_after)
+            target.collection_resume_after = retry_after or target.collection_resume_after
+            fields.append("collection_resume_after")
+        target.save(update_fields=fields)
+        after_version = control.bump_shared(action, target)
+        control.automatic(
+            run.job,
+            action,
+            target,
+            before,
+            "paused",
+            after_version - 1,
+            after_version,
+            code,
+            run=run,
+        )
     if (
         action == "retry"
         and run.attempt < MAX_ATTEMPTS
@@ -484,6 +549,11 @@ def record_failure(run_id, owner, code, *, action="fail", responded=False, retry
         else ("partial" if w.items.filter(accepted=True).exists() else "failed"),
     )
     terminal(run, "paused" if action in {"source", "product", "deny"} else "failed", code)
+    if event is not None:
+        try:
+            check_detail(run.job.product, scope, clock())
+        except Denied:
+            event.delete()
 
 
 def quota_check_at(run, available_at):
@@ -605,9 +675,12 @@ def scheduled(job_id):
             scheduled_for=due,
         )
     except Denied as exc:
+        before, version = control.state("job", job), job.control_version
         job.enabled = False
         job.pause_reason = exc.code
         job.save(update_fields=["enabled", "pause_reason"])
+        job.refresh_from_db(fields=["control_version"])
+        control.automatic(job, "job", job, before, "paused", version, job.control_version, exc.code)
 
 
 def reconcile_due():
@@ -660,46 +733,96 @@ def reconcile_due():
                 enqueue(run)
 
 
+def authorize_resume(job):
+    now = clock()
+    target = now.replace(minute=0, second=0, microsecond=0)
+    return admission(job, job.executor_id, *bounds(job, target), allow_paused=True)
+
+
 @transaction.atomic
-def change_job(actor_id, job_id, action):
-    if action not in ("pause", "resume", "resume_source", "resume_product"):
+def change_job(actor_id, job_id, action, *, request=None, data=None):
+    if action not in control.JOB_ACTIONS:
         raise Denied("invalid_request")
     job = lock_job(job_id)
+    session = control.lock_principals(request, {job.executor_id}) if request else None
     actor(actor_id, "manage_collection")
+    kind, target = control.target_for(job, action)
+    version = control.version(kind, target)
+    before = control.state(kind, target)
+    if data is None:
+        data = dict(action=action, request_id=None, reason_code="", expected_version=None)
+    modern = data["request_id"] is not None
     now = clock()
     if action != "pause":
-        target = now.replace(minute=0, second=0, microsecond=0)
-        caps = admission(job, job.executor_id, *bounds(job, target), allow_paused=True)
-        src = job.product.source
+        caps = authorize_resume(job)
+        cnemc_jobs.check_total(job)
+    elif modern:
+        control.review_job(job, now)
+
+    previous = control.previous(job, data, kind, target, actor_id)
+    if previous:
+        session.finish(())
+        if action == "pause":
+            control.review_job(job, clock())
+        else:
+            authorize_resume(job)
+        return control.job_result(job, previous)
+    if modern and version != data["expected_version"]:
+        raise Denied("precondition_conflict")
+    if action == "pause" and before == "paused":
+        if modern:
+            raise Denied("precondition_conflict")
+        if session:
+            session.finish(())
+        return control.job_result(job) if request else job
+    if action != "pause":
+        if modern and before != "paused":
+            raise Denied("precondition_conflict")
         if (
-            action == "resume_source"
-            and src.collection_resume_after
-            and src.collection_resume_after > now
+            kind == "source"
+            and target.collection_resume_after
+            and target.collection_resume_after > now
         ):
             raise Denied("resume_too_early")
-        cnemc_jobs.check_total(job)
         budget(job, caps, now)
-        if cnemc_jobs.managed(job) and action == "resume":
+        if kind == "job" and cnemc_jobs.managed(job):
             cnemc_jobs.ensure_schedule(job)
-        if action == "resume_source":
-            src.collection_pause = ""
-            src.collection_resume_after = None
-            src.save(update_fields=["collection_pause", "collection_resume_after"])
-        elif action == "resume_product":
-            job.product.collection_pause = ""
-            job.product.save(update_fields=["collection_pause"])
-        else:
-            job.enabled = True
-            job.pause_reason = ""
-        wake_scanner()
+    if kind == "job":
+        job.enabled = action != "pause"
+        job.pause_reason = "operator_pause" if action == "pause" else ""
+        job.changed_by_id = actor_id
+        job.changed_at = now
+        job.save(update_fields=["enabled", "pause_reason", "changed_at", "changed_by"])
+        job.refresh_from_db(fields=["control_version"])
+        after_version = job.control_version
     else:
-        job.enabled = False
-        job.pause_reason = "operator_pause"
-    ControlEvent.objects.create(job=job, actor_id=actor_id, action=action, occurred_at=now)
-    job.changed_by_id = actor_id
-    job.changed_at = now
-    job.save(update_fields=["enabled", "pause_reason", "changed_at", "changed_by"])
-    return job
+        target.collection_pause = ""
+        fields = ["collection_pause"]
+        if kind == "source":
+            target.collection_resume_after = None
+            fields.append("collection_resume_after")
+        target.save(update_fields=fields)
+        after_version = control.bump_shared(kind, target)
+    control.event(
+        job,
+        data,
+        kind,
+        target,
+        before,
+        control.state(kind, target),
+        version,
+        after_version,
+        operator_id=actor_id,
+    )
+    if action != "pause":
+        wake_scanner()
+    if session:
+        session.finish(())
+    if action != "pause":
+        authorize_resume(job)
+    elif modern:
+        control.review_job(job, clock())
+    return control.job_result(job) if request else job
 
 
 def execute(run_id):
@@ -789,23 +912,64 @@ def execute(run_id):
             raise
 
 
+def authorize_delivery(run):
+    caps = authorized(run)
+    now = clock()
+    if not can_fetch(run.job, run.window.target_end, now, run.endpoint):
+        raise Denied("backfill_unavailable")
+    cnemc_jobs.check_total(run.job)
+    return caps, now
+
+
 @transaction.atomic
-def redeliver(actor_id, run_id):
+def redeliver(actor_id, run_id, *, request=None, data=None):
     run = locked(run_id)
+    session = control.lock_principals(request, {run.actor_id, run.executor_id}) if request else None
     actor(actor_id, "manage_collection")
-    authorized(run)
+    caps, now = authorize_delivery(run)
+    version = run.control_version
+    if data is None:
+        data = dict(action="redeliver", request_id=None, reason_code="", expected_version=None)
+    modern = data["request_id"] is not None
+    previous = control.previous(run.job, data, "run", run, actor_id)
+    if previous:
+        session.finish(())
+        authorize_delivery(run)
+        return run
     if (
-        run.status != "pending"
+        modern
+        and version != data["expected_version"]
+        or run.status != "pending"
         or run.request_state != "unsent"
         or run.owner
         or run.dispatch != "manual"
+        or run.next_retry_at is not None
+        or run.window.owner
+        or run.window.closed_at
+        and not allows_closed(run.window, intent(run))
     ):
-        raise Denied("invalid_redelivery")
-    ControlEvent.objects.create(job=run.job, actor_id=actor_id, action="redeliver", run=run)
+        raise Denied("precondition_conflict" if modern else "invalid_redelivery")
+    budget(run.job, caps, now)
     run.dispatch = "pending"
     run.deliveries = 0
     run.dispatch_due = clock()
     run.save(update_fields=["dispatch", "deliveries", "dispatch_due"])
+    run.refresh_from_db(fields=["control_version"])
+    control.event(
+        run.job,
+        data,
+        "run",
+        run,
+        "manual",
+        run.dispatch,
+        version,
+        run.control_version,
+        operator_id=actor_id,
+        run=run,
+    )
+    if session:
+        session.finish(())
+    authorize_delivery(run)
     enqueue(run)
     return run
 

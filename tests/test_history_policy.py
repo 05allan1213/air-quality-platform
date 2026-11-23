@@ -4,6 +4,7 @@ from datetime import timedelta
 
 import pytest
 from django.utils import timezone
+from observations.controlled_storage import register_volume
 from observations.disposition import dispose_due, schedule
 from observations.history import check_import
 from observations.models import Batch, ImportAttempt, QualityIssue, StagedInput, UseGrant
@@ -62,6 +63,7 @@ def test_pending_attempt_is_terminal_after_its_unconsumed_file_expires(
         product=product,
         expires_at=timezone.now() - timedelta(seconds=1),
         state="claimed",
+        volume_generation=register_volume(tmp_path),
     )
     attempt = ImportAttempt.objects.create(
         product=product,

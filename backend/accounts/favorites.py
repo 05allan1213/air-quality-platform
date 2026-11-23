@@ -6,9 +6,10 @@ from datetime import timedelta
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.views.decorators.cache import never_cache
-from observations.models import City, Product
+from observations.catalog import catalog_change_span
+from observations.models import CatalogChange, City, Product
 from observations.normalization import INDICATORS, LEVELS, WINDOWS
-from observations.policy import Denied, actor
+from observations.policy import Denied, actor, applicable
 from observations.queries import pk
 from observations.s04_city import hourly_rows
 from observations.s04_http import decode_cursor, encode_cursor, instant, page_size, params
@@ -186,6 +187,23 @@ def station_summaries(ctx, product, stations):
     by_epoch = defaultdict(list)
     for segment in catalog.segments:
         by_epoch[segment.entity_id].append(segment)
+    names = defaultdict(list)
+    for change in CatalogChange.objects.filter(
+        change__product=product,
+        epoch__station_id__in=stations,
+        label__active_period__startswith__lte=ctx.now,
+    ).select_related("epoch__city", "epoch__station", "identifier", "label"):
+        try:
+            applicable(
+                product,
+                "retain_normalized",
+                catalog_change_span(product, change),
+                {"catalog"},
+                ctx.now,
+            )
+        except Denied:
+            continue
+        names[change.epoch.station_id].append(change.label)
     visible_sites = defaultdict(list)
     active = {}
     for epoch in sorted(epochs, key=lambda item: item.pk):
@@ -197,10 +215,22 @@ def station_summaries(ctx, product, stations):
             active[epoch.station_id] = epoch.pk
         if not directory and not rows[epoch.pk]:
             continue
+        name = (
+            next(
+                (
+                    alias.code
+                    for alias in names[epoch.station_id]
+                    if identity_at in alias.active_period
+                ),
+                epoch.station.name,
+            )
+            if directory
+            else None
+        )
         visible_sites[epoch.station_id].append(
             dict(
                 site_epoch=epoch.pk,
-                name=epoch.station.name if directory else None,
+                name=name,
                 site_name=epoch.name if directory else None,
                 period_start=epoch.active_period.lower if directory else None,
                 period_end=upper if directory else None,

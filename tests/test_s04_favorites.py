@@ -297,15 +297,14 @@ def test_favorite_migration_preserves_existing_session_observations_and_window(s
     rollback = [("accounts", None)]
     executor = MigrationExecutor(connection)
     leaves = executor.loader.graph.leaf_nodes()
-    # The current registrar reconciles S05 private tables. Seed the grants before
-    # rolling back, then exercise the original observation, window and Session writes.
+    # S06's current ORM must not run against the historical schema. Seed the
+    # ledger first; inspect the identical stored inputs on both sides of migration.
     product = create_product("favorite-migration")
     site = create_site(product)
     allow(operator, product)
     allow(operator, product, "display")
     allow(operator, product, "process_local")
     try:
-        executor.migrate(rollback)
         ingest_fixture(operator.pk, product.pk, "favorites-migration", "F", [candidate(product)])
         job = Job.objects.create(product=product, executor=operator, profile="s04-upgrade")
         window = WorkWindow.objects.create(
@@ -321,6 +320,17 @@ def test_favorite_migration_preserves_existing_session_observations_and_window(s
         selection = selector(product, site)
         before = read_current(owner.pk, selection)
         assert before["count"] == 1
+        assert Session.objects.filter(pk=cookie).exists()
+        executor.migrate(rollback)
+        assert "accounts_favorite" not in connection.introspection.table_names()
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT count(*) FROM observations_stationobservation WHERE product_id=%s",
+                [product.pk],
+            )
+            assert cursor.fetchone() == (1,)
+            cursor.execute("SELECT result FROM collection_workwindow WHERE id=%s", [window.pk])
+            assert cursor.fetchone() == ("pending",)
         assert Session.objects.filter(pk=cookie).exists()
         MigrationExecutor(connection).migrate(leaves)
         assert MigrationExecutor(connection).migration_plan(leaves) == []

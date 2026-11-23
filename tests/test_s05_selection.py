@@ -124,7 +124,13 @@ def test_authorized_aqi_source_description_requires_both_uses(django_user_model)
     p = product("optional-description", "C")
     a = city(p)
     authorize(op, p)
+    # Only the description covered at ingestion can later be displayed. A
+    # minimal field-specific allow is insufficient for the read projection.
     c = candidate(p, indicator="AQI")
+    other = candidate(p, indicator="AQI", at=START + HOUR)
+    ingest(op, p, [replace(other, data=replace(other.data, source_description="F unlicensed"))])
+    assert CityRevision.objects.get(key__observed_at_utc=START + HOUR).source_description == ""
+    grant(op, p, "retain_normalized", fields={"source_description"})
     ingest(op, p, [replace(c, data=replace(c.data, source_description="F source wording"))])
     query = parent(p, [a], indicators=("AQI",))
 

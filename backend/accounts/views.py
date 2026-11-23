@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_GET, require_POST
 
 from .limits import limited
+from .session_generation import bind_generation, lock_login_name
 
 
 def csrf_failure(request, reason=""):
@@ -80,10 +81,13 @@ def sign_in(request):
     data = credentials(request)
     if data is None:
         return JsonResponse({"code": "invalid_request"}, status=400)
-    user = authenticate(request, **data)
-    if user is None:
-        return JsonResponse({"code": "invalid_credentials"}, status=403)
-    login(request, user)
+    with transaction.atomic():
+        locked = lock_login_name(data["username"])
+        user = authenticate(request, **data)
+        if user is None or locked is None or locked.pk != user.pk:
+            return JsonResponse({"code": "invalid_credentials"}, status=403)
+        login(request, user)
+        bind_generation(request, user.pk)
     return JsonResponse({"username": user.username})
 
 

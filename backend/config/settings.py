@@ -15,7 +15,9 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").sp
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 INSTALLED_APPS = [
+    "django.contrib.admin.apps.SimpleAdminConfig",
     "django.contrib.auth",
+    "django.contrib.messages",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "rest_framework",
@@ -32,7 +34,23 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.session_generation.GenerationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
 ]
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ]
+        },
+    }
+]
+STATIC_URL = "/static/"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -76,7 +94,10 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_IGNORE_RESULT = True
 CELERY_RESULT_BACKEND = None
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_BEAT_SCHEDULER = "config.scheduler:ObservedScheduler"
+OPERATIONS_WORKER = os.environ.get("AQ_WORKER_NODE", "worker@local")
+OPERATIONS_SAMPLE_SECONDS = 10
+OPERATIONS_TTL_SECONDS = 30
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TASK_PUBLISH_RETRY = False
 CELERY_BROKER_CONNECTION_TIMEOUT = 1
@@ -97,6 +118,8 @@ if CNEMC_MODE not in {"off", "limited", "periodic"}:
     raise ImproperlyConfigured("Invalid CNEMC_MODE")
 
 S02_STAGE_DIR = "/run/s02-history"
+S06_BACKUP_DIR = os.environ.get("S06_BACKUP_DIR")
+S06_AUTHORITY_DIR = os.environ.get("S06_AUTHORITY_DIR")
 CELERY_TASK_ROUTES = {
     "collection.execute_run": {"queue": "s03.collection"},
     "collection.reconcile_due": {"queue": "s03.collection"},

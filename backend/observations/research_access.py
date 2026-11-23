@@ -3,7 +3,8 @@
 from datetime import timedelta
 from zoneinfo import ZoneInfo
 
-from django.db.models import Q
+from django.contrib.auth import get_user_model
+from django.db.models import DateTimeField, Func, Q
 
 from .models import Product, SiteEpoch, Source, Station, UseGrant
 from .policy import REQUIRED, Denied, Scope, actor, applicable, clock
@@ -37,7 +38,6 @@ class ResearchContext(ReadContext):
             raise Denied()
         self.products = {product.pk: product}
         self.user_id = user_id
-        actor(user_id)
         self._identities = {}
         self._geographies = {}
         self.epochs = {}
@@ -54,7 +54,16 @@ class ResearchContext(ReadContext):
                     .order_by("pk")
                 )
             self.epochs = {e.pk: e for e in epochs.select_related("city", "station")}
-        self.now = now or clock()
+        checked_at = (
+            get_user_model()
+            .objects.filter(pk=user_id, is_active=True)
+            .annotate(checked_at=Func(function="clock_timestamp", output_field=DateTimeField()))
+            .values_list("checked_at", flat=True)
+            .first()
+        )
+        if checked_at is None:
+            raise Denied("permission_denied")
+        self.now = now or checked_at
 
 
 def uses(purpose, spec, fields=()):

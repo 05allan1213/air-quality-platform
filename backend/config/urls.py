@@ -1,4 +1,7 @@
+from accounts.management_api import accounts
+from accounts.operations import health
 from accounts.profile import profile
+from accounts.restricted_admin import site
 from collection import views as collection_views
 from django.db import DatabaseError, connection
 from django.http import JsonResponse
@@ -22,12 +25,18 @@ def ready(request):
 
 
 urlpatterns = [
+    path("admin/", site.urls),
+    path("api/v1/admin/accounts/<int:pk>/actions/", accounts),
     path("health/ready/", ready),
+    path("api/v1/admin/operations/health/", health),
     path("api/v1/admin/collection-runs/", collection_views.runs),
     path("api/v1/admin/collection-runs/<uuid:run_id>/", collection_views.recover),
     path("api/v1/admin/collection-jobs/<int:pk>/", collection_views.jobs),
     path("api/v1/admin/collection-windows/<int:pk>/", collection_views.windows),
     path("api/v1/admin/history-imports/", observation_views.history_imports),
+    path("api/v1/", include("observations.quality_urls")),
+    path("api/v1/", include("observations.disposition_control")),
+    path("api/v1/", include("observations.backup_urls")),
     path("api/v1/", include("observations.s04_national")),
     path("api/v1/", include("observations.s04_city")),
     path("api/v1/", include("observations.s04_station")),

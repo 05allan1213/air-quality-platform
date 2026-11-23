@@ -8,9 +8,12 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
-from django.db import transaction
+from django.db import DatabaseError, transaction
+from django.db.models import Q
+from django.db.models.expressions import RawSQL
 from django_celery_beat.models import ClockedSchedule, IntervalSchedule, PeriodicTask
 
+from .controlled_storage import bound_directory, unlink_from
 from .models import (
     Batch,
     Change,
@@ -37,6 +40,7 @@ from .policy import (
     clock,
     locked_catalog_product,
 )
+from .quality_events import check_detail, collection_issue
 from .research_disposition import cleanup_expired, reconcile_private
 from .revisions import key_scope, tables
 
@@ -49,7 +53,7 @@ def schedule(product, due_at, reason):
     PeriodicTask.objects.create(
         name=f"s02.due.{job.pk}",
         task="observations.dispose",
-        queue="s02.history",
+        queue=settings.CELERY_TASK_ROUTES["observations.dispose"]["queue"],
         clocked=clocked,
         one_off=True,
         args=json.dumps([product.pk]),
@@ -58,7 +62,10 @@ def schedule(product, due_at, reason):
     PeriodicTask.objects.update_or_create(
         name="s02.reconcile",
         defaults=dict(
-            interval=interval, task="observations.dispose", queue="s02.history", enabled=True
+            interval=interval,
+            task="observations.dispose",
+            queue=settings.CELERY_TASK_ROUTES["observations.dispose"]["queue"],
+            enabled=True,
         ),
     )
     return job
@@ -67,7 +74,12 @@ def schedule(product, due_at, reason):
 def private_dir():
     path = Path(settings.S02_STAGE_DIR)
     st = path.lstat()
-    if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.geteuid() or st.st_mode & 0o077:
+    if (
+        path.resolve(strict=True) != path
+        or not stat.S_ISDIR(st.st_mode)
+        or st.st_uid != os.geteuid()
+        or st.st_mode & 0o077
+    ):
         raise OSError("stage_directory_unavailable")
     # In the deployed Worker this must be its own bounded tmpfs, never the image layer.
     if str(path) == "/run/s02-history" and not os.path.ismount(path):
@@ -76,15 +88,10 @@ def private_dir():
 
 
 def clear_stage(stage):
-    path = private_dir() / str(stage.pk)
-    path.unlink(missing_ok=True)
-    try:
-        path.lstat()
-    except FileNotFoundError:
-        stage.state = "cleared"
-        stage.save(update_fields=["state"])
-        return
-    raise OSError("stage_still_present")
+    with bound_directory(private_dir(), stage.volume_generation) as fd:
+        unlink_from(fd, str(stage.pk))
+    stage.state = "cleared"
+    stage.save(update_fields=["state"])
 
 
 def covers(product, op, scope, fields, now, grants):
@@ -109,6 +116,7 @@ def reconcile_data(product, grants, now, *, lost_cities=(), lost_epochs=(), lost
     )
     drop = []
     strip = []
+    scrub = {"source_time": [], "source_description": []}
     for key in keys.iterator():
         scope = key_scope(key)
         missing_identity = (
@@ -122,11 +130,24 @@ def reconcile_data(product, grants, now, *, lost_cities=(), lost_epochs=(), lost
             or not covers(product, "retain_normalized", scope, REQUIRED, now, grants)
         ):
             drop.append(key.pk)
-        elif not covers(product, "retain_normalized", scope, RAW, now, grants):
+            continue
+        if not covers(product, "retain_normalized", scope, RAW, now, grants):
             strip.append(key.pk)
+        for field, key_ids in scrub.items():
+            if not covers(product, "retain_normalized", scope, {field}, now, grants):
+                key_ids.append(key.pk)
     _, rev, _, _, rf = tables(product.level)
-    receipts = Receipt.objects.filter(batch__product=product, **{rf + "__key_id__in": drop + strip})
-    # A batch digest describes the WHOLE material. It must not survive a partial purge.
+    raw_revisions = rev.objects.filter(key_id__in=strip).filter(
+        Q(raw_value__isnull=False) | Q(raw_unit__isnull=False)
+    )
+    # Redact a batch when its material actually loses an observation, a raw
+    # revision field or a raw receipt locator. A normalized-only contribution
+    # with none of those fields still has its original acquisition lineage.
+    receipts = Receipt.objects.filter(batch__product=product).filter(
+        Q(**{rf + "__key_id__in": drop})
+        | Q(**{rf + "__in": raw_revisions})
+        | Q(locator__isnull=False, **{rf + "__key_id__in": strip})
+    )
     affected = Batch.objects.filter(pk__in=receipts.values("batch_id"))
     affected.update(identity=None, redacted=True)
     if product.family == "H" and not covers(
@@ -134,18 +155,45 @@ def reconcile_data(product, grants, now, *, lost_cities=(), lost_epochs=(), lost
     ):
         Batch.objects.filter(product=product).update(identity=None, redacted=True)
     receipts.update(locator=None)
-    rev.objects.filter(key_id__in=strip).update(raw_value=None, raw_unit=None)
+    raw_revisions.update(raw_value=None, raw_unit=None)
+    for field, key_ids in scrub.items():
+        if not key_ids:
+            continue
+        revisions = rev.objects.filter(key_id__in=key_ids)
+        if field == "source_time":
+            affected_revisions = revisions.filter(provenance__source_time__isnull=False).exclude(
+                provenance__source_time=None
+            )
+        else:
+            affected_revisions = revisions.exclude(source_description="")
+        linked = Receipt.objects.filter(**{rf + "__in": affected_revisions})
+        Batch.objects.filter(pk__in=linked.values("batch_id")).update(identity=None, redacted=True)
+        if field == "source_time":
+            affected_revisions.update(provenance=RawSQL("provenance - 'source_time'::text", ()))
+        else:
+            affected_revisions.update(source_description="")
     key_model.objects.filter(pk__in=drop).delete()
-    # A batch can have authorized structural issues and no observation rows.
-    for issue in QualityIssue.objects.filter(product=product, city_key=None, station_key=None):
-        if not covers(
-            product,
-            "retain_normalized",
-            Scope.from_issue(issue.scope),
-            batch_issue_fields(product),
-            now,
-            grants,
-        ):
+    # Review details can lose their retention basis independently of their Run or key.
+    for issue in (
+        QualityIssue.objects.filter(product=product)
+        .filter(
+            Q(city_key=None, station_key=None)
+            | Q(run__isnull=False)
+            | Q(batch__collection_run__isnull=False)
+        )
+        .select_related("city_key__city", "station_key__site_epoch__city", "batch__collection_run")
+        .iterator()
+    ):
+        key = issue.city_key or issue.station_key
+        scope = key_scope(key) if key else Scope.from_issue(issue.scope)
+        try:
+            if collection_issue(issue):
+                check_detail(product, scope, now, grants)
+            else:
+                applicable(
+                    product, "retain_normalized", scope, batch_issue_fields(product), now, grants
+                )
+        except Denied:
             Batch.objects.filter(pk=issue.batch_id).update(identity=None, redacted=True)
             issue.delete()
     from collection.retention import reconcile
@@ -182,6 +230,8 @@ def contains_period(outer, inner):
 def reconcile_catalog(product, siblings, now):
     """Check each full directory period against the remaining independent bases."""
     from collection.models import Job, WorkWindow
+
+    from .catalog import DIRECTORY_RULE
 
     source_id = product.source_id
     grants = {p.pk: list(p.usegrant_set.filter(revoked_at=None)) for p in siblings}
@@ -234,7 +284,13 @@ def reconcile_catalog(product, siblings, now):
             keep_stations.add(epoch.station_id)
         else:
             lost_epochs.add(epoch.pk)
-    lost_station_ids = {i.pk for i in station_ids} - keep_station_ids
+    lost_station_ids = {
+        i.pk
+        for i in station_ids
+        if not (
+            i.kind == "alias" and i.evidence == DIRECTORY_RULE and i.station_id in keep_stations
+        )
+    } - keep_station_ids
 
     def removed_periods(identifiers, lost):
         periods = {}
@@ -277,12 +333,23 @@ def reconcile_catalog(product, siblings, now):
 
 
 @transaction.atomic
-def reconcile_product(product_id):
+def reconcile_product(product_id, *, expected_jobs=None):
     product, siblings = locked_catalog_product(product_id)
     now = clock()
     jobs = DispositionJob.objects.filter(product=product, completed_at=None, due_at__lte=now)
+    if expected_jobs is not None and set(jobs.values_list("pk", flat=True)) != expected_jobs:
+        raise Denied("precondition_conflict")
+    if jobs.filter(reason="legacy_boundary_review").exists():
+        jobs.filter(reason="legacy_boundary_review").update(error_code="historical_basis_unknown")
+        return
     if not jobs.exists():
         return
+    from .backup import reconcile_segments
+    from .catalog import reconcile_catalog_changes
+    from .loss import refresh, settle
+
+    versions = {p.pk: p.rights_version for p in (siblings or [product])}
+    settle(product, now)
     grants = list(product.usegrant_set.filter(revoked_at__isnull=True))
     if jobs.exclude(reason__in=["stage_cleanup", "stage_expiry"]).exists():
         if siblings:
@@ -295,6 +362,7 @@ def reconcile_product(product_id):
             Change.objects.create(
                 product=product, kind="disposition", rights_version=product.rights_version
             )
+        reconcile_catalog_changes(product, now, grants)
     for stage in StagedInput.objects.filter(product=product).exclude(state="cleared"):
         if (
             stage.expires_at <= now
@@ -305,21 +373,39 @@ def reconcile_product(product_id):
             ImportAttempt.objects.filter(stage=stage, state="pending").update(
                 state="rejected", error_code="invalid_stage", finished_at=now
             )
+    # Files must be absent (and controlled readers closed) before marking work done.
+    reconcile_segments(product, now)
     jobs.update(completed_at=clock(), error_code="")
+    if product.next_loss_at is not None:
+        refresh(product)
+    from .backup_authority import record_event
+
+    for p in siblings or [product]:
+        if versions[p.pk] != p.rights_version:
+            record_event(p, "disposition", clock())
 
 
 def dispose_due(product_id=None):
+    failed = False
     if product_id is None:
         cleanup_expired()
     due = DispositionJob.objects.filter(completed_at=None, due_at__lte=clock())
     if product_id is not None:
         due = due.filter(product_id=product_id)
-    failed = False
     for pk in list(due.order_by("product_id").values_list("product_id", flat=True).distinct()):
         try:
             reconcile_product(pk)
         except OSError:
             due.filter(product_id=pk).update(error_code="cleanup_failed")
+            failed = True
+    if product_id is None and getattr(settings, "S06_BACKUP_DIR", None):
+        from .backup import sweep_orphans
+
+        try:
+            sweep_orphans()
+        except (DatabaseError, Denied, OSError):
+            # A disconnected backup root or a contended catalog cannot delay
+            # the independent transactions for already registered work.
             failed = True
     if failed:
         raise Denied("cleanup_failed")

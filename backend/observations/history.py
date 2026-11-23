@@ -1,5 +1,6 @@
 """The Worker owns all staged bytes. Queue messages contain only attempt UUIDs."""
 
+import fcntl
 import io
 import os
 import stat
@@ -10,8 +11,10 @@ from django.db import transaction
 from kombu.exceptions import OperationalError
 from samples.normalization import Rejected
 
+from .controlled_storage import bound_directory, register_volume
 from .disposition import PACKAGE_SCOPE, clear_stage, private_dir, schedule
 from .import_uci import MAX_ARCHIVE_BYTES, PROFILE, read_archive, validate_archive
+from .loss import require_continuous
 from .models import ImportAttempt, Product, StagedInput
 from .normalization import CONCENTRATIONS
 from .policy import REQUIRED, Denied, Scope, actor, applicable, clock, locked_product
@@ -30,47 +33,67 @@ def source_product():
     return locked_product(pk)
 
 
-def check_import(product, actor_id):
+def check_import(product, actor_id, *, stage=None):
     actor(actor_id, "import_history")
     now = clock()
+    if stage is not None and (
+        stage.volume_generation is None or not stage.created_at <= now < stage.expires_at
+    ):
+        raise Denied("invalid_stage")
     grants = list(product.usegrant_set.filter(revoked_at__isnull=True))
+
+    def require(operation, scope, fields):
+        applicable(product, operation, scope, fields, now, grants)
+        if stage is not None and operation in {"retain_raw", "retain_normalized"}:
+            require_continuous(product, operation, scope, fields, now, since=stage.created_at)
+
     for operation in ("acquire_file", "process_local", "retain_raw"):
-        applicable(product, operation, PACKAGE_SCOPE, {"archive"}, now, grants)
-    applicable(product, "retain_normalized", PACKAGE_SCOPE, {"batch_identity"}, now, grants)
+        require(operation, PACKAGE_SCOPE, {"archive"})
+    require("retain_normalized", PACKAGE_SCOPE, {"batch_identity"})
     for station in STATIONS:
         for start, end in WINDOWS:
             for offset in range((end - start).days):
                 day = start + timedelta(days=offset)
                 for indicator in CONCENTRATIONS:
                     scope = Scope("beijing", station, indicator, day, day + timedelta(days=1))
-                    applicable(product, "retain_normalized", scope, REQUIRED, now, grants)
-                    applicable(product, "process_local", scope, {"normalized"}, now, grants)
+                    require("retain_normalized", scope, REQUIRED)
+                    require("process_local", scope, {"normalized"})
 
 
 def stage_uci(actor_id, stream):
     with transaction.atomic():
         product = source_product()
         check_import(product, actor_id)
-        private_dir()
+        volume = register_volume(private_dir())
+        created = clock()
         stage = StagedInput.objects.create(
-            product=product, owner_id=actor_id, expires_at=clock() + timedelta(minutes=20)
+            product=product,
+            owner_id=actor_id,
+            created_at=created,
+            expires_at=created + timedelta(minutes=20),
+            volume_generation=volume,
         )
         schedule(product, stage.expires_at, "stage_expiry")
     try:
         with transaction.atomic():
             product = locked_product(product.pk)
-            check_import(product, actor_id)
             stage.refresh_from_db()
-            if stage.state != "preparing" or stage.expires_at <= clock():
+            if stage.state != "preparing":
                 raise Denied("invalid_stage")
+            check_import(product, actor_id, stage=stage)
             data = stream.read(MAX_ARCHIVE_BYTES + 1)
             validate_archive(io.BytesIO(data))
-            check_import(product, actor_id)
-            path = private_dir() / str(stage.pk)
-            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-            with os.fdopen(fd, "wb") as out:
-                out.write(data)
-            check_import(product, actor_id)
+            check_import(product, actor_id, stage=stage)
+            with bound_directory(private_dir(), stage.volume_generation) as directory_fd:
+                fd = os.open(
+                    str(stage.pk),
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                    0o600,
+                    dir_fd=directory_fd,
+                )
+                with os.fdopen(fd, "wb") as out:
+                    out.write(data)
+            check_import(product, actor_id, stage=stage)
             stage.state = "ready"
             stage.save(update_fields=["state"])
     except Exception:
@@ -113,12 +136,12 @@ def submit(actor_id, payload):
         except ValueError:
             raise Denied("invalid_request") from None
         product = source_product()
-        check_import(product, actor_id)
         stage = StagedInput.objects.filter(
             pk=stage_id, product=product, owner_id=actor_id, state="ready", expires_at__gt=clock()
         ).first()
         if not stage:
             raise Denied()
+        check_import(product, actor_id, stage=stage)
         run = ImportAttempt.objects.create(
             product=product, stage=stage, actor_id=actor_id, reason=payload["reason"]
         )
@@ -142,7 +165,7 @@ def publish(run):
 def redeliver(actor_id, attempt_id):
     with transaction.atomic(durable=True):
         product = source_product()
-        check_import(product, actor_id)
+        actor(actor_id, "import_history")
         run = (
             ImportAttempt.objects.select_for_update()
             .filter(pk=attempt_id, product=product, actor_id=actor_id)
@@ -151,18 +174,30 @@ def redeliver(actor_id, attempt_id):
         if run is None:
             raise Denied()
         if run.state != "pending":
+            check_import(product, actor_id)
             return str(run.pk), run.state
-        if run.stage.state != "claimed" or run.stage.expires_at <= clock():
+        if run.stage.state != "claimed":
             raise Denied("invalid_stage")
+        check_import(product, actor_id, stage=run.stage)
     return publish(run)
 
 
 def inspect_input(stage):
     if stage.state != "claimed" or stage.expires_at <= clock():
         raise Denied("invalid_stage")
-    fd = os.open(private_dir() / str(stage.pk), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-    with os.fdopen(fd, "rb") as stream:
-        st = os.fstat(fd)
+    with (
+        bound_directory(private_dir(), stage.volume_generation) as directory_fd,
+        os.fdopen(
+            os.open(
+                str(stage.pk),
+                os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                dir_fd=directory_fd,
+            ),
+            "rb",
+        ) as stream,
+    ):
+        fcntl.flock(stream.fileno(), fcntl.LOCK_SH | fcntl.LOCK_NB)
+        st = os.fstat(stream.fileno())
         if (
             not stat.S_ISREG(st.st_mode)
             or st.st_nlink != 1
@@ -184,16 +219,15 @@ def consume(attempt_id):
             run.save(update_fields=["deliveries"])
             if run.state != "pending":
                 return "redelivery"
-            check_import(product, run.actor_id)
+            check_import(product, run.actor_id, stage=run.stage)
             selection = inspect_input(run.stage)
-            check_import(product, run.actor_id)
+            check_import(product, run.actor_id, stage=run.stage)
         with transaction.atomic():
             product = locked_product(run.product_id)
             run = ImportAttempt.objects.select_for_update().get(pk=attempt_id)
             if run.state != "pending":
                 return "redelivery"
-            check_import(product, run.actor_id)
-            if run.stage.state != "claimed" or run.stage.expires_at <= clock():
+            if run.stage.state != "claimed":
                 raise Denied("invalid_stage")
             batch, created = ingest_batch(
                 run.actor_id,
@@ -201,8 +235,9 @@ def consume(attempt_id):
                 selection.digest,
                 PROFILE,
                 (Candidate(r) for r in selection.rows),
+                stage_id=run.stage_id,
             )
-            check_import(product, run.actor_id)
+            check_import(product, run.actor_id, stage=run.stage)
             run.batch = batch
             run.state = "succeeded" if created else "duplicate"
             run.started_at, run.finished_at = started, clock()

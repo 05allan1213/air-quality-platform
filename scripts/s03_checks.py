@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 
 from s01_runtime import Client, wait_for
 from s03_runtime import (
-    JOB_URL,
     RUN_URL,
     city_packet,
     hour,
+    job_control,
     list_packet,
     register_job,
     urllib_query,
@@ -675,7 +675,7 @@ def backoff_and_pause(p, account, job):
             == "t"
         ),
     )
-    resumed = account.call(f"{JOB_URL}{job}/", {"action": "resume_source"})
+    resumed = job_control(account, job, "resume_source")
     p.record(tag, "controlled job resume HTTP", resumed)
     assert resumed[0] in {200, 202, 204}
     p.equal(

@@ -24,6 +24,23 @@ LIMITS = {
 }
 
 
+def control_payload(action, version):
+    reason = {"pause": "operator_pause", "redeliver": "operator_recovery"}.get(
+        action, "operator_resume"
+    )
+    return dict(
+        action=action, request_id=str(uuid.uuid4()), reason_code=reason, expected_version=version
+    )
+
+
+def job_control(account, job, action):
+    route = f"{JOB_URL}{job}/"
+    status, result = account.call(route)
+    assert status == 200, (status, result)
+    kind = {"resume_source": "source", "resume_product": "product"}.get(action, "job")
+    return account.call(route, control_payload(action, result["targets"][kind]["control_version"]))
+
+
 TEST_HOUR = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
 
 

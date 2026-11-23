@@ -140,6 +140,7 @@ def raw_and_mixed_batch_withdrawal(p, reader, operator):
             F_SETUP
             + """
 from datetime import timedelta
+from observations.controlled_storage import register_volume
 from observations.disposition import PACKAGE_SCOPE, private_dir
 from observations.models import StagedInput
 from observations.policy import clock, register_grant
@@ -154,7 +155,8 @@ allow(u,product,geography='B')
 raw=register_grant(u.pk,product.pk,operation='retain_raw',audience='platform',
     geography=PACKAGE_SCOPE.geography,data_from=PACKAGE_SCOPE.start,data_until=PACKAGE_SCOPE.end,
     terms='F test fixture',terms_version='1',fields=['archive'])
-stage=StagedInput.objects.create(product=product,owner=u,expires_at=clock()+timedelta(minutes=5),state='ready')
+stage=StagedInput.objects.create(product=product,owner=u,expires_at=clock()+timedelta(minutes=5),
+    state='ready',volume_generation=register_volume(private_dir()))
 path=private_dir()/str(stage.pk)
 path.mkdir(mode=0o700)
 (path/'injected').write_bytes(b'F')

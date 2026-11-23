@@ -173,6 +173,7 @@ def test_nonrenewing_total_across_503_retry_new_uuid_and_rollover(lab, monkeypat
         (Run, first.pk, {"endpoint": "A07"}),
         (Run, first.pk, {"reserved_at": None}),
         (UseGrant, job.validation_grant_id, {"max_total_requests": 2}),
+        (UseGrant, job.validation_grant_id, {"registered_at": clock() - timedelta(days=1)}),
     ):
         with pytest.raises(IntegrityError), transaction.atomic():
             model.objects.filter(pk=pk).update(**fields)

@@ -29,7 +29,9 @@
 | `executor`、`city_code`、`first_due`、`cadence` | 工作身份、按城入口的城市码、带时区的发布时间偏移及周期秒数。省略 `first_due` 即人工 Job。周期以整小时为单位，目标仍是源整点 |
 | `validation_terms_version`、`backfill_policy` | 限定人工验证绑定授权版本。A10 使用独立的 `equivalence_basis`、`lookback_hours`、`max_windows_per_scan`、`max_requests_per_scan` 和 `operating_from`。回看上限 23 小时，锚取有权的 A07 实见时次，锚达到两小时后停止补采。`Job.backfill_cursor` 保存下一次扫描的整点，单页上限为 1 时也会越过无权日期 |
 
-变更运行状态使用已登录、带 CSRF 的 `POST /api/v1/admin/collection-jobs/<id>/`，正文的 `action` 可取 `resume`、`pause`、`resume_source` 或 `resume_product`。人工提交使用 `POST /api/v1/admin/collection-runs/`，传 `job`、`request_id`、`reason` 和带时区的整点 `target`。相同操作者重投原 UUID 可查原 Run。停止和恢复均以 PG 账本为准。`scheduled` 由现有 Beat 扫描器负责。
+变更运行状态使用已登录、带 CSRF 的 `POST /api/v1/admin/collection-jobs/<id>/`。S06 起先对同一路径做受权 `GET`，读取 `targets.job/source/product.control_version`。提交 `action`、`request_id`（UUID）、`reason_code` 和实际目标的 `expected_version`：`pause`、`resume` 用 Job 版本，`resume_source` 用 Source 版本，`resume_product` 用 Product 版本。可用理由码包括 `operator_pause`、`operator_resume` 和 `incident_review`。仅紧急暂停兼容旧正文 `{"action":"pause"}`。遇 `409` 先重读状态，不能沿用旧版本强行恢复。
+
+人工采集提交使用 `POST /api/v1/admin/collection-runs/`，传 `job`、`request_id`、`reason` 和带时区的整点 `target`。相同操作者重发原 UUID 可查原 Run；这不是重投任务。需要重投符合条件的原 Run 时，对 `collection-runs/<uuid>/` 做受权 `GET`，取 `target.control_version`，再以 `action=redeliver`、新 UUID、`reason_code=operator_recovery` 和该版本提交给同一地址。控制重放仍须通过会话、权限及用途检查。停止和恢复均以 PG 账本为准。`scheduled` 由现有 Beat 扫描器负责。
 
 常规 Job 处置后如需保留预留时刻，`retain_normalized` 的 `request_ledger` 需覆盖该产品、全来源范围及窗口日期。其余预留进入 `disposed` 并清除时间字段。
 

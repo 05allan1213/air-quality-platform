@@ -133,3 +133,62 @@ class ExportTicket(models.Model):
                 name="export_ticket_owner_page",
             ),
         ]
+
+
+class AccountState(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True
+    )
+    session_generation = models.PositiveBigIntegerField(default=0)
+    version = models.PositiveBigIntegerField(default=0)
+
+    class Meta:
+        default_permissions = ()
+        permissions = [
+            ("manage_accounts", "Manage subordinate accounts"),
+            ("adjudicate_quality", "Adjudicate authorized quality evidence"),
+            ("manage_catalog", "Govern authorized station identities"),
+            ("diagnose_operations", "Read authorized operational diagnostics"),
+            ("manage_backups", "Prepare authorized backup segments"),
+            ("restore_backup", "Restore authorized backup segments"),
+        ]
+
+
+class GovernanceAction(models.Model):
+    """Committed receipts. Only server-selected codes and identifiers belong here."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    request_id = models.UUIDField(null=True)
+    action = models.CharField(max_length=32)
+    target_kind = models.CharField(max_length=24)
+    target = models.CharField(max_length=64)
+    origin = models.CharField(max_length=64, blank=True)
+    reason_code = models.CharField(max_length=48, blank=True)
+    parameter = models.CharField(max_length=80, blank=True)
+    before_state = models.CharField(max_length=48)
+    after_state = models.CharField(max_length=48)
+    before_version = models.PositiveBigIntegerField()
+    after_version = models.PositiveBigIntegerField()
+    outcome = models.CharField(max_length=16, default="applied")
+    created_at = models.DateTimeField()
+
+    class Meta:
+        default_permissions = ()
+        constraints = [
+            models.UniqueConstraint(fields=("actor", "request_id"), name="gov_actor_request")
+        ]
+
+
+class ServicePulse(models.Model):
+    """Latest process evidence only. No observations, user input or task payload."""
+
+    component = models.CharField(max_length=12, primary_key=True)
+    instance = models.CharField(max_length=120)
+    observed_at = models.DateTimeField()
+    subscribed_queues = models.JSONField(null=True)
+    consumed_at = models.DateTimeField(null=True)
+    queue = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        default_permissions = ()

@@ -14,6 +14,7 @@ from rest_framework.response import Response
 
 from .api import error
 from .limits import limited
+from .session_generation import generation, matches_generation
 
 PROFILE_FIELDS = ("first_name", "last_name")
 
@@ -33,8 +34,12 @@ def current_user(request, *, lock=False):
     if lock:
         users = users.select_for_update()
     user = users.first()
-    if user is None or not constant_time_compare(
-        user.get_session_auth_hash(), request.user.get_session_auth_hash()
+    if (
+        user is None
+        or not matches_generation(request.session, generation(user.pk))
+        or not constant_time_compare(
+            user.get_session_auth_hash(), request.user.get_session_auth_hash()
+        )
     ):
         raise PermissionDenied()
     return user

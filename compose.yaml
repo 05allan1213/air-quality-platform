@@ -59,7 +59,7 @@ services:
       migrate: {condition: service_completed_successfully}
   worker:
     <<: *app
-    command: [sh, -ec, 'python backend/manage.py s02_dispose_due && python backend/manage.py s03_reconcile_due && exec celery -A config worker -l INFO -Q s01.fixture,s02.history,s03.collection --concurrency=1']
+    command: [sh, -ec, 'python backend/manage.py s02_dispose_due && python backend/manage.py s03_reconcile_due && exec celery -A config worker -n worker@local -l INFO -Q s01.fixture,s02.history,s03.collection --concurrency=1']
     tmpfs:
       - /run/s02-history:rw,noexec,nosuid,nodev,size=32m,mode=0700,uid=10001,gid=10001
     depends_on: *after-migration

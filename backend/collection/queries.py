@@ -8,18 +8,28 @@ from zoneinfo import ZoneInfo
 from django.db import transaction
 from django.db.models import F
 from observations.catalog import resolve
-from observations.models import CityIdentifier, Receipt, SiteEpoch, StationIdentifier
+from observations.models import CityIdentifier, QualityIssue, Receipt, SiteEpoch, StationIdentifier
 from observations.normalization import INDICATORS
 from observations.policy import Denied, Scope, actor, applicable, clock, locked_product
+from observations.quality_events import check_detail
 from observations.queries import params_once
 from observations.revisions import tables
 
-from . import cnemc_jobs
+from . import cnemc_jobs, control
 from .admission import LEDGER, data_scope, selected_scopes, selected_use
 from .models import WorkWindow
 
 
-def tally(window, object_code=None, indicator=None, *, allowed=None, full=True, indicators=None):
+def tally(
+    window,
+    object_code=None,
+    indicator=None,
+    *,
+    allowed=None,
+    full=True,
+    indicators=None,
+    detail_allowed=None,
+):
     expected = window.expected
 
     def included(code, ind):
@@ -68,7 +78,10 @@ def tally(window, object_code=None, indicator=None, *, allowed=None, full=True, 
             ),
         )
         if i["status"] == "rejected":
-            cell.update(received=True, reason=i["reason"] or "invalid_field")
+            detail = i["reason"]
+            if detail and detail_allowed is not None and not detail_allowed(i):
+                detail = ""
+            cell.update(received=True, reason=detail or "invalid_field")
         elif i["status"] == "absent" and not cell["received"]:
             cell["reason"] = "missing_key"
     obs, _, _, _, rf = tables(window.product.level)
@@ -349,8 +362,30 @@ def read_window(actor_id, window_id, params=None):
             return dict(window_id=window.pk, state="disposed", coverage=None)
     if indicator and indicator not in INDICATORS[product.shape]:
         return dict(window_id=window.pk, state="not_applicable", coverage=None)
+    optional_checks = set()
+    detail_checks = set()
+    read_at = clock()
+
+    def allow_detail(item):
+        at = item["observed_at"]
+        day = at.astimezone(ZoneInfo(product.source_timezone)).date()
+        try:
+            _, geo = resolve(product, item["object_code"], at)
+            scope = Scope(geo, item["object_code"], item["indicator"], day, day + timedelta(days=1))
+            check_detail(product, scope, read_at, grant_rows, review=True)
+        except Denied:
+            return False
+        detail_checks.add(scope)
+        return True
+
     coverage, cells = tally(
-        window, requested_code, indicator, allowed=allowed, full=full, indicators=indicators
+        window,
+        requested_code,
+        indicator,
+        allowed=allowed,
+        full=full,
+        indicators=indicators,
+        detail_allowed=allow_detail,
     )
     # A mixed batch may survive partial erasure. Never project its original counts or
     # fetch history to a caller who may only see a subset of its item lineage.
@@ -366,6 +401,7 @@ def read_window(actor_id, window_id, params=None):
             "reason",
             "predecessor_id",
             "status",
+            "attempt",
             "result",
             "error_code",
             "dispatch",
@@ -389,13 +425,25 @@ def read_window(actor_id, window_id, params=None):
         subset = subset.filter(run_id=run_id)
     details = list(
         subset.values(
-            "id", "run_id", "item_key", "status", "accepted", "reason", batch_id=F("run__batch_id")
+            "id",
+            "run_id",
+            "item_key",
+            "object_code",
+            "observed_at",
+            "indicator",
+            "status",
+            "accepted",
+            "reason",
+            batch_id=F("run__batch_id"),
         )[:101]
     )
+    for row in details:
+        if row["reason"] and not allow_detail(row):
+            row["reason"] = ""
+        for field in ("object_code", "observed_at", "indicator"):
+            del row[field]
     page_items = [item["id"] for item in details[:100]]
-    optional_checks = set()
     receipts = []
-    read_at = clock()
     for receipt in (
         Receipt.objects.filter(collection_item_id__in=page_items)
         .select_related("collection_item")
@@ -406,6 +454,10 @@ def read_window(actor_id, window_id, params=None):
             item_id=receipt.collection_item_id,
             batch_id=receipt.batch_id,
             outcome=receipt.outcome,
+            revision={
+                "type": "city" if receipt.city_revision_id else "station",
+                "id": receipt.city_revision_id or receipt.station_revision_id,
+            },
         )
         if receipt.collection_metadata:
             item = receipt.collection_item
@@ -428,6 +480,8 @@ def read_window(actor_id, window_id, params=None):
     if permit() != projection:
         raise Denied()
     now = clock()
+    for detail_scope in detail_checks:
+        check_detail(product, detail_scope, now, grant_rows, review=True)
     for scope, field in optional_checks:
         for op in ("review", "retain_normalized"):
             applicable(product, op, scope, {field}, now, grant_rows)
@@ -459,3 +513,51 @@ def read_window(actor_id, window_id, params=None):
         receipts=receipts[:100],
         receipts_truncated=len(receipts) > 100,
     )
+
+
+@transaction.atomic
+def read_run(request, run_id):
+    from .services import locked
+
+    params = params_once(request.query_params)
+    if set(params) - {"object_code", "indicator", "after"}:
+        raise Denied("invalid_request")
+    run = locked(run_id)
+    session = control.lock_principals(request)
+    projection = read_window(request.user.pk, run.window_id, params | {"run": str(run.pk)})
+    if projection.get("coverage") is not None:
+        projection["quality_issues"] = read_run_issues(run, projection)
+    if projection.get("runs") and actor(request.user.pk).has_perm("observations.manage_collection"):
+        projection["target"] = dict(
+            type="run",
+            id=run.pk,
+            control_version=run.control_version,
+            state=run.status,
+            dispatch=run.dispatch,
+            request_state=run.request_state,
+            owner_present=run.owner is not None,
+            reason=run.error_code,
+        )
+    session.finish(())
+    return projection
+
+
+def read_run_issues(run, projection):
+    from observations.quality_governance import checks, event_result
+
+    product = run.job.product
+    items = {entry["id"] for entry in projection["items"]}
+    issues = QualityIssue.objects.filter(run=run, run_item_id__in=items)
+    if projection["runs"]:
+        issues |= QualityIssue.objects.filter(run=run, run_item__isnull=True)
+    grants = list(product.usegrant_set.filter(revoked_at=None))
+    result = []
+    for issue in issues.select_related("city_key", "station_key").order_by("pk")[:50]:
+        key = issue.city_key or issue.station_key
+        try:
+            now = clock()
+            scope = checks(issue, product, key, grants, now)
+        except Denied:
+            continue
+        result.append(event_result(issue, product, key, scope))
+    return result

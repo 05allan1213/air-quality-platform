@@ -1,14 +1,17 @@
 """Both observation tables use one ordered, transaction-local revision decision."""
 
-from dataclasses import dataclass
-from datetime import timedelta
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
+from zoneinfo import ZoneInfo
 
 from django.core.signing import BadSignature, Signer
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Max, Q
+from django.utils.http import base36_to_int, int_to_base36
 
 from .catalog import resolve
+from .loss import require_continuous
 from .models import (
     Batch,
     Change,
@@ -17,11 +20,22 @@ from .models import (
     MappingLink,
     QualityIssue,
     Receipt,
+    StagedInput,
     StationObservation,
     StationRevision,
 )
 from .normalization import INDICATORS, BatchContext, Normalized, ProductProfile, normalize
 from .policy import RAW, REQUIRED, Denied, Scope, actor, applicable, clock, locked_product
+from .quality_events import (
+    MAPPING_CONFLICTS,
+    QUALITY_DETAIL,
+    active_candidates,
+    add_key_issue,
+    advance_key_events,
+    clear_event_state,
+    keyed_issues,
+    severity,
+)
 
 
 @dataclass(frozen=True)
@@ -36,9 +50,11 @@ class Candidate:
 class WriteContext:
     product: object
     actor_id: int
-    batch: Batch
+    batch: Batch | None
     grants: list
     checks: set
+    issued_at: datetime | None = None
+    collection: bool = False
 
 
 def tables(level):
@@ -61,7 +77,10 @@ def key_scope(key):
 
 
 def check(ctx, op, scope, fields):
-    basis = applicable(ctx.product, op, scope, fields, clock(), ctx.grants)
+    now = clock()
+    if ctx.issued_at is not None:
+        require_continuous(ctx.product, op, scope, fields, now, since=ctx.issued_at)
+    basis = applicable(ctx.product, op, scope, fields, now, ctx.grants)
     ctx.checks.add((op, scope, frozenset(fields)))
     return basis
 
@@ -75,9 +94,11 @@ def finish_checks(ctx):
     now = clock()
     for op, scope, fields in ctx.checks:
         applicable(ctx.product, op, scope, fields, now, ctx.grants)
+        if ctx.issued_at is not None:
+            require_continuous(ctx.product, op, scope, fields, now, since=ctx.issued_at)
 
 
-def locate(ctx, candidate):
+def locate(ctx, candidate, *, for_write=True):
     d, t = candidate.data, candidate.data.time
     p = ctx.product
     if (
@@ -101,7 +122,7 @@ def locate(ctx, candidate):
         t.observed_at_utc or t.window_start,
         t.window_start,
         t.window_end,
-        for_write=True,
+        for_write=for_write,
     )
     scope = Scope(
         geo,
@@ -193,6 +214,21 @@ def append(ctx, key, candidate, raw, kind, *, disputed=False, reason=""):
     )
 
 
+def permitted_optional_fields(ctx, key, d):
+    scope = key_scope(key)
+    for field in ("source_description", "source_time"):
+        if not (d.source_description if field == "source_description" else d.time.source_time):
+            continue
+        try:
+            check(ctx, "retain_normalized", scope, {field})
+        except Denied:
+            if field == "source_description":
+                d = replace(d, source_description="")
+            else:
+                d = replace(d, time=replace(d.time, source_time=None))
+    return d
+
+
 def emit(product, key, kind):
     return Change.objects.create(
         product=product,
@@ -204,13 +240,12 @@ def emit(product, key, kind):
 
 
 def issue(ctx, key, code):
-    QualityIssue.objects.get_or_create(
-        product=ctx.product,
-        code=code,
-        resolved_at__isnull=True,
-        **{tables(ctx.product.level)[3]: key},
-        defaults={"batch": ctx.batch},
-    )
+    if ctx.collection:
+        try:
+            check(ctx, "retain_normalized", key_scope(key), QUALITY_DETAIL)
+        except Denied:
+            return None
+    return add_key_issue(key, code, batch=ctx.batch, rule=key.rule_floor)
 
 
 def decide(ctx, key, c, current, raw):
@@ -243,14 +278,16 @@ def decide(ctx, key, c, current, raw):
     other = next(
         (
             r
-            for r in key.revisions.filter(candidate=True, source_token=c.token, kind=kind)
+            for r in active_candidates(key).filter(
+                source_token=c.token, kind=kind, rule_version=c.rule
+            )
             if same(r, c.data)
         ),
         None,
     )
     if other is None:
         other = append(ctx, key, c, raw, kind, disputed=True)
-    issue(ctx, key, kind)
+        issue(ctx, key, kind)
     if not key.disputed:
         key.disputed = True
         key.qualification_version += 1
@@ -268,12 +305,14 @@ def apply_observation(ctx, candidate, ordinal):
     )
     if key.object_code != d.object_code or key.source_local_date != d.time.source_local_date:
         raise Denied("identity_code_conflict")
+    d = permitted_optional_fields(ctx, key, d)
+    candidate = replace(candidate, data=d)
     current = key.revisions.filter(is_current=True).first()
     new, outcome = decide(ctx, key, candidate, current, raw)
     key.save(update_fields=["trusted_scheme", "watermark", "disputed", "qualification_version"])
     if d.issue and outcome not in {"late", "retired_mapping"}:
         issue(ctx, key, d.issue)
-    Receipt.objects.create(
+    evidence = Receipt.objects.create(
         batch=ctx.batch,
         ordinal=ordinal,
         rule_version=candidate.rule,
@@ -282,29 +321,72 @@ def apply_observation(ctx, candidate, ordinal):
         source_token=candidate.token,
         **{tables(ctx.product.level)[4]: new},
     )
+    if outcome in {"first", "content_changed", "watermark_advanced"} or (
+        new.candidate
+        and outcome in {"same_version_conflict", "unordered_conflict"}
+        and not Receipt.objects.filter(**{tables(ctx.product.level)[4]: new})
+        .exclude(pk=evidence.pk)
+        .exists()
+    ):
+        advance_key_events(key)
+    if key.disputed and outcome in {"content_changed", "watermark_advanced"}:
+        # A manually closed work item does not resolve the underlying dispute. A new
+        # trusted head provides meaningful evidence even when it introduces no candidate.
+        if active_candidates(key).filter(kind="same_version_conflict").exists():
+            issues = keyed_issues(key).filter(code="same_version_conflict")
+            if not issues.filter(resolved_at__isnull=True).exists():
+                closed = issues.order_by("-pk").first()
+                if closed is not None:
+                    closed.status, closed.resolved_at, closed.handler_id = "open", None, None
+                    closed.save(update_fields=["status", "resolved_at", "handler"])
+    if (
+        new.candidate
+        and outcome in {"same_version_conflict", "unordered_conflict"}
+        and (
+            not ctx.collection
+            or ("retain_normalized", key_scope(key), QUALITY_DETAIL) in ctx.checks
+        )
+    ):
+        event = QualityIssue.objects.filter(
+            product=ctx.product,
+            code=outcome,
+            resolved_at__isnull=True,
+            **{tables(ctx.product.level)[3]: key},
+        ).first()
+        if event and event.receipt_id is None and event.batch_id == evidence.batch_id:
+            event.receipt = evidence
+            event.save(update_fields=["receipt"])
     return key, new, outcome
 
 
 def fixture_ticket(product_id):
     """Opaque request identity. No source value, digest or user label is signed or retained."""
-    return Signer(salt="observations.synthetic.batch").sign(f"{product_id}:{uuid4()}")
+    issued = int_to_base36(int(clock().timestamp() * 1_000_000))
+    return Signer(salt="observations.synthetic.batch").sign(f"{product_id}:{uuid4().hex}:{issued}")
 
 
 def fixture_identity(product, ticket, profile):
     try:
-        scope, key = Signer(salt="observations.synthetic.batch").unsign(ticket).split(":")
+        scope, key, *issued = Signer(salt="observations.synthetic.batch").unsign(ticket).split(":")
+        if len(issued) > 1:
+            raise ValueError
+        stamp = (
+            datetime.fromtimestamp(base36_to_int(issued[0]) / 1_000_000, UTC)
+            if issued
+            else datetime.min.replace(tzinfo=UTC)
+        )
         if (
             int(scope) != product.pk
             or UUID(key).version != 4
             or profile != product.contract_version
         ):
             raise ValueError
-        return key
-    except (BadSignature, TypeError, ValueError, AttributeError):
+        return str(UUID(key)), stamp
+    except (BadSignature, TypeError, ValueError, AttributeError, OverflowError, OSError):
         raise Denied("invalid_batch") from None
 
 
-def lock_stations(product, candidates):
+def lock_stations(product, candidates, *, additional=()):
     if product.level == "station":
         # Products can share stations. Every writer takes station locks in PK order.
         from .models import Station
@@ -315,14 +397,14 @@ def lock_stations(product, candidates):
         ).values_list("pk", flat=True)
         list(
             Station.objects.select_for_update()
-            .filter(pk__in=station_ids)
+            .filter(Q(pk__in=station_ids) | Q(pk__in=additional))
             .order_by("pk")
             .values_list("pk", flat=True)
         )
 
 
 @transaction.atomic
-def ingest_batch(actor_id, product_id, identity, profile, candidates):
+def ingest_batch(actor_id, product_id, identity, profile, candidates, *, stage_id=None):
     product = locked_product(product_id)
     actor(actor_id, "import_history")
     candidates = list(candidates)
@@ -330,7 +412,8 @@ def ingest_batch(actor_id, product_id, identity, profile, candidates):
         not candidates
         or len(candidates) > 1152
         or not identity
-        or len(identity) > 100
+        or not isinstance(identity, str)
+        or len(identity) > 150
         or not profile
         or len(profile) > 100
     ):
@@ -342,13 +425,32 @@ def ingest_batch(actor_id, product_id, identity, profile, candidates):
     grants = list(product.usegrant_set.filter(revoked_at__isnull=True))
     if product.family == "H":
         from .disposition import PACKAGE_SCOPE
+        from .history import check_import
         from .import_uci import PROFILE, SHA256
 
         if (profile, identity) != (PROFILE, SHA256):
             raise Denied("invalid_batch")
-        applicable(product, "retain_normalized", PACKAGE_SCOPE, {"batch_identity"}, clock(), grants)
+        now = clock()
+        stage = StagedInput.objects.filter(
+            pk=stage_id,
+            product=product,
+            owner_id=actor_id,
+            state="claimed",
+            created_at__lte=now,
+            expires_at__gt=now,
+        ).first()
+        if stage is None:
+            raise Denied("invalid_stage")
+        check_import(product, actor_id, stage=stage)
+        issued = stage.created_at
     else:
-        identity = fixture_identity(product, identity, profile)
+        if stage_id is not None:
+            raise Denied("invalid_stage")
+        identity, issued = fixture_identity(product, identity, profile)
+    ctx = WriteContext(product, actor_id, None, grants, set(), issued_at=issued)
+    if product.family == "H":
+        check(ctx, "retain_raw", PACKAGE_SCOPE, {"archive"})
+        check(ctx, "retain_normalized", PACKAGE_SCOPE, {"batch_identity"})
     lock_stations(product, candidates)
     batch, created = Batch.objects.get_or_create(
         product=product,
@@ -356,9 +458,7 @@ def ingest_batch(actor_id, product_id, identity, profile, candidates):
         profile=profile,
         defaults={"fetched_at": candidates[0].data.fetched_at},
     )
-    ctx = WriteContext(product, actor_id, batch, grants, set())
-    if product.family == "H":
-        check(ctx, "retain_normalized", PACKAGE_SCOPE, {"batch_identity"})
+    ctx.batch = batch
     for i, c in enumerate(candidates, 1):
         try:
             if created:
@@ -380,10 +480,28 @@ def ingest_batch(actor_id, product_id, identity, profile, candidates):
             check(ctx, "process_local", scope, {"normalized"})
             check(ctx, "retain_normalized", scope, REQUIRED)
             QualityIssue.objects.get_or_create(
-                product=product, batch=batch, code=exc.code, scope=scope.serialize()
+                product=product,
+                batch=batch,
+                code=exc.code,
+                scope=scope.serialize(),
+                severity=severity(exc.code),
+                rule_version=c.rule,
             )
     finish(ctx)
     return batch, created
+
+
+def mapping_time(current):
+    """A retained source label, or the unambiguous authorized logical key time."""
+    label = current.provenance.get("source_time")
+    if label:
+        return label
+    key = current.key
+    if key.local_report_date:
+        return key.local_report_date.isoformat()
+    return key.observed_at_utc.astimezone(
+        ZoneInfo(current.provenance["source_timezone"])
+    ).isoformat()
 
 
 @transaction.atomic
@@ -394,8 +512,13 @@ def correct_mapping(
     actor(actor_id, "review_observation")
     if product.level != level or not reason or len(reason) > 100:
         raise Denied("invalid_correction")
-    obs, _, _, fk, _ = tables(level)
-    key = obs.objects.select_for_update().get(product=product, pk=key_id)
+    obs, _, _, _, _ = tables(level)
+    # Lock the registered source and target Station set before either logical key.
+    # Product lock already serializes observation writes for this product.
+    preflight = obs.objects.get(product=product, pk=key_id)
+    if level == "station":
+        lock_stations(product, [candidate], additional=[preflight.site_epoch.station_id])
+    key = obs.objects.select_for_update().get(pk=preflight.pk)
     current = key.revisions.get(is_current=True)
     grants = list(product.usegrant_set.filter(revoked_at__isnull=True))
     scope = key_scope(key)
@@ -434,7 +557,7 @@ def correct_mapping(
         profile,
         dict(
             object_code=data.object_code,
-            source_time=current.provenance["source_time"],
+            source_time=mapping_time(current),
             indicator="CO",
             raw_value=current.raw_value,
             raw_unit="µg/m³",
@@ -460,11 +583,24 @@ def correct_mapping(
     )
     if target.object_code != candidate.data.object_code:
         raise Denied("identity_code_conflict")
+    # A logical time reconstructed from the key is never an original source label.
+    corrected = replace(
+        recomputed,
+        time=replace(
+            recomputed.time,
+            source_time=current.provenance.get("source_time"),
+        ),
+    )
+    candidate = replace(candidate, data=permitted_optional_fields(ctx, target, corrected))
+    # A local mapping rule cannot retire or clear an independent upstream conflict.
+    source_conflict = active_candidates(key).exclude(kind="mapping_conflict").exists()
+    if source_conflict and target.pk != key.pk:
+        raise Denied("mapping_evidence_mismatch")
     if target.pk != key.pk:
         target_scope = key_scope(target)
         check(ctx, "review", target_scope, RAW)
         check(ctx, "retain_normalized", target_scope, RAW)
-        if target.disputed or target.retired:
+        if target.disputed or target.retired or target.rule_floor > candidate.rule:
             issue(ctx, key, "mapping_review_required")
             finish_correction(ctx, scope)
             return "mapping_review_required"
@@ -479,29 +615,32 @@ def correct_mapping(
         if existing and not same(existing, candidate.data):
             append(ctx, target, candidate, raw, "mapping_conflict", disputed=True, reason=reason)
             for affected in (target, key):
-                affected.disputed = True
-                affected.qualification_version += 1
-                affected.save(update_fields=["disputed", "qualification_version"])
+                if not affected.disputed:
+                    affected.disputed = True
+                    affected.qualification_version += 1
+                    affected.save(update_fields=["disputed", "qualification_version"])
+                    emit(product, affected, "qualification_changed")
                 issue(ctx, affected, "mapping_conflict")
-                emit(product, affected, "qualification_changed")
+                advance_key_events(affected)
             finish_correction(ctx, scope)
             return "mapping_conflict"
         key.retired = True
         key.qualification_version += 1
         key.save(update_fields=["retired", "qualification_version"])
         emit(product, key, "mapping_retired")
+        advance_key_events(key)
         if existing is None:
             target.watermark, target.trusted_scheme = key.watermark, key.trusted_scheme
     append(ctx, target, candidate, raw, "local_mapping_fix", reason=reason)
-    target.disputed = False
-    target.qualification_version += 1
+    if not source_conflict and not active_candidates(target).exists():
+        if target.disputed:
+            target.disputed = False
+            target.qualification_version += 1
+            emit(product, target, "qualification_changed")
+        clear_event_state(target, MAPPING_CONFLICTS, clock())
     target.rule_floor = candidate.rule
     target.save()
-    QualityIssue.objects.filter(
-        **{fk: target},
-        resolved_at__isnull=True,
-        code__in=["mapping_conflict", "same_version_conflict", "unordered_conflict"],
-    ).update(resolved_at=clock())
+    advance_key_events(target)
     emit(product, target, "local_mapping_fix")
     finish_correction(ctx, scope)
     return "local_mapping_fix"

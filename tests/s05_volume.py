@@ -13,6 +13,26 @@ from s05_support import HOUR, START, candidate, ingest
 
 
 def require_owned_database():
+    if os.environ.get("S06_RUN"):
+        # The S06 runner provisions a distinct, socket-only cluster for each snapshot.
+        from s06_guard import check_environment, identity, require
+        from s06_sandbox import check_network
+
+        root = check_environment(os.environ)
+        run = os.environ["S06_RUN"]
+        db, user = identity(run)
+        check_network()
+        require(connection.settings_dict["HOST"] == str(root / "pg"), "foreign_cost_socket")
+        with connection.cursor() as cursor:
+            cursor.execute("""SELECT current_database(), current_user, inet_server_addr() IS NULL,
+                current_setting('listen_addresses'), current_setting('airquality.s06_run', true),
+                rolcreatedb AND NOT rolsuper FROM pg_roles WHERE rolname = current_user""")
+            require(
+                cursor.fetchone() == (f"test_{db}", user, True, "", run, True), "foreign_cost_db"
+            )
+        path = root / "s05-regression"
+        path.mkdir(mode=0o700, exist_ok=True)
+        return path
     run = os.environ.get("S05_VERIFY_RUN", "")
     evidence = os.environ.get("S05_EVIDENCE_DIR", "")
     if (

@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import BACKEND_SESSION_KEY, HASH_SESSION_KEY, SESSION_KEY, get_user_model
 from django.contrib.sessions.models import Session
 from django.db import connection, transaction
-from django.db.models import DateTimeField, Func
+from django.db.models import DateTimeField, Func, Subquery
 from django.utils.crypto import constant_time_compare
 from observations.models import Product, SiteEpoch, Source, Station
 from observations.policy import Denied, clock
@@ -16,6 +16,8 @@ from observations.s04_http import decode_cursor, encode_cursor, page_size, param
 from rest_framework.response import Response
 
 from .api import error
+from .models import AccountState
+from .session_generation import matches_generation
 
 
 class Budget:
@@ -56,12 +58,12 @@ def request_transaction():
 
 def authorize_inputs(user_id, specs, *, purpose="analysis", fields=(), now=None):
     """Check all groups without dependency locks or constructing a data relation."""
-    now = now or clock()
     accesses = []
     too_large = False
     for spec in specs:
         try:
             ctx = ResearchContext(user_id, spec, now, locked=True)
+            now = ctx.now  # Use the first principal check's PG instant for every group.
             accesses.append(Access(ctx, spec, purpose, fields))
         except Denied as exc:
             if exc.code != "query_too_large":
@@ -112,17 +114,22 @@ class SessionCheck:
         user = get_user_model().objects.select_for_update().filter(pk=self.user_id).first()
         if not self.key or request.session.session_key != self.key:
             raise Denied("not_authenticated")
-        row = Session.objects.select_for_update().filter(session_key=self.key).first()
+        # The user lock serializes every session-generation writer. Read the bound
+        # generation in the next statement, after any wait for that lock.
+        self.rows = Session.objects.filter(session_key=self.key).annotate(
+            current_generation=Subquery(
+                AccountState.objects.filter(pk=self.user_id).values("session_generation")[:1]
+            )
+        )
+        row = self.rows.select_for_update().first()
         self.now = clock()
         self.verify(user, row, self.now)
 
     def finish(self, relations):
         user = get_user_model().objects.filter(pk=self.user_id).first()
-        row = (
-            Session.objects.filter(session_key=self.key)
-            .annotate(checked_at=Func(function="clock_timestamp", output_field=DateTimeField()))
-            .first()
-        )
+        row = self.rows.annotate(
+            checked_at=Func(function="clock_timestamp", output_field=DateTimeField())
+        ).first()
         if row is None:
             raise Denied("not_authenticated")
         now = row.checked_at
@@ -143,6 +150,7 @@ class SessionCheck:
         if (
             str(data.get(SESSION_KEY)) != str(user.pk)
             or data.get(BACKEND_SESSION_KEY) not in settings.AUTHENTICATION_BACKENDS
+            or not matches_generation(data, row.current_generation or 0)
             or not isinstance(digest, str)
             or not constant_time_compare(digest, user.get_session_auth_hash())
         ):

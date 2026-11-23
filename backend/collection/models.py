@@ -29,6 +29,7 @@ class Job(models.Model):
     cadence_seconds = models.PositiveIntegerField(default=3600)
     next_due_at = models.DateTimeField(null=True, db_index=True)
     enabled = models.BooleanField(default=False)
+    control_version = models.PositiveBigIntegerField(default=0)
     pause_reason = text(blank=True)
     changed_at = models.DateTimeField(default=timezone.now)
     changed_by = models.ForeignKey(USER, null=True, on_delete=models.PROTECT, related_name="+")
@@ -107,6 +108,7 @@ class Run(models.Model):
     result = text(24, blank=True)
     dispatch = text(16, default="pending")
     deliveries = models.PositiveSmallIntegerField(default=0)
+    control_version = models.PositiveBigIntegerField(default=0)
     dispatch_due = models.DateTimeField(null=True, db_index=True)
     next_retry_at = models.DateTimeField(null=True, db_index=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -206,10 +208,33 @@ class RunItem(models.Model):
 
 class ControlEvent(models.Model):
     job = models.ForeignKey(Job, on_delete=models.PROTECT)
-    actor = models.ForeignKey(USER, on_delete=models.PROTECT)
+    actor = models.ForeignKey(USER, null=True, on_delete=models.PROTECT)
     action = text(24)
     occurred_at = models.DateTimeField(default=timezone.now)
     # Half-open cadence range skipped after a long outage; no response or object identities.
     slot_start = models.DateTimeField(null=True)
     slot_end = models.DateTimeField(null=True)
     run = models.ForeignKey(Run, null=True, on_delete=models.PROTECT)
+    receipt = models.OneToOneField(
+        "accounts.GovernanceAction", null=True, on_delete=models.SET_NULL
+    )
+    legacy_protocol = models.BooleanField(default=False)
+    response_enabled = models.BooleanField(null=True)
+    response_reason = text(64, blank=True)
+
+
+class CollectionControl(models.Model):
+    """Source and Product control versions, shared across all referencing Jobs."""
+
+    source = models.OneToOneField("observations.Source", null=True, on_delete=models.CASCADE)
+    product = models.OneToOneField(Product, null=True, on_delete=models.CASCADE)
+    version = models.PositiveBigIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(source__isnull=True, product__isnull=False)
+                | Q(source__isnull=False, product__isnull=True),
+                name="s06_control_target",
+            ),
+        ]

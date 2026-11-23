@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from django.db import transaction
 from samples.normalization import Rejected, parse_time
 
+from .catalog import catalog_change_span
 from .models import (
     Batch,
     Change,
@@ -29,6 +30,7 @@ from .policy import (
     locked_product,
 )
 from .projection import metadata, originals
+from .quality_events import check_detail, collection_issue
 from .revisions import key_scope, tables
 from .selection import grant_bins, read_basis
 
@@ -286,7 +288,7 @@ def review_scope(product, key, grants, *, raw=False):
         applicable(product, operation, scope, RAW if raw else REQUIRED, now, grants)
 
 
-def details(r, raw):
+def details(r, raw, optional):
     row = dict(
         **project_revision(r),
         current=r.is_current,
@@ -299,6 +301,9 @@ def details(r, raw):
     )
     if raw:
         row.update(raw_value=r.raw_value, raw_unit=r.raw_unit)
+    for field in ("source_time", "source_description"):
+        if field not in optional:
+            row.pop(field, None)
     return row
 
 
@@ -311,7 +316,9 @@ def read_evidence(actor_id, params):
     obs, _, _, fk, rf = tables(product.level)
     grants = list(product.usegrant_set.filter(revoked_at__isnull=True))
     checks = {}
+    optional_checks = set()
     issue_scopes = set()
+    detail_scopes = set()
     issue_fields = batch_issue_fields(product)
 
     def permitted(key):
@@ -324,6 +331,19 @@ def read_evidence(actor_id, params):
         checks[key.pk] = (key, raw)
         return raw
 
+    def optional(key):
+        scope = key_scope(key)
+        allowed = set()
+        for field in ("source_time", "source_description"):
+            try:
+                for op in ("retain_normalized", "review"):
+                    applicable(product, op, scope, {field}, clock(), grants)
+            except Denied:
+                continue
+            allowed.add(field)
+            optional_checks.add((scope, field))
+        return allowed
+
     if set(params) == {fk}:
         key = obs.objects.filter(product=product, pk=pk(params[fk])).first()
         if key is None:
@@ -331,15 +351,23 @@ def read_evidence(actor_id, params):
         raw = permitted(key)
         revs = list(key.revisions.filter(pk__gt=after).order_by("pk")[:101])
         rows = revs[:100]
-        issues = list(
-            QualityIssue.objects.filter(**{fk: key})
-            .order_by("pk")
-            .values_list("code", flat=True)[:100]
-        )
+        issues = []
+        scope = key_scope(key)
+        for issue in QualityIssue.objects.filter(**{fk: key}).order_by("pk").iterator():
+            if collection_issue(issue):
+                try:
+                    check_detail(product, scope, clock(), grants, review=True)
+                except Denied:
+                    continue
+                detail_scopes.add(scope)
+            issues.append(issue.code)
+            if len(issues) == 100:
+                break
         receipts = Receipt.objects.filter(**{rf + "__in": rows}).order_by("pk")
         fields = ["batch_id", "outcome", "source_token", rf + "_id"] + (["locator"] if raw else [])
+        allowed_fields = optional(key)
         result = dict(
-            revisions=[details(r, raw) for r in rows],
+            revisions=[details(r, raw, allowed_fields) for r in rows],
             watermark=key.watermark,
             trusted_scheme=key.trusted_scheme,
             disputed=key.disputed,
@@ -376,7 +404,7 @@ def read_evidence(actor_id, params):
                     receipt_id=receipt.pk,
                     key_id=revision.key_id,
                     outcome=receipt.outcome,
-                    revision=details(revision, raw),
+                    revision=details(revision, raw, optional(revision.key)),
                     locator=receipt.locator if raw else None,
                 )
             )
@@ -388,6 +416,9 @@ def read_evidence(actor_id, params):
             try:
                 for operation in ("review", "retain_normalized"):
                     applicable(product, operation, issue_scope, issue_fields, clock(), grants)
+                if collection_issue(issue):
+                    check_detail(product, issue_scope, clock(), grants, review=True)
+                    detail_scopes.add(issue_scope)
             except Denied:
                 continue
             authorized = True
@@ -406,11 +437,16 @@ def read_evidence(actor_id, params):
         )
     else:
         raise Denied("invalid_request")
+    for detail_scope in detail_scopes:
+        check_detail(product, detail_scope, clock(), grants, review=True)
     for issue_scope in issue_scopes:
         for op in ("review", "retain_normalized"):
             applicable(product, op, issue_scope, issue_fields, clock(), grants)
     for key, raw in checks.values():
         review_scope(product, key, grants, raw=raw)
+    for scope, field in optional_checks:
+        for op in ("retain_normalized", "review"):
+            applicable(product, op, scope, {field}, clock(), grants)
     actor(actor_id, "review_observation")
     return dict(**result, attribution=product.attribution, synthetic=product.synthetic)
 
@@ -421,8 +457,46 @@ def changes_since(cursor, product_id, scope, actor_id):
     actor(actor_id, "review_observation")
     applicable(product, "review", scope, REQUIRED, clock())
     events = []
-    for event in Change.objects.filter(product=product, pk__gt=cursor).order_by("pk").iterator():
+    rows = (
+        Change.objects.filter(product=product, pk__gt=cursor)
+        .select_related(
+            "catalogchange__identifier",
+            "catalogchange__label",
+            "catalogchange__epoch__city",
+            "catalogchange__epoch__station",
+            "city_key__city",
+            "station_key__site_epoch__city",
+        )
+        .order_by("pk")
+    )
+    for event in rows.iterator():
         key = event.station_key or event.city_key
+        directory = None
+        if event.kind == "catalog_changed":
+            detail = getattr(event, "catalogchange", None)
+            if detail is None or scope.indicator != "*":
+                continue
+            try:
+                cell = catalog_change_span(product, detail)
+                if (
+                    scope.geography not in ("*", cell.geography)
+                    or scope.object_code not in ("*", cell.object_code)
+                    or max(scope.start, cell.start) >= min(scope.end, cell.end)
+                ):
+                    continue
+                now = clock()
+                for operation in ("review", "retain_normalized"):
+                    applicable(product, operation, cell, {"catalog"}, now)
+            except Denied:
+                continue
+            period = detail.label.active_period if detail.label_id else detail.active_period
+            directory = {
+                "station": detail.epoch.station_id,
+                "site_epoch": detail.epoch_id,
+                "start": period.lower,
+                "end": period.upper,
+                "scope": cell.serialize(),
+            }
         if key:
             cell = key_scope(key)
             if not (
@@ -441,6 +515,7 @@ def changes_since(cursor, product_id, scope, actor_id):
                 key_id=key.pk if key else None,
                 qualification=event.qualification_version,
                 rights=event.rights_version,
+                **({"directory": directory} if directory else {}),
             )
         )
         if len(events) == 100:

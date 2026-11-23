@@ -10,11 +10,11 @@ from datetime import UTC, datetime, timedelta
 from s01_runtime import source_hash, wait_for
 from s03_checks import identification
 from s03_runtime import (
-    JOB_URL,
     WINDOW_URL,
     S03Project,
     city_packet,
     hour,
+    job_control,
     list_packet,
     prepare,
     register_job,
@@ -340,9 +340,8 @@ def transport_limits(p, account, _reader, _archivist):
             p,
             tag,
             "resume after synthetic contract failure",
-            account.call(
-                f"{JOB_URL}{job}/",
-                {"action": "resume_source" if code == "unexpected_redirect" else "resume_product"},
+            job_control(
+                account, job, "resume_source" if code == "unexpected_redirect" else "resume_product"
             ),
             200,
         )

@@ -26,7 +26,10 @@ from test_s05_selection import parent
 
 pytestmark = [
     pytest.mark.django_db(transaction=True),
-    pytest.mark.skipif(not os.environ.get("S05_VERIFY_RUN"), reason="use scripts/verify_s05.py"),
+    pytest.mark.skipif(
+        not (os.environ.get("S05_VERIFY_RUN") or os.environ.get("S06_RUN")),
+        reason="requires an owned S05 or S06 verification cluster",
+    ),
 ]
 STAT = "/api/v1/analysis/statistics/"
 COMPARE = "/api/v1/analysis/compare/"

@@ -4,6 +4,7 @@ import pytest
 from django.db import connection
 from django.utils import timezone
 from django_celery_beat.models import PeriodicTask
+from observations.controlled_storage import register_volume
 from observations.disposition import dispose_due
 from observations.models import (
     Batch,
@@ -120,7 +121,11 @@ def test_reconciles_due_work_even_when_one_off_schedule_is_missing(
     tmp_path.chmod(0o700)
     now = timezone.now()
     stage = StagedInput.objects.create(
-        product=product, owner=actor, expires_at=now - timedelta(seconds=1), state="available"
+        product=product,
+        owner=actor,
+        expires_at=now - timedelta(seconds=1),
+        state="available",
+        volume_generation=register_volume(tmp_path),
     )
     stage_path = tmp_path / str(stage.pk)
     stage_path.mkdir()

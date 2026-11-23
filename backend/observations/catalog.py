@@ -1,10 +1,73 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from django.db import transaction
 from psycopg.types.range import Range
 
 from .models import CityIdentifier, SiteEpoch, Station, StationIdentifier
-from .policy import Denied
+from .policy import Denied, Scope
+
+DIRECTORY_RULE = "s06.f.directory.v1"
+
+
+def directory_span(product, code, geography, period):
+    zone = ZoneInfo(product.source_timezone)
+    start = period.lower.astimezone(zone).date()
+    end = (
+        (period.upper - timedelta(microseconds=1)).astimezone(zone).date() + timedelta(days=1)
+        if period.upper
+        else date.max
+    )
+    return Scope(geography, code, "*", start, end)
+
+
+def catalog_change_span(product, detail):
+    if (
+        detail.epoch.station.source_id != product.source_id
+        or detail.epoch.city.source_id != product.source_id
+        or detail.identifier.source_id != product.source_id
+        or detail.identifier.station_id != detail.epoch.station_id
+        or (detail.label_id and detail.label.station_id != detail.epoch.station_id)
+    ):
+        raise Denied()
+    period = detail.label.active_period if detail.label_id else detail.active_period
+    return directory_span(product, detail.identifier.code, detail.epoch.city.geography, period)
+
+
+def reconcile_catalog_changes(product, now, grants):
+    from .models import CatalogChange, Change
+    from .policy import applicable
+
+    details = CatalogChange.objects.filter(change__product=product).select_related(
+        "epoch__station",
+        "epoch__city",
+        "identifier",
+        "label",
+    )
+    doomed = []
+    for detail in details.iterator():
+        try:
+            applicable(
+                product,
+                "retain_normalized",
+                catalog_change_span(product, detail),
+                {"catalog"},
+                now,
+                grants,
+            )
+        except Denied:
+            doomed.append(detail.change_id)
+    if doomed:
+        Change.objects.filter(pk__in=doomed).delete()
+    Change.objects.filter(
+        product=product, kind="catalog_changed", catalogchange__isnull=True
+    ).delete()
+    StationIdentifier.objects.filter(
+        source_id=product.source_id,
+        kind="alias",
+        evidence=DIRECTORY_RULE,
+        label_changes__isnull=True,
+    ).delete()
 
 
 def identity_instant(at, end):
@@ -68,21 +131,30 @@ def covers(period, start, end):
     return start >= period.lower and (period.upper is None or end <= period.upper)
 
 
-@transaction.atomic
-def relocate(station, at, **new_epoch):
-    """Close and open together. Changing historical observation identity needs a correction."""
+def boundary_conflicts(epoch, at, *, code=None):
     from .models import StationRevision
 
-    Station.objects.select_for_update().get(pk=station.pk)
-    old = SiteEpoch.objects.select_for_update().get(station=station, active_period__contains=at)
-    for row in StationRevision.objects.filter(
-        key__site_epoch=old, key__observed_at_utc__gte=at - timedelta(hours=24)
-    ).select_related("key"):
+    # The widest registered reporting window is a local day, which can span 25 hours.
+    rows = StationRevision.objects.filter(
+        key__site_epoch=epoch, key__observed_at_utc__gte=at - timedelta(days=2)
+    ).select_related("key")
+    if code is not None:
+        rows = rows.filter(key__object_code=code)
+    for row in rows.iterator():
         end = row.provenance.get("window_end")
         if (end and datetime.fromisoformat(end) > at) or (
             end is None and row.key.observed_at_utc >= at
         ):
-            raise Denied("mapping_review_required")
+            yield row.key
+
+
+@transaction.atomic
+def relocate(station, at, **new_epoch):
+    """Close and open together. Changing historical observation identity needs a correction."""
+    Station.objects.select_for_update().get(pk=station.pk)
+    old = SiteEpoch.objects.select_for_update().get(station=station, active_period__contains=at)
+    if next(boundary_conflicts(old, at), None) is not None:
+        raise Denied("mapping_review_required")
     if old.active_period.lower >= at or new_epoch["city"].source_id != station.source_id:
         raise Denied("invalid_epoch")
     upper = old.active_period.upper

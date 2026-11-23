@@ -9,6 +9,8 @@ from django.db import models
 from django.db.models import F, Q
 from django.utils import timezone
 
+from .backup_models import BackupAuthorityEvent, BackupSegment, BackupSubject, RestoreIntent  # noqa: F401 -- register logical backup models
+
 
 def text(size=100, **kwargs):
     return models.CharField(max_length=size, **kwargs)
@@ -34,6 +36,8 @@ class Product(models.Model):
     evidence = models.TextField(blank=True)
     attribution = models.TextField(blank=True)
     rights_version = models.PositiveBigIntegerField(default=0)
+    next_loss_at = models.DateTimeField(null=True)
+    last_disposed_at = models.DateTimeField(null=True)
     collection_pause = text(blank=True)
 
     class Meta:
@@ -86,6 +90,8 @@ class UseGrant(models.Model):
     confirmed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+"
     )
+    # First PG witness after registration commits. NULL cannot prove historical overlap.
+    registered_at = models.DateTimeField(null=True, editable=False)
     valid_from = models.DateTimeField(default=timezone.now)
     valid_until = models.DateTimeField(null=True)
     retain_until = models.DateTimeField(null=True)
@@ -356,6 +362,7 @@ class StagedInput(models.Model):
     state = text(default="preparing")
     created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField()
+    volume_generation = models.UUIDField(null=True, editable=False)
 
 
 class ImportAttempt(models.Model):
@@ -423,6 +430,81 @@ class QualityIssue(Event):
     code = text()
     batch = models.ForeignKey(Batch, null=True, on_delete=models.CASCADE)
     resolved_at = models.DateTimeField(null=True)
+    status = text(
+        12,
+        default="open",
+        choices=[("open", "Open"), ("in_review", "In review"), ("resolved", "Resolved")],
+    )
+    severity = text(
+        8,
+        default="unknown",
+        choices=[
+            ("unknown", "Unknown"),
+            ("info", "Info"),
+            ("warning", "Warning"),
+            ("blocking", "Blocking"),
+        ],
+    )
+    event_version = models.PositiveBigIntegerField(default=0)
+    rule_version = models.PositiveIntegerField(null=True)
+    run = models.ForeignKey(
+        "collection.Run", null=True, on_delete=models.CASCADE, related_name="quality_issues"
+    )
+    run_item = models.ForeignKey(
+        "collection.RunItem", null=True, on_delete=models.CASCADE, related_name="quality_issues"
+    )
+    receipt = models.ForeignKey(
+        Receipt, null=True, on_delete=models.CASCADE, related_name="quality_issues"
+    )
+    handler = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    last_action = models.ForeignKey(
+        "accounts.GovernanceAction", null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta(Event.Meta):
+        indexes = [models.Index(fields=["product", "status", "-id"], name="quality_product_status")]
+        constraints = [
+            *Event.Meta.constraints,
+            models.CheckConstraint(
+                condition=Q(run_item__isnull=True) | Q(run__isnull=False),
+                name="quality_item_has_run",
+            ),
+            models.UniqueConstraint(
+                fields=["run", "code"],
+                condition=Q(
+                    run__isnull=False,
+                    run_item__isnull=True,
+                    city_key__isnull=True,
+                    station_key__isnull=True,
+                ),
+                name="quality_run_code",
+            ),
+            models.UniqueConstraint(
+                fields=["run_item", "code"],
+                condition=Q(run_item__isnull=False),
+                name="quality_item_code",
+            ),
+        ]
+
+
+class CandidateClearance(models.Model):
+    """Evidence that a retained candidate was superseded by a governed source correction."""
+
+    city_revision = models.OneToOneField(CityRevision, null=True, on_delete=models.CASCADE)
+    station_revision = models.OneToOneField(StationRevision, null=True, on_delete=models.CASCADE)
+    correction = models.ForeignKey(Receipt, on_delete=models.CASCADE)
+    action = models.ForeignKey("accounts.GovernanceAction", on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(city_revision__isnull=True, station_revision__isnull=False)
+                | Q(city_revision__isnull=False, station_revision__isnull=True),
+                name="quality_clearance_one_side",
+            )
+        ]
 
 
 class Change(Event):
@@ -431,10 +513,63 @@ class Change(Event):
     qualification_version = models.PositiveBigIntegerField(default=0)
 
 
+class CatalogChange(Period):
+    change = models.OneToOneField(Change, on_delete=models.CASCADE)
+    action = models.ForeignKey("accounts.GovernanceAction", on_delete=models.PROTECT)
+    epoch = models.ForeignKey(SiteEpoch, on_delete=models.CASCADE)
+    identifier = models.ForeignKey(StationIdentifier, on_delete=models.CASCADE)
+    label = models.ForeignKey(
+        StationIdentifier, null=True, on_delete=models.CASCADE, related_name="label_changes"
+    )
+
+
+class QualityDecision(models.Model):
+    action = models.OneToOneField("accounts.GovernanceAction", on_delete=models.CASCADE)
+    city_before = models.ForeignKey(
+        CityRevision, null=True, on_delete=models.CASCADE, related_name="decisions_before"
+    )
+    city_after = models.ForeignKey(
+        CityRevision, null=True, on_delete=models.CASCADE, related_name="decisions_after"
+    )
+    station_before = models.ForeignKey(
+        StationRevision, null=True, on_delete=models.CASCADE, related_name="decisions_before"
+    )
+    station_after = models.ForeignKey(
+        StationRevision, null=True, on_delete=models.CASCADE, related_name="decisions_after"
+    )
+    qualification_before = models.PositiveBigIntegerField()
+    qualification_after = models.PositiveBigIntegerField()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        city_before__isnull=False,
+                        city_after__isnull=False,
+                        station_before__isnull=True,
+                        station_after__isnull=True,
+                    )
+                    | Q(
+                        city_before__isnull=True,
+                        city_after__isnull=True,
+                        station_before__isnull=False,
+                        station_after__isnull=False,
+                    )
+                ),
+                name="quality_decision_one_level",
+            )
+        ]
+
+
 class DispositionJob(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     due_at = models.DateTimeField(db_index=True)
     completed_at = models.DateTimeField(null=True)
+    boundary_grant = models.ForeignKey(UseGrant, null=True, on_delete=models.PROTECT)
+    boundary_version = models.PositiveBigIntegerField(null=True)
+    # Grant IDs visible at the loss, captured before any subsequent rights mutation.
+    boundary_basis = models.JSONField(null=True)
     reason = text(32)
     error_code = text(blank=True)
 

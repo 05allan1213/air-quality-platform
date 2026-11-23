@@ -1,18 +1,20 @@
 from accounts.api import error
 from accounts.limits import limited
+from accounts.research_session import request_transaction
 from django.views.decorators.cache import never_cache
 from observations.policy import Denied
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .queries import read_window
+from . import control
+from .queries import read_run, read_window
 from .services import change_job, redeliver, submit
 
 
 def reject(exc):
     if exc.code in ("invalid_request", "invalid_target"):
         return error(exc.code, 400)
-    if exc.code in ("request_conflict", "window_contract_conflict"):
+    if exc.code in ("request_conflict", "window_contract_conflict", "precondition_conflict"):
         return error(exc.code, 409)
     return error(exc.code, 403)
 
@@ -23,7 +25,8 @@ def runs(request):
     if limited("collection", request.user.pk):
         return error("rate_limited", 429)
     try:
-        run = submit(request.user.pk, request.data)
+        with request_transaction():
+            run = submit(request.user.pk, request.data, request=request)
         run.refresh_from_db()
     except Denied as exc:
         return reject(exc)
@@ -34,17 +37,19 @@ def runs(request):
 
 
 @never_cache
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 def jobs(request, pk):
     if limited("collection", request.user.pk):
         return error("rate_limited", 429)
     try:
-        if not isinstance(request.data, dict) or set(request.data) != {"action"}:
-            raise Denied("invalid_request")
-        job = change_job(request.user.pk, pk, request.data["action"])
+        with request_transaction():
+            if request.method == "GET":
+                return Response(control.job_diagnostic(request, pk))
+            data = control.parse(request.data, control.JOB_ACTIONS)
+            result = change_job(request.user.pk, pk, data["action"], request=request, data=data)
     except Denied as exc:
         return reject(exc)
-    return Response({"job": job.pk, "enabled": job.enabled, "reason": job.pause_reason})
+    return Response(result)
 
 
 @never_cache
@@ -57,14 +62,16 @@ def windows(request, pk):
 
 
 @never_cache
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 def recover(request, run_id):
     if limited("collection", request.user.pk):
         return error("rate_limited", 429)
     try:
-        if request.data != {"action": "redeliver"}:
-            raise Denied("invalid_request")
-        run = redeliver(request.user.pk, run_id)
+        with request_transaction():
+            if request.method == "GET":
+                return Response(read_run(request, run_id))
+            data = control.parse(request.data, {"redeliver"})
+            run = redeliver(request.user.pk, run_id, request=request, data=data)
     except Denied as exc:
         return reject(exc)
     return Response({"run_id": str(run.pk), "window_id": run.window_id}, status=202)

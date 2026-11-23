@@ -5,6 +5,7 @@ from datetime import date, datetime
 
 from django.contrib.auth import get_user_model
 from django.db import connection, transaction
+from django.db.models import DateTimeField, Func
 
 from .models import Change, Product, Source, UseGrant
 
@@ -151,6 +152,14 @@ def actor(actor_id, permission=None):
 
 
 def applicable(product, operation, scope, fields, now, rows=None, *, audience=None):
+    from .loss import require_continuous
+
+    basis = _grant_basis(product, operation, scope, fields, now, rows, audience=audience)
+    require_continuous(product, operation, scope, fields, now)
+    return basis
+
+
+def _grant_basis(product, operation, scope, fields, now, rows=None, *, audience=None):
     """One allow must cover the whole request. A partial intersecting deny vetoes it."""
     wanted = set(fields)
     if audience is None and isinstance(operation, str):
@@ -166,7 +175,7 @@ def applicable(product, operation, scope, fields, now, rows=None, *, audience=No
         if (
             grant.product_id != product.pk
             or grant.operation != operation
-            or grant.revoked_at
+            or (grant.revoked_at and grant.revoked_at <= now)
             or grant.valid_from > now
             or grant.audience != audience
             or (grant.valid_until and now >= grant.valid_until)
@@ -259,12 +268,16 @@ def check_allocation(product, terms):
 
 @transaction.atomic
 def register_grant(actor_id, product_id, **terms):
+    from .backup import block_segments
+    from .backup_authority import record_event
     from .disposition import schedule
+    from .loss import CONTROLLED, settle, track
 
     product, _ = locked_catalog_product(product_id)
     user = actor(actor_id, "manage_grants")
     if (
-        not accepts_audience(terms.get("operation"), terms.get("audience"))
+        "registered_at" in terms
+        or not accepts_audience(terms.get("operation"), terms.get("audience"))
         or not terms.get("terms")
         or not terms.get("terms_version")
         or not isinstance(terms.get("fields"), list)
@@ -326,24 +339,43 @@ def register_grant(actor_id, product_id, **terms):
         ]
         + (["restrictions"] if not grant.restrictions else [])
     )
+    settle(product, clock())
     grant.save()
+    # Stamp only a row that PostgreSQL has already made visible. A deferred
+    # trigger can run before COMMIT (and can be forced early by a caller).
+    # Missing confirmation cannot count as proof of a historical overlap.
+    transaction.on_commit(
+        lambda: UseGrant.objects.filter(pk=grant.pk, registered_at=None).update(
+            registered_at=Func(function="clock_timestamp", output_field=DateTimeField())
+        )
+    )
     bump(product, "grant_registered")
     now = clock()
     from .research_disposition import reconcile_private
 
-    reconcile_private(product, now=now, change=grant)
+    restricted = grant.effect == "deny" or bool(grant.restrictions)
     for cutoff in {
         grant.valid_until,
         grant.retain_until,
-        grant.valid_from if grant.effect == "deny" or grant.restrictions else None,
+        grant.valid_from if restricted else None,
     } - {None}:
-        schedule(product, max(cutoff, now), "rights_boundary")
+        job = schedule(product, max(cutoff, now), "rights_boundary")
+        if grant.operation in CONTROLLED and (not restricted or cutoff == grant.valid_from):
+            track(job, grant, product)
+    settle(product, now)
+    if grant.operation in CONTROLLED:
+        block_segments(product, now)
+    reconcile_private(product, now=now, change=grant)
+    record_event(product, "grant_registered", now)
     return grant
 
 
 @transaction.atomic
 def revoke_grant(actor_id, grant_id, reason):
+    from .backup import block_segments
+    from .backup_authority import record_event
     from .disposition import schedule
+    from .loss import CONTROLLED, settle, track
 
     product, _ = locked_catalog_product(
         UseGrant.objects.values_list("product_id", flat=True).get(pk=grant_id)
@@ -353,11 +385,18 @@ def revoke_grant(actor_id, grant_id, reason):
     if not isinstance(reason, str) or not reason.strip() or len(reason) > 100:
         raise Denied("invalid_reason")
     if not grant.revoked_at:
-        grant.revoked_at, grant.revoked_by, grant.revoke_reason = clock(), user, reason
+        now = clock()
+        settle(product, now)
+        grant.revoked_at, grant.revoked_by, grant.revoke_reason = now, user, reason
         grant.save(update_fields=["revoked_at", "revoked_by", "revoke_reason"])
         bump(product, "grant_revoked")
         from .research_disposition import reconcile_private
 
+        job = schedule(product, grant.revoked_at, "revocation")
+        if grant.operation in CONTROLLED and grant.effect == "allow" and not grant.restrictions:
+            track(job, grant, product)
+            settle(product, grant.revoked_at)
+            block_segments(product, grant.revoked_at)
         reconcile_private(product, now=grant.revoked_at, change=grant)
-        schedule(product, grant.revoked_at, "revocation")
+        record_event(product, "grant_revoked", grant.revoked_at)
     return product.pk

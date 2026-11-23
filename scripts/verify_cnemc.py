@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 
 from s01_runtime import source_hash, wait_for
 from s02_runtime import VerificationError
-from s03_runtime import JOB_URL, S03Project, prepare
+from s03_runtime import JOB_URL, S03Project, control_payload, job_control, prepare
 
 ZONE = ZoneInfo("Asia/Shanghai")
 CITY = "999999"
@@ -139,7 +139,7 @@ def setup_job(
 
 
 def enable(account, job):
-    code, result = account.call(f"{JOB_URL}{job}/", {"action": "resume"})
+    code, result = job_control(account, job, "resume")
     assert code == 200 and result["enabled"], (code, result)
 
 
@@ -351,7 +351,10 @@ revoke_grant(u.pk, g.pk, 'F capacity withdrawal')
     account.base = reader.base = p.base
     assert reader.call(url)[0] == 403
     assert account.call(f"/api/v1/admin/collection-windows/{run['window_id']}/")[0] == 403
-    assert account.call(f"{JOB_URL}{job}/", {"action": "resume"}) == (403, {"code": "job_disposed"})
+    assert account.call(f"{JOB_URL}{job}/", control_payload("resume", 0)) == (
+        403,
+        {"code": "job_disposed"},
+    )
     assert (
         p.sql(f"""SELECT disposed AND NOT enabled AND expected_codes IS NULL AND
         selection='{{}}'::jsonb AND roster_basis='' AND next_due_at IS NULL
