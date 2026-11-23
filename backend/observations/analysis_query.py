@@ -121,6 +121,13 @@ def relation_sql(product, spec, identities, profiles, first_day, end_day):
         else "k.observed_at_utc"
     )
     anchor_args = [product.source_timezone] if spec.report == "daily" else []
+    # The per-identity ranges still determine eligibility. Expose the fixed hourly bounds
+    # and requested dimensions separately so PG can use the observation identity index.
+    instant_bounds = ""
+    instant_args = []
+    if spec.report != "daily":
+        instant_bounds = "AND k.observed_at_utc >= %s AND k.observed_at_utc < %s"
+        instant_args = [spec.start, spec.end]
     expected_anchor = (
         "date_bin(interval '1 hour', w.lo, date_trunc('day', w.lo AT TIME ZONE %s) AT TIME ZONE %s)"
     )
@@ -147,6 +154,8 @@ def relation_sql(product, spec, identities, profiles, first_day, end_day):
         JOIN {rev._meta.db_table} r ON r.key_id=k.id AND r.is_current AND NOT r.candidate AND r.unit=c.unit
         WHERE k.product_id=%s AND NOT k.retired AND k.window_definition=%s AND k.report_kind=%s
         AND k.source_local_date >= %s AND k.source_local_date < %s
+        AND k.{entity}_id=ANY(%s) AND k.indicator=ANY(%s) AND k.standard_series=ANY(%s)
+        {instant_bounds}
         AND EXISTS (SELECT FROM ranges s WHERE s.entity=c.entity AND s.code=k.object_code AND {anchor}>=s.low AND {anchor}<s.high)
     ), cells AS (
         SELECT c.pos,c.entity,c.indicator,c.unit,c.standard,COALESCE(e.at,a.at) AS at,
@@ -174,6 +183,10 @@ def relation_sql(product, spec, identities, profiles, first_day, end_day):
         spec.report,
         first_day,
         end_day,
+        list(spec.ids),
+        list(spec.indicators),
+        sorted(set(spec.standards.values())),
+        *instant_args,
         *anchor_args,
         *anchor_args,
         len(columns),

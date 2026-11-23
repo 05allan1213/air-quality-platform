@@ -255,10 +255,10 @@ def statistics_buckets(relation, grain):
         "month": "date_trunc('month', local_at)",
         "season": "date_trunc('quarter', local_at + interval '1 month') - interval '1 month'",
     }[grain]
-    # All output keys and grouping expressions are fixed in code. The timezone is a parameter.
+    # Group using the fields needed for coverage and the sample, without carrying revision metadata.
     rows = relation.query(
         f""", labelled AS MATERIALIZED (
-        SELECT *, {bucket_expression} AS bucket,
+        SELECT pos, at, expected, key_id, quality, effective, {bucket_expression} AS bucket,
           CASE WHEN {SAMPLES} THEN value END AS sample
         FROM (SELECT *, at AT TIME ZONE %s AS local_at FROM slots) local_slots
     ), measures AS (
@@ -267,8 +267,10 @@ def statistics_buckets(relation, grain):
           array_agg(sample ORDER BY sample) FILTER (WHERE sample IS NOT NULL) AS sample_values,
           count(sample)-1 AS last_index
         FROM labelled GROUP BY pos,bucket
-    ), quartiles AS (
-        SELECT *, {QUANTILES_SQL} FROM measures
+    ), quartiles AS MATERIALIZED (
+        SELECT pos,bucket,"E","O","V",outside_schedule,gap,missing,censored,
+          invalid,suspect,disputed,unknown,mean,minimum,maximum,{QUANTILES_SQL}
+        FROM measures
     ) SELECT q.pos,q.bucket,q."E",q."O",q."V",q.outside_schedule,q.gap,q.missing,q.censored,
       q.invalid,q.suspect,q.disputed,q.unknown,q.mean,q.minimum,q.maximum,q.q1,q.median,q.q3,
       min(s.at) FILTER (WHERE s.sample=q.minimum) AS minimum_at,
@@ -411,14 +413,14 @@ def heatmap(relation):
 
 
 def anomalies(relation, column, disclose_points):
-    # Compute exact quartiles and test the IQR with numeric arithmetic in PostgreSQL.
+    # Materialize the exact quartiles once before testing the IQR for each slot.
     eligible = sufficient(column["V"], column["E"]) and column["V"] >= 30
     if not eligible:
         return {"state": "insufficient_samples", "count": None}
     query = f""", measures AS (
       SELECT array_agg(value ORDER BY value) AS sample_values, count(value)-1 AS last_index
       FROM slots WHERE {SAMPLES}
-    ), quartiles AS (
+    ), quartiles AS MATERIALIZED (
       SELECT {QUANTILES_SQL} FROM measures
     ), outliers AS MATERIALIZED (
       SELECT at,key_id,value FROM slots CROSS JOIN quartiles WHERE {SAMPLES} AND q3>q1
