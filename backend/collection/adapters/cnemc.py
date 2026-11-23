@@ -125,7 +125,8 @@ def fetch(endpoint, city_code, city_name, target, *, synthetic):
     return transport.request(contract, origin, params, content, headers)
 
 
-def _profile(shape, source_timezone, standard):
+def observation_profile(shape, source_timezone, standard):
+    """Validate the hourly profile and return its optional source-local standard period."""
     if source_timezone != TIMEZONE:
         raise WireError("unregistered_profile")
     standard = {} if standard is None else standard
@@ -226,7 +227,7 @@ def parse(
     contract = ENDPOINTS.get(endpoint)
     if contract is None:
         raise WireError("unregistered_profile")
-    profile, standard_period = _profile(contract.shape, source_timezone, standard)
+    profile, standard_period = observation_profile(contract.shape, source_timezone, standard)
     included = _included(
         {"mode": "include", "objects": {}} if selection is None else selection, contract
     )
