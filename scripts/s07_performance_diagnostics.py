@@ -85,9 +85,8 @@ def runtime():
             FROM accounts_servicepulse WHERE component IN ('beat','worker') ORDER BY component""")
         pulses = {component: float(age) for component, age in cur.fetchall()}
     queues = ("s01.fixture", "s02.history", "s03.collection")
-    with Redis.from_url(
-        settings.CELERY_BROKER_URL, socket_timeout=2, socket_connect_timeout=2
-    ) as redis:
+    broker_url = settings.CELERY_BROKER_URL.replace("redis+socket://", "unix://", 1)
+    with Redis.from_url(broker_url, socket_timeout=2, socket_connect_timeout=2) as redis:
         backlog = {queue: redis.llen(queue) for queue in queues}
     return {
         "run": run,
