@@ -861,6 +861,247 @@
       "sha256": "a7718f835e4dbab956624e2ae16af51f024119e47883c60d6fcc91772923bd45",
       "status": "PASS",
       "source_sha256": "28932126d450314f1564a380ffdc6b320413b60591aa996aedcf69f431eb7372"
+    },
+    {
+      "cases": [
+        "V10",
+        "V12"
+      ],
+      "label": "candidate-s05-upgrade",
+      "receipt": "tmp/s06-evidence/s06-d147dd07b63b/upgrade.json",
+      "sha256": "18d80537ca8c0556384f605203921c696dd292a4c4585a30a7f6dd61e1bec2e3",
+      "status": "PASS"
+    },
+    {
+      "cases": [
+        "V01",
+        "V12"
+      ],
+      "label": "candidate-s05-guard",
+      "receipt": "tmp/s06-evidence/s06-d147dd07b63b/V01/result.json",
+      "sha256": "0670cbeb1199a2d03af168d93b82d74ef54d27acdb28c051f9a19f95c4d0413b",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a"
+    },
+    {
+      "cases": [
+        "V01",
+        "V03"
+      ],
+      "label": "candidate-singleton-guard",
+      "receipt": "tmp/s07-evidence/s07-b-ca26f407057c/V01/result.json",
+      "sha256": "2a06113f39a73f5c17b74f349cc69c116a5aba8c1eb5bba322eec062dbb504de",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a"
+    },
+    {
+      "cases": [
+        "V03"
+      ],
+      "label": "candidate-singleton",
+      "receipt": "tmp/s07-evidence/s07-b-ca26f407057c/V03/host-compose.json",
+      "sha256": "34a3b60131e0f004a18dcda61221bebdb8b97c8cb91b75810afa761617dc1a51",
+      "status": "PASS"
+    },
+    {
+      "cases": [
+        "V03"
+      ],
+      "label": "private-umask-failure",
+      "receipt": "tmp/s07-evidence/s07-b-7c2567763c3a/V03/host-compose.json",
+      "sha256": "c94a39385664b3e662bcadc6d590ff0991657f7142279799b8d742f6c4a4b4f7",
+      "status": "FAIL"
+    },
+    {
+      "cases": [
+        "V15"
+      ],
+      "label": "candidate-static",
+      "receipt": "tmp/s07-evidence/s07-static-b61e7d9ccdb2/regression.json",
+      "sha256": "c6686d14b86708d2b033ac11acbf0c4663b6635ba66ca41285ad882ea60b35ba",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a"
+    },
+    {
+      "cases": [
+        "V15"
+      ],
+      "label": "candidate-a-full",
+      "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/regression.json",
+      "sha256": "caf129e8384f9f09f7daa9303be7bcde26efa33b5ae4905a1cedd62a33664aa8",
+      "status": "PASS",
+      "nodes": {
+        "PASS": 562,
+        "FAIL": 0,
+        "NOT RUN": 38
+      },
+      "not_passed": {
+        "NOT RUN": [
+          "tests/test_s05_cost.py::test_v17_research_and_drilldown_cost",
+          "tests/test_s05_cost.py::test_v12_json_response_budget_is_independent_of_candidate_cells",
+          "tests/test_s05_cost.py::test_v12_csv_rows_hidden_records_and_new_input",
+          "tests/test_s05_cost.py::test_v12_csv_byte_budget_at_low_row_count",
+          "tests/test_s05_cost.py::test_v17_detail_csv_cost",
+          "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+          "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+          "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+          "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+          "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+          "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+          "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+          "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+          "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+          "tests/test_s06_backup.py::test_v13_catalog_dependency_never_partially_archives",
+          "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+          "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+          "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+          "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+          "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+          "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+          "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
+          "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+          "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+          "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+          "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+          "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected"
+        ]
+      }
+    },
+    {
+      "cases": [
+        "V01",
+        "V15"
+      ],
+      "label": "candidate-a-full-guard",
+      "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/environment.json",
+      "sha256": "3692a8931a0eba5687d10940b163306d02e4685e5b6e9a80d698d3520e98da8d",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a"
+    },
+    {
+      "cases": [
+        "V15"
+      ],
+      "label": "candidate-node-reconciliation",
+      "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/reconciliation.json",
+      "sha256": "da798fc5d17f83f05a59f49dd66eaa635c81467d6786ffcef4e9b731fe60c5ba",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a"
+    },
+    {
+      "cases": [
+        "V17"
+      ],
+      "label": "candidate-trends",
+      "receipt": "tmp/s07-evidence/s07a-8b0166a03e62/admin-trends.json",
+      "sha256": "970bf9ccc040ea01b22b4d6a07a5987aa4fd117d25afdbacf8b9e945884dcbb6",
+      "status": "PASS",
+      "nodes": {
+        "PASS": 5,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "not_passed": {}
+    },
+    {
+      "cases": [
+        "V01",
+        "V17"
+      ],
+      "label": "candidate-trends-guard",
+      "receipt": "tmp/s07-evidence/s07a-8b0166a03e62/environment.json",
+      "sha256": "01e66bc12916a5adc6d739d1ad4980beb598145724a30d722c942370cb8f868a",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a"
+    },
+    {
+      "cases": [
+        "V15"
+      ],
+      "label": "candidate-r-full",
+      "receipt": "tmp/s06-evidence/s06-c08f218dfb4e/pytest.json",
+      "sha256": "98114b435f007d834db9d239ae68563579ac29dfb17fb64e9fac2af8223a2f18",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a",
+      "nodes": {
+        "PASS": 567,
+        "FAIL": 0,
+        "NOT RUN": 33
+      },
+      "not_passed": {
+        "NOT RUN": [
+          "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+          "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+          "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+          "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+          "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+          "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+          "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+          "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+          "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+          "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+          "tests/test_s06_backup.py::test_v13_catalog_dependency_never_partially_archives",
+          "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+          "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+          "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+          "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+          "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+          "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+          "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
+          "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+          "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+          "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+          "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+          "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+          "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected"
+        ]
+      }
+    },
+    {
+      "cases": [
+        "V11",
+        "V15"
+      ],
+      "label": "candidate-r-restore",
+      "receipt": "tmp/s06-evidence/s06-ddb85d54bf28/pytest.json",
+      "sha256": "8e2fcc47b9979333798dc0f0796b621cc93fbace59bbc077b30017ce104b8b80",
+      "status": "PASS",
+      "source_sha256": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a",
+      "nodes": {
+        "PASS": 33,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "not_passed": {}
+    },
+    {
+      "cases": [
+        "V15"
+      ],
+      "label": "candidate-s06-upgrade",
+      "receipt": "tmp/s06-evidence/s06-8aa4169af989/upgrade.json",
+      "sha256": "2f1185a22447bf1e488035aaf8a868d8daa81aec37f1eade115cc97e4f1bcd98",
+      "status": "PASS"
     }
   ]
 }

@@ -1,0 +1,1368 @@
+{
+  "scope": "V15 and V17 general P1 trends",
+  "origin": "F/I",
+  "status": "PASS",
+  "candidate": {
+    "head": "bec88f468030deb3ea900d5ef07cef6f548d8d6b",
+    "dirty_paths": 0,
+    "origin": "git"
+  },
+  "source": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a",
+  "runtime_files": 307,
+  "static": {
+    "receipt": "tmp/s07-evidence/s07-static-b61e7d9ccdb2/regression.json",
+    "sha256": "c6686d14b86708d2b033ac11acbf0c4663b6635ba66ca41285ad882ea60b35ba",
+    "run": "s07-static-b61e7d9ccdb2",
+    "checks": [
+      {
+        "command": [
+          ".venv/bin/ruff",
+          "--version"
+        ],
+        "exit_code": 0,
+        "stdout": "ruff 0.17.6\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          ".venv/bin/mypy",
+          "--version"
+        ],
+        "exit_code": 0,
+        "stdout": "mypy 2.4.1 (compiled: yes)\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "uv",
+          "--version"
+        ],
+        "exit_code": 0,
+        "stdout": "uv 0.13.6 (x86_64-unknown-linux-gnu)\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          ".venv/bin/python",
+          "--version"
+        ],
+        "exit_code": 0,
+        "stdout": "Python 3.13.18\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          ".venv/bin/ruff",
+          "check",
+          "--no-cache",
+          "backend",
+          "tests",
+          "scripts",
+          "main.py"
+        ],
+        "exit_code": 0,
+        "stdout": "All checks passed!\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          ".venv/bin/ruff",
+          "format",
+          "--check",
+          "--no-cache",
+          "backend",
+          "tests",
+          "scripts",
+          "main.py"
+        ],
+        "exit_code": 0,
+        "stdout": "288 files already formatted\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          ".venv/bin/mypy",
+          "--cache-dir=/dev/null"
+        ],
+        "exit_code": 0,
+        "stdout": "Success: no issues found in 3 source files\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "uv",
+          "--no-cache",
+          "lock",
+          "--check",
+          "--offline"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Resolved 67 packages in 0.73ms\n"
+      },
+      {
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "git",
+          "diff",
+          "--cached",
+          "--check"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ]
+  },
+  "django": [
+    {
+      "command": [
+        "/app/.venv/bin/python",
+        "-B",
+        "backend/manage.py",
+        "check"
+      ],
+      "exit_code": 0,
+      "stdout": "System check identified no issues (0 silenced).\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/app/.venv/bin/python",
+        "-B",
+        "backend/manage.py",
+        "makemigrations",
+        "--check",
+        "--dry-run"
+      ],
+      "exit_code": 0,
+      "stdout": "No changes detected\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/app/.venv/bin/python",
+        "-B",
+        "backend/manage.py",
+        "migrate",
+        "--plan"
+      ],
+      "exit_code": 0,
+      "stdout": "Planned operations:\n  No planned migration operations.\n",
+      "stderr": ""
+    }
+  ],
+  "a_r_reconciliation": {
+    "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/reconciliation.json",
+    "sha256": "da798fc5d17f83f05a59f49dd66eaa635c81467d6786ffcef4e9b731fe60c5ba",
+    "scope": "V15-A/R",
+    "origin": "F/I",
+    "status": "PASS",
+    "candidate": {
+      "head": "bec88f468030deb3ea900d5ef07cef6f548d8d6b",
+      "dirty_paths": 0,
+      "origin": "git"
+    },
+    "source": "35843e833e9a12ceeb5bcc19a3a772f1e612b05da47395866c6f1aafe66a706a",
+    "a": {
+      "run": "s07a-f94afbce4d21",
+      "counts": {
+        "PASS": 562,
+        "FAIL": 0,
+        "NOT RUN": 38
+      },
+      "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/regression.json",
+      "sha256": "caf129e8384f9f09f7daa9303be7bcde26efa33b5ae4905a1cedd62a33664aa8"
+    },
+    "r_full": {
+      "run": "s06-c08f218dfb4e",
+      "counts": {
+        "PASS": 567,
+        "FAIL": 0,
+        "NOT RUN": 33
+      },
+      "receipt": "tmp/s06-evidence/s06-c08f218dfb4e/pytest.json",
+      "sha256": "98114b435f007d834db9d239ae68563579ac29dfb17fb64e9fac2af8223a2f18"
+    },
+    "r_restore": {
+      "run": "s06-ddb85d54bf28",
+      "counts": {
+        "PASS": 33,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "receipt": "tmp/s06-evidence/s06-ddb85d54bf28/pytest.json",
+      "sha256": "8e2fcc47b9979333798dc0f0796b621cc93fbace59bbc077b30017ce104b8b80"
+    },
+    "guard_receipts": {
+      "a": {
+        "receipt": "tmp/s07-evidence/s07a-f94afbce4d21/environment.json",
+        "sha256": "3692a8931a0eba5687d10940b163306d02e4685e5b6e9a80d698d3520e98da8d"
+      },
+      "r_full": {
+        "receipt": "tmp/s06-evidence/s06-c08f218dfb4e/V01/result.json",
+        "sha256": "fb6dd905e07b66cc4b4158be4040c47d84847a39a8c222dea8f8fa610ef445ed"
+      },
+      "r_restore": {
+        "receipt": "tmp/s06-evidence/s06-ddb85d54bf28/V01/result.json",
+        "sha256": "88bc6fe6f8bf6a258793ebba02b1bc243d63c08b1d57bf4333934b7b96d90ca0"
+      }
+    },
+    "a_skip_resolution": [
+      {
+        "nodeid": "tests/test_s05_cost.py::test_v12_csv_byte_budget_at_low_row_count",
+        "sat_by": "s06-c08f218dfb4e",
+        "reason": "volume fixtures require the R socket guard"
+      },
+      {
+        "nodeid": "tests/test_s05_cost.py::test_v12_csv_rows_hidden_records_and_new_input",
+        "sat_by": "s06-c08f218dfb4e",
+        "reason": "volume fixtures require the R socket guard"
+      },
+      {
+        "nodeid": "tests/test_s05_cost.py::test_v12_json_response_budget_is_independent_of_candidate_cells",
+        "sat_by": "s06-c08f218dfb4e",
+        "reason": "volume fixtures require the R socket guard"
+      },
+      {
+        "nodeid": "tests/test_s05_cost.py::test_v17_detail_csv_cost",
+        "sat_by": "s06-c08f218dfb4e",
+        "reason": "volume fixtures require the R socket guard"
+      },
+      {
+        "nodeid": "tests/test_s05_cost.py::test_v17_research_and_drilldown_cost",
+        "sat_by": "s06-c08f218dfb4e",
+        "reason": "volume fixtures require the R socket guard"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v13_catalog_dependency_never_partially_archives",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      },
+      {
+        "nodeid": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+        "sat_by": "s06-ddb85d54bf28",
+        "reason": "requires the independently owned R restoration targets"
+      }
+    ],
+    "covered_unique_nodes": 600,
+    "unmatched_nodes": []
+  },
+  "forward_upgrade": {
+    "receipt": "tmp/s06-evidence/s06-8aa4169af989/upgrade.json",
+    "sha256": "2f1185a22447bf1e488035aaf8a868d8daa81aec37f1eade115cc97e4f1bcd98",
+    "run": "s06-8aa4169af989",
+    "guard": {
+      "receipt": "tmp/s06-evidence/s06-8aa4169af989/V01/result.json",
+      "sha256": "5e24164c4b1f901e373dd36c732a64900c2fc9400daf72634784f6389afb1b1d"
+    },
+    "baseline": {
+      "commit": "8de867853c470393617bc7ee14bb692a97fe8c5c",
+      "source": "598e00c2db1d39918b2e5eecb64f35956de26c38c4ebed944401c34caa66c632",
+      "mounted_subtree": "backend"
+    },
+    "scope": "V15-R-forward",
+    "origin": "F",
+    "status": "PASS",
+    "old_writers_exited": true,
+    "s06": {
+      "leaves": [
+        [
+          "accounts",
+          "0006_worker_subscription"
+        ],
+        [
+          "admin",
+          "0003_logentry_add_action_flag_choices"
+        ],
+        [
+          "auth",
+          "0012_alter_user_first_name_max_length"
+        ],
+        [
+          "collection",
+          "0009_control_versions"
+        ],
+        [
+          "contenttypes",
+          "0002_remove_content_type_name"
+        ],
+        [
+          "django_celery_beat",
+          "0019_alter_periodictasks_options"
+        ],
+        [
+          "observations",
+          "0017_backup_preparation_dependencies"
+        ],
+        [
+          "samples",
+          "0002_local_grants"
+        ],
+        [
+          "sessions",
+          "0001_initial"
+        ]
+      ],
+      "pending": []
+    },
+    "s07_before": {
+      "leaves": [
+        [
+          "accounts",
+          "0006_worker_subscription"
+        ],
+        [
+          "admin",
+          "0003_logentry_add_action_flag_choices"
+        ],
+        [
+          "auth",
+          "0012_alter_user_first_name_max_length"
+        ],
+        [
+          "collection",
+          "0009_control_versions"
+        ],
+        [
+          "contenttypes",
+          "0002_remove_content_type_name"
+        ],
+        [
+          "django_celery_beat",
+          "0019_alter_periodictasks_options"
+        ],
+        [
+          "observations",
+          "0017_backup_preparation_dependencies"
+        ],
+        [
+          "samples",
+          "0002_local_grants"
+        ],
+        [
+          "sessions",
+          "0001_initial"
+        ]
+      ],
+      "pending": []
+    },
+    "s07_first": {
+      "leaves": [
+        [
+          "accounts",
+          "0006_worker_subscription"
+        ],
+        [
+          "admin",
+          "0003_logentry_add_action_flag_choices"
+        ],
+        [
+          "auth",
+          "0012_alter_user_first_name_max_length"
+        ],
+        [
+          "collection",
+          "0009_control_versions"
+        ],
+        [
+          "contenttypes",
+          "0002_remove_content_type_name"
+        ],
+        [
+          "django_celery_beat",
+          "0019_alter_periodictasks_options"
+        ],
+        [
+          "observations",
+          "0017_backup_preparation_dependencies"
+        ],
+        [
+          "samples",
+          "0002_local_grants"
+        ],
+        [
+          "sessions",
+          "0001_initial"
+        ]
+      ],
+      "pending": []
+    },
+    "s07_second": {
+      "leaves": [
+        [
+          "accounts",
+          "0006_worker_subscription"
+        ],
+        [
+          "admin",
+          "0003_logentry_add_action_flag_choices"
+        ],
+        [
+          "auth",
+          "0012_alter_user_first_name_max_length"
+        ],
+        [
+          "collection",
+          "0009_control_versions"
+        ],
+        [
+          "contenttypes",
+          "0002_remove_content_type_name"
+        ],
+        [
+          "django_celery_beat",
+          "0019_alter_periodictasks_options"
+        ],
+        [
+          "observations",
+          "0017_backup_preparation_dependencies"
+        ],
+        [
+          "samples",
+          "0002_local_grants"
+        ],
+        [
+          "sessions",
+          "0001_initial"
+        ]
+      ],
+      "pending": []
+    },
+    "tables": {
+      "accounts_accountstate": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "accounts_exportticket": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "accounts_exportticket_products": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "accounts_favorite": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "accounts_governanceaction": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "accounts_savedquery": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "accounts_savedquerytarget": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "accounts_servicepulse": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "auth_group": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "auth_group_permissions": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "auth_permission": {
+        "s06_rows": 204,
+        "s07_rows": 204,
+        "contents_preserved": true
+      },
+      "auth_user": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "auth_user_groups": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "auth_user_user_permissions": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "collection_collectioncontrol": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "collection_controlevent": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "collection_job": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "collection_run": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "collection_runitem": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "collection_workwindow": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "django_admin_log": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "django_celery_beat_clockedschedule": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "django_celery_beat_crontabschedule": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "django_celery_beat_intervalschedule": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "django_celery_beat_periodictask": {
+        "s06_rows": 2,
+        "s07_rows": 2,
+        "contents_preserved": true
+      },
+      "django_celery_beat_periodictasks": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "django_celery_beat_solarschedule": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "django_content_type": {
+        "s06_rows": 55,
+        "s07_rows": 55,
+        "contents_preserved": true
+      },
+      "django_migrations": {
+        "s06_rows": 73,
+        "s07_rows": 73,
+        "contents_preserved": true
+      },
+      "django_session": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "observations_backupauthorityevent": {
+        "s06_rows": 5,
+        "s07_rows": 5,
+        "contents_preserved": true
+      },
+      "observations_backupsegment": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_backupsubject": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_batch": {
+        "s06_rows": 2,
+        "s07_rows": 2,
+        "contents_preserved": true
+      },
+      "observations_candidateclearance": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_catalogchange": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_change": {
+        "s06_rows": 7,
+        "s07_rows": 7,
+        "contents_preserved": true
+      },
+      "observations_city": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "observations_cityidentifier": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "observations_cityobservation": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "observations_cityrevision": {
+        "s06_rows": 2,
+        "s07_rows": 2,
+        "contents_preserved": true
+      },
+      "observations_dispositionjob": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "observations_importattempt": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_mappinglink": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_product": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "observations_qualitydecision": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_qualityissue": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_receipt": {
+        "s06_rows": 2,
+        "s07_rows": 2,
+        "contents_preserved": true
+      },
+      "observations_restoreintent": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_siteepoch": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_source": {
+        "s06_rows": 1,
+        "s07_rows": 1,
+        "contents_preserved": true
+      },
+      "observations_stagedinput": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_station": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_stationidentifier": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_stationobservation": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_stationrevision": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "observations_usegrant": {
+        "s06_rows": 4,
+        "s07_rows": 4,
+        "contents_preserved": true
+      },
+      "samples_fixturegrant": {
+        "s06_rows": 3,
+        "s07_rows": 3,
+        "contents_preserved": true
+      },
+      "samples_fixtureobservation": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      },
+      "samples_fixturerun": {
+        "s06_rows": 0,
+        "s07_rows": 0,
+        "contents_preserved": true
+      }
+    },
+    "old_session_http": 200
+  },
+  "trends": {
+    "receipt": "tmp/s07-evidence/s07a-8b0166a03e62/admin-trends.json",
+    "sha256": "970bf9ccc040ea01b22b4d6a07a5987aa4fd117d25afdbacf8b9e945884dcbb6",
+    "run": "s07a-8b0166a03e62",
+    "guard": {
+      "receipt": "tmp/s07-evidence/s07a-8b0166a03e62/environment.json",
+      "sha256": "01e66bc12916a5adc6d739d1ad4980beb598145724a30d722c942370cb8f868a"
+    },
+    "scope": "P05/V17-A",
+    "origins": [
+      "F",
+      "I"
+    ],
+    "result": "PASS",
+    "image": "sha256:def88d0823c20f5186859f7d85e87f10a43665744fed5e65e7b9b6787a43e7af",
+    "suite": {
+      "exit_code": 0,
+      "counts": {
+        "PASS": 5,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "cases": [
+        {
+          "nodeid": "tests/test_s07_operations.py::test_v17_trends_match_independent_sql",
+          "status": "PASS",
+          "duration_seconds": 6.49,
+          "http_contract": [
+            {
+              "operation": "readOperationsTrend",
+              "status": 200,
+              "count": 2
+            },
+            {
+              "operation": "readOperationsTrend",
+              "status": 400,
+              "count": 1
+            },
+            {
+              "operation": "readOperationsTrend",
+              "status": 403,
+              "count": 2
+            }
+          ]
+        },
+        {
+          "nodeid": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+          "status": "PASS",
+          "duration_seconds": 3.209,
+          "http_contract": [
+            {
+              "operation": "listCollectionJobs",
+              "status": 200,
+              "count": 2
+            },
+            {
+              "operation": "listCollectionRuns",
+              "status": 200,
+              "count": 4
+            },
+            {
+              "operation": "listCollectionRuns",
+              "status": 400,
+              "count": 1
+            },
+            {
+              "operation": "listCollectionWindows",
+              "status": 200,
+              "count": 4
+            },
+            {
+              "operation": "listQualityIssues",
+              "status": 200,
+              "count": 1
+            },
+            {
+              "operation": "previewProductDisposition",
+              "status": 200,
+              "count": 1
+            },
+            {
+              "operation": "readCollectionJob",
+              "status": 200,
+              "count": 1
+            },
+            {
+              "operation": "readCollectionRun",
+              "status": 200,
+              "count": 1
+            },
+            {
+              "operation": "readCollectionWindow",
+              "status": 200,
+              "count": 6
+            }
+          ]
+        },
+        {
+          "nodeid": "tests/test_s07_operations.py::test_history_status_is_owned_or_reviewed_and_does_not_expose_staging",
+          "status": "PASS",
+          "duration_seconds": 4.199,
+          "http_contract": [
+            {
+              "operation": "listHistoryImports",
+              "status": 200,
+              "count": 2
+            },
+            {
+              "operation": "readHistoryImport",
+              "status": 200,
+              "count": 1
+            },
+            {
+              "operation": "readHistoryImport",
+              "status": 403,
+              "count": 2
+            },
+            {
+              "operation": "submitHistoryImport",
+              "status": 202,
+              "count": 1
+            },
+            {
+              "operation": "submitHistoryImport",
+              "status": 403,
+              "count": 1
+            },
+            {
+              "operation": "submitHistoryImport",
+              "status": 503,
+              "count": 1
+            }
+          ]
+        },
+        {
+          "nodeid": "tests/test_s07_operations.py::test_history_enqueue_rechecks_winning_pg_commit[case-1]",
+          "status": "PASS",
+          "duration_seconds": 2.027,
+          "observed": {
+            "pg_utc": "2026-11-23T10:18:28.363668+00:00"
+          }
+        },
+        {
+          "nodeid": "tests/test_s07_operations.py::test_history_enqueue_rechecks_winning_pg_commit[case-2]",
+          "status": "PASS",
+          "duration_seconds": 1.975,
+          "observed": {
+            "pg_utc": "2026-11-23T10:18:30.343013+00:00"
+          }
+        }
+      ],
+      "trend_buckets": {
+        "full_buckets": [
+          {
+            "date": "2024-01-02",
+            "window_count": 3,
+            "partially_authorized_windows": 0,
+            "window_results": {
+              "new": 1,
+              "partial": 1,
+              "failed": 1
+            },
+            "coverage": {
+              "E": 21,
+              "O": 13,
+              "V": 13,
+              "unknown_E_windows": 0,
+              "received": {
+                "numerator": 13,
+                "denominator": 21,
+                "ratio": 0.6190476190476191
+              },
+              "valid": {
+                "numerator": 13,
+                "denominator": 21,
+                "ratio": 0.6190476190476191
+              }
+            },
+            "first_observation_window_rate": {
+              "numerator": 2,
+              "denominator": 3,
+              "ratio": 0.6666666666666666
+            },
+            "source_publication_delay": null,
+            "terminal_attempt_states": {
+              "coalesced": 1,
+              "failed": 2,
+              "finished": 2
+            },
+            "response_attempt_rate": {
+              "numerator": 2,
+              "denominator": 5,
+              "ratio": 0.4
+            },
+            "queue_wait": {
+              "sample_count": 5,
+              "known_count": 4,
+              "mean_seconds": null
+            },
+            "execution": {
+              "sample_count": 5,
+              "known_count": 3,
+              "mean_seconds": null
+            },
+            "schedule_delay": {
+              "sample_count": 1,
+              "known_count": 1,
+              "mean_seconds": 4.0
+            }
+          },
+          {
+            "date": "2024-01-03",
+            "window_count": 2,
+            "partially_authorized_windows": 0,
+            "window_results": {
+              "no_new": 1,
+              "new": 1
+            },
+            "coverage": {
+              "E": null,
+              "O": 7,
+              "V": 7,
+              "unknown_E_windows": 1,
+              "received": {
+                "numerator": 7,
+                "denominator": null,
+                "ratio": null
+              },
+              "valid": {
+                "numerator": 7,
+                "denominator": null,
+                "ratio": null
+              }
+            },
+            "first_observation_window_rate": {
+              "numerator": 1,
+              "denominator": 2,
+              "ratio": 0.5
+            },
+            "source_publication_delay": null,
+            "terminal_attempt_states": {
+              "finished": 2
+            },
+            "response_attempt_rate": {
+              "numerator": 2,
+              "denominator": 2,
+              "ratio": 1.0
+            },
+            "queue_wait": {
+              "sample_count": 2,
+              "known_count": 2,
+              "mean_seconds": 3.0
+            },
+            "execution": {
+              "sample_count": 2,
+              "known_count": 2,
+              "mean_seconds": 5.0
+            },
+            "schedule_delay": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            }
+          },
+          {
+            "date": "2024-01-04",
+            "window_count": 0,
+            "partially_authorized_windows": 0,
+            "window_results": {},
+            "coverage": {
+              "E": 0,
+              "O": 0,
+              "V": 0,
+              "unknown_E_windows": 0,
+              "received": {
+                "numerator": 0,
+                "denominator": 0,
+                "ratio": null
+              },
+              "valid": {
+                "numerator": 0,
+                "denominator": 0,
+                "ratio": null
+              }
+            },
+            "first_observation_window_rate": {
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": null
+            },
+            "source_publication_delay": null,
+            "terminal_attempt_states": {},
+            "response_attempt_rate": {
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": null
+            },
+            "queue_wait": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            },
+            "execution": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            },
+            "schedule_delay": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            }
+          }
+        ],
+        "partial_buckets": [
+          {
+            "date": "2024-01-02",
+            "window_count": 3,
+            "partially_authorized_windows": 3,
+            "window_results": {},
+            "coverage": {
+              "E": 3,
+              "O": 2,
+              "V": 2,
+              "unknown_E_windows": 0,
+              "received": {
+                "numerator": 2,
+                "denominator": 3,
+                "ratio": 0.6666666666666666
+              },
+              "valid": {
+                "numerator": 2,
+                "denominator": 3,
+                "ratio": 0.6666666666666666
+              }
+            },
+            "first_observation_window_rate": {
+              "numerator": 2,
+              "denominator": 3,
+              "ratio": 0.6666666666666666
+            },
+            "source_publication_delay": null,
+            "terminal_attempt_states": {},
+            "response_attempt_rate": {
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": null
+            },
+            "queue_wait": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            },
+            "execution": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            },
+            "schedule_delay": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            }
+          },
+          {
+            "date": "2024-01-03",
+            "window_count": 2,
+            "partially_authorized_windows": 2,
+            "window_results": {},
+            "coverage": {
+              "E": null,
+              "O": 1,
+              "V": 1,
+              "unknown_E_windows": 1,
+              "received": {
+                "numerator": 1,
+                "denominator": null,
+                "ratio": null
+              },
+              "valid": {
+                "numerator": 1,
+                "denominator": null,
+                "ratio": null
+              }
+            },
+            "first_observation_window_rate": {
+              "numerator": 1,
+              "denominator": 2,
+              "ratio": 0.5
+            },
+            "source_publication_delay": null,
+            "terminal_attempt_states": {},
+            "response_attempt_rate": {
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": null
+            },
+            "queue_wait": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            },
+            "execution": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            },
+            "schedule_delay": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            }
+          },
+          {
+            "date": "2024-01-04",
+            "window_count": 0,
+            "partially_authorized_windows": 0,
+            "window_results": {},
+            "coverage": {
+              "E": 0,
+              "O": 0,
+              "V": 0,
+              "unknown_E_windows": 0,
+              "received": {
+                "numerator": 0,
+                "denominator": 0,
+                "ratio": null
+              },
+              "valid": {
+                "numerator": 0,
+                "denominator": 0,
+                "ratio": null
+              }
+            },
+            "first_observation_window_rate": {
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": null
+            },
+            "source_publication_delay": null,
+            "terminal_attempt_states": {},
+            "response_attempt_rate": {
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": null
+            },
+            "queue_wait": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            },
+            "execution": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            },
+            "schedule_delay": {
+              "sample_count": 0,
+              "known_count": 0,
+              "mean_seconds": null
+            }
+          }
+        ],
+        "withdrawn": 403,
+        "pg_utc": "2026-11-23T10:18:18.442822+00:00"
+      }
+    }
+  }
+}

@@ -49,3 +49,17 @@ V15 static-pre-handoff s07-evidence/s07-static-6ce7120f5c4d/regression.json
 V08 post-review-flows s07-evidence/s07a-817c145247d6/flows.json
 V05,V06,V07,V10 post-review-participant s07-evidence/s07a-817c145247d6/participant.json
 V01 post-review-flow-cleanup s07-evidence/s07a-817c145247d6/environment.json
+V10,V12 candidate-s05-upgrade s06-evidence/s06-d147dd07b63b/upgrade.json
+V01,V12 candidate-s05-guard s06-evidence/s06-d147dd07b63b/V01/result.json
+V01,V03 candidate-singleton-guard s07-evidence/s07-b-ca26f407057c/V01/result.json
+V03 candidate-singleton s07-evidence/s07-b-ca26f407057c/V03/host-compose.json
+V03 private-umask-failure s07-evidence/s07-b-7c2567763c3a/V03/host-compose.json
+V15 candidate-static s07-evidence/s07-static-b61e7d9ccdb2/regression.json
+V15 candidate-a-full s07-evidence/s07a-f94afbce4d21/regression.json
+V01,V15 candidate-a-full-guard s07-evidence/s07a-f94afbce4d21/environment.json
+V15 candidate-node-reconciliation s07-evidence/s07a-f94afbce4d21/reconciliation.json
+V17 candidate-trends s07-evidence/s07a-8b0166a03e62/admin-trends.json
+V01,V17 candidate-trends-guard s07-evidence/s07a-8b0166a03e62/environment.json
+V15 candidate-r-full s06-evidence/s06-c08f218dfb4e/pytest.json
+V11,V15 candidate-r-restore s06-evidence/s06-ddb85d54bf28/pytest.json
+V15 candidate-s06-upgrade s06-evidence/s06-8aa4169af989/upgrade.json

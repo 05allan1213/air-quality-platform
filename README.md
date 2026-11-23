@@ -16,9 +16,11 @@ python main.py
 - 从用户会话到管理员和研究接口的请求样例、版本迁移与错误见 [v1 候选契约](docs/api/v1.md) 和 [OpenAPI 3.1](docs/api/openapi.v1.json)。
 - 阶段判定、证据、历史 CSV 风险及外部授权见 [S07 验收报告](docs/verification/S07.md)。
 
+本包包含上述 S07 操作和验收材料。下文 S01 至 S04 的历史文档路径以完整 Git 仓库根目录为起点。
+
 ## 查询与用户业务
 
-登录后可从全国同刻概览进入城市七项、独立趋势、站点和历史明细，并在“我的关注”复访已收藏的实体。查询链路只需 Web、PostgreSQL 和已获准的存量数据。查询参数、分页、字段可用性、改密与收藏示例见 [S04 用户 API](docs/operations/S04.md)。开发验证和真实 H 核对见 [S04 工程交接](docs/verification/S04.md)。
+登录后可从全国同刻概览进入城市七项、独立趋势、站点和历史明细，并在“我的关注”复访已收藏的实体。查询链路只需 Web、PostgreSQL 和已获准的存量数据。查询参数、分页、字段可用性、改密与收藏示例见 S04 用户 API（`docs/operations/S04.md`）。开发验证和真实 H 核对见 S04 工程交接（`docs/verification/S04.md`）。
 
 ## 原 S01 开发 Compose 与 F 演示
 
@@ -135,7 +137,7 @@ python3.13 scripts/verify_s01.py
 
 默认顺序运行两个全新、随机命名的 Compose 项目，每轮使用随机回环端口、独立 PG 卷、临时秘密和独立的 `test_s01` 库。`--rounds 1` 可用于开发复测。运行器会停启、注入故障并最终清理自己创建的服务、卷和应用镜像标签，保留脱敏证据 `tmp/s01-evidence/<项目名>/{checks,result}.json`。本地演示项目可以保持运行。首次获取依赖与两次保卷重建都需要时间。
 
-每轮在应用镜像内执行 `uv lock --check`、Ruff 检查和格式检查、纯规则 mypy、Django 系统和迁移检查、pytest。运行器另外通过真实 HTTP、PG、Redis 和 Worker 完成跨进程断言。阶段报告含两轮标识、手算与实测对账、故障注入和覆盖范围，见 [S01 开发验证记录](docs/verification/S01.md)。
+每轮在应用镜像内执行 `uv lock --check`、Ruff 检查和格式检查、纯规则 mypy、Django 系统和迁移检查、pytest。运行器另外通过真实 HTTP、PG、Redis 和 Worker 完成跨进程断言。阶段报告含两轮标识、手算与实测对账、故障注入和覆盖范围，见 S01 开发验证记录（`docs/verification/S01.md`）。
 
 `backend/accounts/` 管会话和入口保护，`backend/samples/` 只管本地 F。正式城市、站点身份与版本规则归 S02，采集业务窗口和可靠恢复归 S03。
 
@@ -190,7 +192,7 @@ docker compose exec worker python backend/manage.py s02_revoke_grant \
 docker compose exec worker python backend/manage.py s02_dispose_due
 ```
 
-限期后可恢复处置的依据以 `expiry_mode=recoverable` 登记，使用资格在数据库截止时刻终止。`DispositionJob.completed_at` 标记数据库与文件已实际核对。漏投和清理失败保留 PG 待办，由 Worker 启动核查、Beat 补偿或上述命令重试。要求在整机停机期间物理删除的硬期限无法由本地部署保证，系统在写入时拒绝该项保存依据。平台内控撤回不改变 UCI 已发布的 CC BY 4.0 许可。详见 [S02 实施计划](docs/plans/S02_IMPLEMENTATION_PLAN.md) 和 [S02 开发验证报告](docs/verification/S02.md)。
+限期后可恢复处置的依据以 `expiry_mode=recoverable` 登记，使用资格在数据库截止时刻终止。`DispositionJob.completed_at` 标记数据库与文件已实际核对。漏投和清理失败保留 PG 待办，由 Worker 启动核查、Beat 补偿或上述命令重试。要求在整机停机期间物理删除的硬期限无法由本地部署保证，系统在写入时拒绝该项保存依据。平台内控撤回不改变 UCI 已发布的 CC BY 4.0 许可。详见 S02 实施计划（`docs/plans/S02_IMPLEMENTATION_PLAN.md`） 和 S02 开发验证报告（`docs/verification/S02.md`）。
 
 ## S03 离线采集与窗口对账
 
@@ -202,9 +204,9 @@ python3.13 scripts/verify_s03.py --case V08       # Redis 投递和同 UUID 恢�
 python3.13 scripts/verify_s03.py --case V10       # 分块回滚、重新取得响应、ACK 前退出
 ```
 
-默认 Compose 的 Worker 监听 `s01.fixture,s02.history,s03.collection`。排期、运行预算及完成事实在 PostgreSQL 中。空库的在线 Job 数为 0。原 S03 的四种 F 契约使用 `s03.fixture` 命名空间。`f-exact-v1` 的模拟来源能按原标签取数，`f-latest-v1` 仅能取当前包。真实来源的许可、回溯能力与联网验收单列在[验证报告](docs/verification/S03.md)。
+默认 Compose 的 Worker 监听 `s01.fixture,s02.history,s03.collection`。排期、运行预算及完成事实在 PostgreSQL 中。空库的在线 Job 数为 0。原 S03 的四种 F 契约使用 `s03.fixture` 命名空间。`f-exact-v1` 的模拟来源能按原标签取数，`f-latest-v1` 仅能取当前包。真实来源的许可、回溯能力与联网验收单列在验证报告（`docs/verification/S03.md`）。
 
-CNEMC 接入复用采集 Worker 实现和 PostgreSQL 账本。首次实源 A03 使用独立验收项目和专用 TLS 出口。运行 `python3.13 scripts/verify_cnemc.py`，可用内网合成来源验证 L、C、按城 S、全国 S 和 T。正式访问默认关闭，实源登记、限定验证与 S04 精确读取参数见[操作说明](docs/operations/CNEMC.md)。
+CNEMC 接入复用采集 Worker 实现和 PostgreSQL 账本。首次实源 A03 使用独立验收项目和专用 TLS 出口。运行 `python3.13 scripts/verify_cnemc.py`，可用内网合成来源验证 L、C、按城 S、全国 S 和 T。正式访问默认关闭，实源登记、限定验证与 S04 精确读取参数见操作说明（`docs/operations/CNEMC.md`）。
 
 ### 产品及时间
 
