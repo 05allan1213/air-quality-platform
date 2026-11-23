@@ -57,3 +57,18 @@ python3.13 -B scripts/s07_v12_index.py | cmp docs/verification/S07_V12.json -
 ```
 
 独立报告记录实际提交、ZIP 摘要、成员复核、两入口的结果、配置指纹及热测成绩。按真实收据登记 PASS / FAIL / BLOCKED / NOT RUN，列出发现编号、复验位置及外部项。本轮真实 H 按现行授权单独核定。T11 继续 NO-GO，S07 封版及 S08 启动以 GPT 的独立阶段验收为前置条件。
+
+## 受控备份和隔离恢复
+
+备份操作者须有 `accounts.manage_backups`，权利保管人须由包外信任配置指定并有 `observations.manage_grants`。操作者在每个段的产品、地区、对象、指标、日期和字段范围内核 `backup` 及 `retain_normalized`，恢复时再核 `restore`。应用使用自有 `S06_BACKUP_DIR`，只读访问 `S06_AUTHORITY_DIR`。保管人另行持有现行条款、可信锚、主体映射、签发记录及离线私钥。原段、签认及身份凭证留在各自受控介质上。
+
+1. 在已验证归属的实例中，操作者用已登录会话和 CSRF 向 `/api/v1/admin/backup-products/<product_id>/segments/` POST `{"scope":{"geography":"F-city","object_code":"001","indicator":"CO","start":"2024-01-01","end":"2024-01-02"}}`。`201` 返回 `operation_id`，准备中的段尚不可读取。公开 F 样例使用规范化数据。
+2. 保管人用独立 Session 读 `/api/v1/admin/backup-authority/publish/<segment_id>/`，对照本次操作、范围、权利链和当前时刻。保管人通过 `scripts/s06_restore_sign.py` 在受控目录离线签发限时证明。原操作者在有效期内向 `/api/v1/admin/backup-segments/<segment_id>/publish/` POST `{}`，核 `200`、`available`、分段清册、依赖及发布标记。
+3. 恢复须使用新建的、单独标记的空目标库。持 `accounts.restore_backup` 的操作者使用自己的有效 Session，向 `/api/v1/admin/backup-segments/<segment_id>/restore-intents/` POST `{"target":"<本次空目标 UUID>"}`。`201` 返回短期 `operation_id`。保管人从 `/api/v1/admin/backup-authority/restore/<operation_id>/` 复核并为本次意图签认。在守卫核准的环境执行 `python backend/manage.py s06_restore "$S06_RESTORE_OPERATION"`。命令核目标、主体、原 Session、当前授权和段依赖，意图仅可消费一次。
+4. 现行撤权先提交时，一次性读取被拒。合法读取先持锁时，权威事务将锁持至回环正文写完，撤权随后生效。最后核权或写入失败时检查原意图是否已消费和目标库是否回滚。仍有资格的操作者用空目标及新意图重试。留存或备份权中断、发布缺标记、证明过期或段依赖失配时，按 PG 的处置待办定位原卷与副本，核实删除后再核销。仅丧失展示权按受影响展示与导出失效处理，按各自仍有效的依据核留存和备份。其他合法独立段继续单独核权。
+
+可从包内运行下列专项。运行器在 R 的隔离边界内创建 F 保管材料和空目标，验证真实 Session、PG 提交顺序、撤权拒绝、恢复清空及本轮资源清理。机器收据在 `tmp/s06-evidence/<run>/`。本轮真实 H 的取得及恢复仍需来源保管人授权。
+
+```sh
+.venv/bin/python -B scripts/verify_s07_host.py restore
+```
