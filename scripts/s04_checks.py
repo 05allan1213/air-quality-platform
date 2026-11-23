@@ -395,6 +395,39 @@ def snapshot():
     )
 
 
+def check_exact_upgrade(before, after):
+    """The public value, revision and attributions survive the pre-S07 wire-format change."""
+    old_rows = before["results"]
+    new_rows = after["results"]
+    check(len(old_rows) == len(new_rows) == 1, "one authorized exact row after upgrade")
+    old, new = old_rows[0], new_rows[0]
+    for row in (old, new):
+        check(
+            all(
+                k in row
+                for k in ("product", "revision_id", "observed_at", "unit", "value", "attribution")
+            ),
+            "exact business fields present",
+        )
+    check(
+        {k: v for k, v in before.items() if k != "results"}
+        == {k: v for k, v in after.items() if k != "results"},
+        "exact envelope and attributions survived",
+    )
+    check(
+        {k: v for k, v in old.items() if k != "input_version"}
+        == {k: v for k, v in new.items() if k != "input_version"},
+        "exact public revision survived",
+    )
+    mark = new["input_version"]
+    check(
+        isinstance(mark, str) and len(mark) == 64 and all(c in "0123456789abcdef" for c in mark),
+        "opaque exact token",
+    )
+    if isinstance(old["input_version"], str):
+        check(old["input_version"] == mark, "same-format exact token stable")
+
+
 def migration(base, ids, password, phase):
     reader = Probe(base).login("s04-old-reader", password)
     operator = Probe(base).login("s04-operator", password)
@@ -418,10 +451,7 @@ def migration(base, ids, password, phase):
         post_s01["results"][0]["value"] == old_s01["results"][0]["value"],
         "old S01 cookie reads same value",
     )
-    check(
-        call(reader, exact(ids["products"]["S"], ids["epoch"])) == old_s02,
-        "old S02 cookie reads same value",
-    )
+    check_exact_upgrade(old_s02, call(reader, exact(ids["products"]["S"], ids["epoch"])))
     check(call(operator, window) == old_s03, "old S03 cookie reads same ledger")
     django_check("migrate", check_unapplied=True, interactive=False)
     django_check("makemigrations", check=True, dry_run=True, interactive=False)
@@ -492,12 +522,16 @@ def detail_http(reader, ids):
         empty["state"] == "no_data" and empty["results"] == [], "valid history does not fill gaps"
     )
     exact_response = call(reader, exact(product, epoch))
-    version = exact_response["results"][0]["input_version"]
+    exact_row = exact_response["results"][0]
     single = call(reader, detail(product, epoch, end=T0 + HOUR), uncached=True)["results"]
     check(
         len(single) == 1
-        and single[0]["key"] == version["key"]
-        and single[0]["revision"] == version["revision"],
+        and single[0]["revision"] == exact_row["revision_id"]
+        and all(
+            single[0][f] == exact_row[f]
+            for f in ("product", "site_epoch", "indicator", "observed_at")
+        )
+        and key_signature(single[0]) == station_sql(product, epoch, T0, T0 + HOUR)[0][:4],
         "normalized key and current revision agree with exact API",
     )
     equivalent = detail(product, epoch, end=T0 + HOUR).replace(

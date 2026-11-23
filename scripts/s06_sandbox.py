@@ -16,7 +16,7 @@ from xml.etree import ElementTree
 import pytest
 from s01_runtime import ROOT, source_hash
 from s06_guard import IsolationError, check_database, check_environment, require
-from s06_observed import safe_observed
+from s06_observed import safe_csv_environment, safe_csv_probe, safe_observed
 
 BASELINE_MOUNT = Path("/tmp/s06-baseline-code")
 
@@ -88,7 +88,13 @@ def sandbox_command(env, snapshot, action, *args, old=None):
             "S06_BASELINE_CODE",
             str(BASELINE_MOUNT),
         ]
-    command += ["--bind", str(root), str(root), "--tmpfs", str(snapshot)]
+    command += ["--bind", str(root), str(root)]
+    lock = root / "stage" / "beat.lock"
+    if action in {"services", "collection"}:
+        require(env.get("AQ_BEAT_LOCK_FILE") == str(lock), "invalid_beat_lock_file")
+        require(lock.resolve(strict=True) == lock and lock.is_file(), "invalid_beat_lock_file")
+        command += ["--ro-bind", str(lock), str(lock)]
+    command += ["--tmpfs", str(snapshot)]
     if old is not None:
         command += ["--tmpfs", str(old.parent)]
     command += ["--chdir", str(ROOT), "--"]
@@ -162,6 +168,24 @@ def pytest_runtest_makereport(item, call):
         "sqlstates": list(dict.fromkeys(states)),
         "frames": list(dict.fromkeys(frames))[-8:],
     }
+    if type(call.excinfo.value).__name__ == "ContractDrift":
+        (diagnostics,) = call.excinfo.value.args
+        metadata["contract"] = [
+            [location, schema, rule]
+            for location, schema, rule in diagnostics[:10]
+            if all(
+                type(part) is int or re.fullmatch(r"[A-Za-z0-9_~./$-]{1,100}", part)
+                for part in [*location, *schema, rule]
+            )
+        ]
+    if type(call.excinfo.value).__name__ == "ContractHttp":
+        (details,) = call.excinfo.value.args
+        if all(
+            type(part) is int or re.fullmatch(r"[/A-Za-z0-9_{}-]{1,120}", part or "")
+            for part in details
+            if part is not None
+        ):
+            metadata["http_contract"] = list(details)
     prop = ("s06_failure", json.dumps(metadata))
     item.user_properties.append(prop)
     report.user_properties.append(prop)
@@ -175,6 +199,8 @@ def summarize_failure(case):
             continue
         yield {
             "phase": data["phase"],
+            **({"contract": data["contract"]} if "contract" in data else {}),
+            **({"http_contract": data["http_contract"]} if "http_contract" in data else {}),
             "types": [value for value in data["types"] if re.fullmatch(TEST_NAME, value)],
             "sqlstates": [
                 value for value in data["sqlstates"] if re.fullmatch(r"[A-Z0-9]{5}", value)
@@ -198,6 +224,49 @@ def summarize_observed(case):
         return safe_observed(json.loads(body))
     except (ValueError, RecursionError):
         return {}
+
+
+CSV_NODE = "tests/test_s05_cost.py::test_v12_csv_rows_hidden_records_and_new_input"
+
+
+def summarize_csv_probes(case, result):
+    probes = []
+    for prop in case.iterfind("properties/property"):
+        name, body = prop.get("name"), prop.get("value", "")
+        if name not in {"s07_csv_probe", "s07_csv_environment"} or len(body) > 4096:
+            continue
+        try:
+            raw = json.loads(body)
+        except (ValueError, RecursionError):
+            continue
+        if name == "s07_csv_probe":
+            if safe := safe_csv_probe(raw):
+                probes.append(safe)
+        elif safe := safe_csv_environment(raw):
+            result["csv_environment"] = safe
+    if probes:
+        result["csv_probes"] = probes
+
+
+def summarize_http_contract(case):
+    prop = case.find("properties/property[@name='s07_http_contract']")
+    if prop is None or len(prop.get("value", "")) > 32768:
+        return []
+    rows = json.loads(prop.attrib["value"])
+    if not isinstance(rows, list):
+        return []
+    return [
+        row
+        for row in rows
+        if isinstance(row, dict)
+        and set(row) == {"operation", "status", "count"}
+        and isinstance(row["operation"], str)
+        and re.fullmatch(TEST_NAME, row["operation"])
+        and type(row["status"]) is int
+        and 200 <= row["status"] < 600
+        and type(row["count"]) is int
+        and 0 < row["count"] <= 10000
+    ]
 
 
 def summarize_pytest(xml_path):
@@ -232,6 +301,10 @@ def summarize_pytest(xml_path):
             result["failure"] = list(summarize_failure(case))
         if status == "PASS" and (observed := summarize_observed(case)):
             result["observed"] = observed
+        if status == "PASS" and (contract := summarize_http_contract(case)):
+            result["http_contract"] = contract
+        if nodeid == CSV_NODE:
+            summarize_csv_probes(case, result)
         cases.append(result)
         counts[status] += 1
     return dict(counts), cases

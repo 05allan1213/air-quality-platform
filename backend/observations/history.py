@@ -7,6 +7,7 @@ import stat
 from datetime import timedelta
 from uuid import UUID
 
+from accounts.research_session import SessionCheck, lock_users_and_groups
 from django.db import transaction
 from kombu.exceptions import OperationalError
 from samples.normalization import Rejected
@@ -33,9 +34,9 @@ def source_product():
     return locked_product(pk)
 
 
-def check_import(product, actor_id, *, stage=None):
+def check_import(product, actor_id, *, stage=None, now=None):
     actor(actor_id, "import_history")
-    now = clock()
+    now = now or clock()
     if stage is not None and (
         stage.volume_generation is None or not stage.created_at <= now < stage.expires_at
     ):
@@ -120,26 +121,37 @@ def cleanup(stage_id):
         job.save(update_fields=["completed_at"])
 
 
-def submit(actor_id, payload):
-
+def submit(actor_id, payload, *, request=None):
+    actor(actor_id, "import_history")
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != {"profile", "stage_id", "reason"}
+        or payload["profile"] != PROFILE
+        or payload["reason"] != "historical_verification"
+    ):
+        raise Denied("invalid_request")
+    try:
+        stage_id = UUID(str(payload["stage_id"]))
+    except ValueError:
+        raise Denied("invalid_request") from None
+    if request is not None and request.user.pk != actor_id:
+        raise Denied("permission_denied")
     with transaction.atomic(durable=True):
-        actor(actor_id, "import_history")
-        if (
-            not isinstance(payload, dict)
-            or set(payload) != {"profile", "stage_id", "reason"}
-            or payload["profile"] != PROFILE
-            or payload["reason"] != "historical_verification"
-        ):
-            raise Denied("invalid_request")
-        try:
-            stage_id = UUID(str(payload["stage_id"]))
-        except ValueError:
-            raise Denied("invalid_request") from None
         product = source_product()
-        stage = StagedInput.objects.filter(
-            pk=stage_id, product=product, owner_id=actor_id, state="ready", expires_at__gt=clock()
-        ).first()
-        if not stage:
+        lock_users_and_groups({actor_id})
+        auth = SessionCheck(request) if request is not None else None
+        stage = (
+            StagedInput.objects.select_for_update()
+            .filter(
+                pk=stage_id,
+                product=product,
+                owner_id=actor_id,
+                state="ready",
+                expires_at__gt=clock(),
+            )
+            .first()
+        )
+        if stage is None:
             raise Denied()
         check_import(product, actor_id, stage=stage)
         run = ImportAttempt.objects.create(
@@ -147,6 +159,7 @@ def submit(actor_id, payload):
         )
         stage.state = "claimed"
         stage.save(update_fields=["state"])
+        check_import(product, actor_id, stage=stage, now=auth.finish(()) if auth else clock())
     return publish(run)
 
 

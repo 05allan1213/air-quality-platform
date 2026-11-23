@@ -184,14 +184,24 @@ def test_display_withdrawal_invalidates_the_next_read_and_preserves_authorized_a
     ingest_batch(operator.pk, product.pk, "first", "f-test-v1", [candidate(product, 1)])
     query = selector(product, site)
     assert read_current(operator.pk, query)["count"] == 1
-    before = read_current(operator.pk, query, "analyze")["results"][0]["input_version"]
+    before = read_current(operator.pk, query, "analyze")["results"][0]
+    product.refresh_from_db()
+    prior_rights_version = product.rights_version
     revoke_grant(operator.pk, display.pk, "withdraw display only")
     with pytest.raises(Denied, match="use_denied"):
         read_current(operator.pk, query)
     dispose_due(product.pk)
     assert StationRevision.objects.filter(key__product=product).count() == 1
-    after = read_current(operator.pk, query, "analyze")["results"][0]["input_version"]
-    assert after["revision"] == before["revision"] and after["rights"] > before["rights"]
+    after = read_current(operator.pk, query, "analyze")["results"][0]
+    product.refresh_from_db()
+    display.refresh_from_db()
+    assert product.rights_version > prior_rights_version and display.revoked_at is not None
+    assert (
+        after["revision_id"]
+        == before["revision_id"]
+        == StationRevision.objects.get(key__product=product).pk
+    )
+    assert after["input_version"] == before["input_version"]
 
 
 @pytest.mark.parametrize(

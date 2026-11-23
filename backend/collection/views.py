@@ -6,12 +6,16 @@ from observations.policy import Denied
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from . import control
+from . import control, s07_admin
 from .queries import read_run, read_window
 from .services import change_job, redeliver, submit
 
 
 def reject(exc):
+    if exc.code in ("invalid_cursor", "query_too_large"):
+        return error(exc.code, 400)
+    if exc.code == "database_unavailable":
+        return error(exc.code, 503)
     if exc.code in ("invalid_request", "invalid_target"):
         return error(exc.code, 400)
     if exc.code in ("request_conflict", "window_contract_conflict", "precondition_conflict"):
@@ -20,11 +24,13 @@ def reject(exc):
 
 
 @never_cache
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 def runs(request):
     if limited("collection", request.user.pk):
         return error("rate_limited", 429)
     try:
+        if request.method == "GET":
+            return Response(s07_admin.list_activity(request, "runs"))
         with request_transaction():
             run = submit(request.user.pk, request.data, request=request)
         run.refresh_from_db()
@@ -75,3 +81,30 @@ def recover(request, run_id):
     except Denied as exc:
         return reject(exc)
     return Response({"run_id": str(run.pk), "window_id": run.window_id}, status=202)
+
+
+@never_cache
+@api_view(["GET"])
+def job_list(request):
+    return workbench(request, s07_admin.list_jobs)
+
+
+@never_cache
+@api_view(["GET"])
+def window_list(request):
+    return workbench(request, s07_admin.list_activity, "windows")
+
+
+@never_cache
+@api_view(["GET"])
+def trends(request):
+    return workbench(request, s07_admin.trends)
+
+
+def workbench(request, service, *args):
+    if limited("collection", request.user.pk):
+        return error("rate_limited", 429)
+    try:
+        return Response(service(request, *args))
+    except Denied as exc:
+        return reject(exc)

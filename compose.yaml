@@ -1,7 +1,7 @@
 x-app: &app
   image: ${COMPOSE_PROJECT_NAME}-app:local
   pull_policy: never
-  environment:
+  environment: &app-environment
     DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?local secret required}
     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?local password required}
     POSTGRES_DB: ${POSTGRES_DB:-air_quality}
@@ -65,6 +65,16 @@ services:
     depends_on: *after-migration
   beat:
     <<: *app
+    environment:
+      <<: *app-environment
+      AQ_INSTANCE_ID: ${AQ_INSTANCE_ID:-unregistered}
+      AQ_BEAT_LOCK_FILE: /run/aq-beat.lock
+    volumes:
+      - type: bind
+        source: ${AQ_BEAT_LOCK_SOURCE:-./.unregistered-beat.lock}
+        target: /run/aq-beat.lock
+        read_only: true
+        bind: {create_host_path: false}
     command: [celery, -A, config, beat, -l, INFO]
     depends_on: *after-migration
 

@@ -1,9 +1,7 @@
 """Collection control versions, authorization, and receipts within ledger transactions."""
 
 from accounts.governance import command, receipt, replay
-from accounts.research_session import SessionCheck
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from accounts.research_session import SessionCheck, lock_users_and_groups
 from django.db import transaction
 from observations.policy import Denied, actor
 
@@ -21,10 +19,7 @@ def parse(data, actions):
 
 
 def lock_principals(request, users=()):
-    ids = {request.user.pk, *users}
-    list(get_user_model().objects.select_for_update().filter(pk__in=ids).order_by("pk"))
-    groups = Group.objects.filter(user__pk__in=ids).values("pk")
-    list(Group.objects.select_for_update().filter(pk__in=groups).order_by("pk"))
+    lock_users_and_groups({request.user.pk, *users})
     return SessionCheck(request)
 
 

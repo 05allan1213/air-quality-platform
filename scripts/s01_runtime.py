@@ -20,6 +20,9 @@ AUTH = "/api/v1/auth/"
 OBS = "/api/v1/fixtures/observations/?product=F&observed_at=2001-02-03T00:00:00Z"
 
 
+CONTRACT_SPEC = Path("docs/api/openapi.v1.json")
+
+
 def source_hash():
     digest = hashlib.sha256()
     paths = [
@@ -38,6 +41,12 @@ def source_hash():
         paths.extend(
             p for p in (ROOT / folder).rglob("*") if p.is_file() and "__pycache__" not in p.parts
         )
+    paths.extend(ROOT.glob("compose.*.yaml"))
+    if (ROOT / "main.py").is_file():
+        paths.append(ROOT / "main.py")
+    # S01/S05 archives predate the optional S07 contract candidate.
+    if (ROOT / CONTRACT_SPEC).is_file():
+        paths.append(ROOT / CONTRACT_SPEC)
     for path in sorted(paths):
         digest.update(str(path.relative_to(ROOT)).encode() + b"\0" + path.read_bytes() + b"\0")
     return digest.hexdigest()

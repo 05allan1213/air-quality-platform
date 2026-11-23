@@ -153,6 +153,17 @@ class Runtime:
                 return False
 
         wait_for("isolated Unix socket Redis", ready, seconds=8)
+        instance = os.environ.get("AQ_INSTANCE_ID")
+        if instance and os.environ.get("S06_WORK_ROOT") == str(self.root):
+            require(instance == os.environ["S06_RUN"], "runtime_instance_identity")
+            self.check_process(self.children["redis"])
+            with self.broker() as client:
+                require(
+                    client.info("server")["process_id"] == self.children["redis"].pid
+                    and client.dbsize() == 0,
+                    "runtime_broker_identity",
+                )
+                require(client.set("airquality:s07:instance", instance, nx=True), "broker_marked")
 
     def worker(self, *, queues=None):
         from config.celery import app

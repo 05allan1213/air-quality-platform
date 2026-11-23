@@ -26,6 +26,7 @@ from s04_checks import (
     account_http,
     call,
     check,
+    check_exact_upgrade,
     db_failure,
     detail_http,
     django_check,
@@ -217,7 +218,7 @@ def migration_graph(archive, evidence):
             stable_favorite(call(reader, item)) == old_favorite,
             "old Session and Favorite remained usable",
         )
-        check(call(reader, observation) == old_observation, "old revision identity remained usable")
+        check_exact_upgrade(old_observation, call(reader, observation))
         check(call(operator, window) == old_window, "old collection window remained usable")
         applied = MigrationLoader(connection).applied_migrations
         check(all(node in applied for node in leaves), "all migration leaves applied")

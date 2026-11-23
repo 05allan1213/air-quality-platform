@@ -5,6 +5,7 @@ from time import monotonic
 
 from django.conf import settings
 from django.contrib.auth import BACKEND_SESSION_KEY, HASH_SESSION_KEY, SESSION_KEY, get_user_model
+from django.contrib.auth.models import Group
 from django.contrib.sessions.models import Session
 from django.db import connection, transaction
 from django.db.models import DateTimeField, Func, Subquery
@@ -103,6 +104,12 @@ def lock_dependencies(specs):
         .order_by("pk")
         .values_list("pk", flat=True)
     )
+
+
+def lock_users_and_groups(ids):
+    list(get_user_model().objects.select_for_update().filter(pk__in=ids).order_by("pk"))
+    groups = Group.objects.filter(user__pk__in=ids).values("pk")
+    list(Group.objects.select_for_update().filter(pk__in=groups).order_by("pk"))
 
 
 class SessionCheck:

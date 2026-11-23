@@ -1,0 +1,7 @@
+# V14 disables DNS upstream resolvers while keeping Compose's internal service discovery.
+services:
+  db: {dns: ['127.0.0.1']}
+  redis: {dns: ['127.0.0.1']}
+  migrate: {dns: ['127.0.0.1']}
+  worker: {dns: ['127.0.0.1']}
+  beat: {dns: ['127.0.0.1']}

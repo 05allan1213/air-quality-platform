@@ -1,12 +1,26 @@
 # 城市空气质量监测数据分析平台
 
-S01 提供一条可在本机复现的链路。管理员提交项目自制的 F 夹具，独立 Celery Worker 从 Redis 收件，在 PostgreSQL 中记录结果。普通用户登录后按观测时刻读取 CO 浓度。当前数据的用途为本地演示，外采业务计划为零。
+这是城市和站点空气质量监测分析平台。PostgreSQL 保存权利、观测和任务事实，Web、Celery Worker 和唯一 Beat 分进程运行。当前交付进入 S07 后端独立验收准备阶段。
+
+## S07 后端入口
+
+Linux / WSL2 上，按运维手册准备独立 PostgreSQL、Redis、锁文件及实例配置，然后在仓库根目录启动。`check` 检查归属和配置，无参数命令负责启动与停止整组应用进程。
+
+```sh
+. .venv/bin/activate
+python main.py check
+python main.py
+```
+
+- 宿主、正式离线 Compose、单组件、故障排查和停复顺序见 [S07 运维手册](docs/operations/S07.md)。
+- 从用户会话到管理员和研究接口的请求样例、版本迁移与错误见 [v1 候选契约](docs/api/v1.md) 和 [OpenAPI 3.1](docs/api/openapi.v1.json)。
+- 阶段判定、证据、历史 CSV 风险及外部授权见 [S07 验收报告](docs/verification/S07.md)。
 
 ## 查询与用户业务
 
 登录后可从全国同刻概览进入城市七项、独立趋势、站点和历史明细，并在“我的关注”复访已收藏的实体。查询链路只需 Web、PostgreSQL 和已获准的存量数据。查询参数、分页、字段可用性、改密与收藏示例见 [S04 用户 API](docs/operations/S04.md)。开发验证和真实 H 核对见 [S04 工程交接](docs/verification/S04.md)。
 
-## 启动本地环境
+## 原 S01 开发 Compose 与 F 演示
 
 需要 Git、带 Compose 和 BuildKit 的本地 Docker，以及 Python 3.13。以下命令在仓库根目录执行。第一次构建需要获取固定 digest 的基础镜像和 `uv.lock` 中的包。本地开发环境使用 `uv sync --locked`。容器自带锁定的 Python、uv 和验证工具。
 
@@ -30,7 +44,7 @@ curl --fail --retry 10 --retry-connrefused http://127.0.0.1:8000/health/ready/
 
 如果 8000 已占用，修改 `.env` 的 `WEB_PORT` 并对下文示例使用同一端口。PG 和 Redis 仅使用内部网络。`migrate` 退出码应为 `0`，其余五个服务保持运行。`{"web":"ok","pg":"ok"}` 表示 Web 可读 PG。迁移只预置三项 F 许可，观测表初始为零行。
 
-PG 初始化密码和应用角色密码独立。首次初始化时，应用角色获得本应用库的所有权。已有卷保留原角色和密码，重建时继续使用原 `.env` 和同一 Compose 项目名。Web、Worker、Beat 和迁移共用同一镜像。当前 Web 是单进程本地 Django 服务，`DEBUG=False`。默认回环 HTTP 使用 `COOKIE_SECURE=0`，HTTPS 环境应设为 `1`。
+PG 初始化密码和应用角色密码独立。首次初始化时，应用角色获得本应用库的所有权。已有卷保留原角色和密码，重建时继续使用原 `.env` 和同一 Compose 项目名。Web、Worker、Beat 和迁移共用同一镜像。此基础配置的 Web 是单进程 Django 开发服务，`DEBUG=False`。默认回环 HTTP 使用 `COOKIE_SECURE=0`，HTTPS 环境应设为 `1`。
 
 ## 从管理员提交到普通用户回读
 

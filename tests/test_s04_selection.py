@@ -375,7 +375,17 @@ def test_exact_recomputes_rights_attribution_when_one_of_two_bases_expires(catal
     monkeypatch.setattr(queries, "metadata", delayed)
     fresh = read_current(reader.pk, selector(p, site))
     assert set(fresh["rights_attributions"]) == {"permanent F"}
-    assert fresh["results"][0]["input_version"]["grants"] == (permanent.pk,)
+    from observations.models import UseGrant
+
+    assert list(
+        UseGrant.objects.filter(
+            product=p, operation="display", valid_until__isnull=True, revoked_at__isnull=True
+        ).values_list("pk", flat=True)
+    ) == [permanent.pk]
+    assert (
+        fresh["results"][0]["input_version"]
+        == read_current(reader.pk, selector(p, site))["results"][0]["input_version"]
+    )
 
 
 def test_exact_and_range_deny_ended_station_epoch_even_with_active_code(catalog):

@@ -290,6 +290,32 @@ def project_window(window, job, grant_rows, now, requested_code, indicator):
     return full, allowed, indicators
 
 
+def window_permission(window, job, grants, now, code=None, indicator=None):
+    """Use the same evidence authorization for a window and every aggregate of it."""
+    if cnemc_jobs.managed(job):
+        return project_window(window, job, grants, now, code, indicator)
+    try:
+        for op in ("review", "retain_normalized"):
+            selected_use(job, window.target_start, window.target_end, op, LEDGER, now, grants)
+        return True, None, None
+    except Denied:
+        if not code or (job.expected_codes is not None and code not in job.expected_codes):
+            raise
+    selection = copy(job)
+    selection.expected_codes = [code]
+    scopes = [
+        scope
+        for scope in selected_scopes(selection, window.target_start, window.target_end)
+        if scope.object_code == code and (not indicator or scope.indicator == indicator)
+    ]
+    if not scopes:
+        raise Denied()
+    for scope in scopes:
+        for op in ("review", "retain_normalized"):
+            applicable(window.product, op, scope, LEDGER, now, grants)
+    return False, None, None
+
+
 @transaction.atomic
 def read_window(actor_id, window_id, params=None):
     actor(actor_id, "review_observation")
@@ -320,35 +346,7 @@ def read_window(actor_id, window_id, params=None):
 
     def permit():
         actor(actor_id, "review_observation")
-        now = clock()
-        if cnemc_jobs.managed(first.job):
-            return project_window(window, first.job, grant_rows, now, requested_code, indicator)
-        try:
-            for op in ("review", "retain_normalized"):
-                selected_use(
-                    first.job, window.target_start, window.target_end, op, LEDGER, now, grant_rows
-                )
-            return True, None, None
-        except Denied:
-            if not requested_code or (
-                first.job.expected_codes is not None
-                and requested_code not in first.job.expected_codes
-            ):
-                raise
-        selection = copy(first.job)
-        selection.expected_codes = [requested_code]
-        scopes = [
-            scope
-            for scope in selected_scopes(selection, window.target_start, window.target_end)
-            if scope.object_code == requested_code
-            and (not indicator or scope.indicator == indicator)
-        ]
-        if not scopes:
-            raise Denied()
-        for scope in scopes:
-            for op in ("review", "retain_normalized"):
-                applicable(product, op, scope, LEDGER, now, grant_rows)
-        return False, None, None
+        return window_permission(window, first.job, grant_rows, clock(), requested_code, indicator)
 
     projection = permit()
     full, allowed, indicators = projection
@@ -491,18 +489,20 @@ def read_window(actor_id, window_id, params=None):
         synthetic=product.synthetic,
         target_start=window.target_start,
         target_end=window.target_end,
-        scope=window.scope_key,
-        profile=window.profile,
+        scope=window.scope_key if full else None,
+        profile=window.profile if full else None,
         roster_basis=window.roster_basis if full else "",
         state="disposed"
         if window.disposed
+        else "partially_authorized"
+        if not full
         else "closed"
         if window.closed_at
         else "active"
         if window.owner
         else "open",
-        closed_at=window.closed_at,
-        result=window.result if full or window.disposed else None,
+        closed_at=window.closed_at if full else None,
+        result=window.result if full else None,
         coverage=coverage,
         cells=[dict(item_key=k, **cells[k]) for k in keys[:50]],
         next_after=offset + 50 if len(keys) > 50 else None,

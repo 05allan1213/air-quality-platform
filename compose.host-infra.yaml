@@ -1,0 +1,49 @@
+# Dedicated local sockets for python main.py. Use as the sole -f input.
+services:
+  db:
+    image: postgres:16-alpine@sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857
+    pull_policy: never
+    network_mode: none
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?dedicated database required}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?local bootstrap password required}
+      POSTGRES_INITDB_ARGS: --auth-local=scram-sha-256
+      APP_DB_USER: ${POSTGRES_USER:?dedicated application role required}
+      APP_DB_PASSWORD: ${POSTGRES_PASSWORD:?local password required}
+    command: [postgres, -c, 'listen_addresses=']
+    labels: {airquality.s07.instance: '${AQ_INSTANCE_ID:?register a dedicated instance}'}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/10-app-role.sql:/docker-entrypoint-initdb.d/10-app-role.sql:ro
+      - type: bind
+        source: ${AQ_HOST_ROOT:?provide a private host root}/pg
+        target: /run/postgresql
+        bind: {create_host_path: false}
+    healthcheck:
+      test: [CMD, pg_isready, -h, /run/postgresql]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  redis:
+    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+    pull_policy: never
+    network_mode: none
+    user: '${AQ_HOST_UID:?host user uid required}:${AQ_HOST_GID:?host user gid required}'
+    command: [redis-server, --port, '0', --unixsocket, /run/aq-redis/redis.sock, --unixsocketperm, '700', --save, '', --appendonly, 'no']
+    labels: {airquality.s07.instance: '${AQ_INSTANCE_ID:?register a dedicated instance}'}
+    volumes:
+      - type: tmpfs
+        target: /data
+      - type: bind
+        source: ${AQ_HOST_ROOT:?provide a private host root}/broker
+        target: /run/aq-redis
+        bind: {create_host_path: false}
+    healthcheck:
+      test: [CMD, redis-cli, -s, /run/aq-redis/redis.sock, ping]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+volumes:
+  pgdata:
+    labels: {airquality.s07.instance: '${AQ_INSTANCE_ID:?register a dedicated instance}'}

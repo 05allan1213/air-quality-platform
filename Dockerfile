@@ -5,9 +5,13 @@ WORKDIR /app
 ENV UV_PYTHON_DOWNLOADS=never PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend PATH="/app/.venv/bin:$PATH"
 COPY pyproject.toml uv.lock .python-version ./
-RUN --mount=type=cache,target=/root/.cache/uv UV_LINK_MODE=copy uv sync --locked
+RUN --mount=type=cache,target=/root/.cache/uv UV_HTTP_TIMEOUT=120 UV_LINK_MODE=copy uv sync --locked
 RUN useradd --create-home --uid 10001 app
 COPY backend backend
+RUN DJANGO_SECRET_KEY=collectstatic-only POSTGRES_DB=unused POSTGRES_USER=unused \
+    POSTGRES_PASSWORD=unused python backend/manage.py collectstatic --noinput
+COPY main.py ./
+COPY docs/api/openapi.v1.json docs/api/openapi.v1.json
 COPY tests tests
 COPY scripts scripts
 USER app

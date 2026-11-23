@@ -1,5 +1,6 @@
 """V02/V03 over live loopback HTTP and committed PostgreSQL transactions."""
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 from queue import Queue
@@ -53,7 +54,10 @@ def sql_hook():
 
 
 @pytest.fixture
-def web_clients(sql_hook):
+def web_clients(sql_hook, request):
+    from s07_contract import Witness
+
+    witness = Witness()
     cache.clear()
     application = get_wsgi_application()
 
@@ -76,6 +80,7 @@ def web_clients(sql_hook):
                             base_url=f"http://127.0.0.1:{server.server_port}",
                             timeout=8,
                             trust_env=False,
+                            event_hooks={"response": [witness.inspect]},
                         )
                     )
 
@@ -84,6 +89,9 @@ def web_clients(sql_hook):
             server.shutdown()
             thread.join()
             cache.clear()
+            request.node.user_properties.append(
+                ("s07_http_contract", json.dumps(witness.receipt()))
+            )
 
 
 def destination(user):

@@ -16,7 +16,7 @@ from copy import deepcopy
 from pathlib import Path
 from time import monotonic, sleep
 
-from s01_runtime import ROOT, source_hash, wait_for
+from s01_runtime import CONTRACT_SPEC, ROOT, source_hash, wait_for
 from s06_guard import (
     IsolationError,
     check_database,
@@ -74,6 +74,9 @@ def make_root(run):
         (root / name).mkdir(mode=0o700)
     # Only the container's postgres uid needs write access, behind the private run root.
     (root / "pg").chmod(0o777)
+    with open(root / "stage" / "beat.lock", "xb"):
+        pass
+    (root / "stage" / "beat.lock").chmod(0o444)
     return root
 
 
@@ -81,6 +84,8 @@ def environment(run, root, password):
     db, user = identity(run)
     return {k: os.environ[k] for k in ("PATH", "HOME", "LANG") if k in os.environ} | {
         "S06_RUN": run,
+        "AQ_INSTANCE_ID": run,
+        "AQ_BEAT_LOCK_FILE": str(root / "stage" / "beat.lock"),
         "S06_WORK_ROOT": str(root),
         "POSTGRES_DB": db,
         "S06_HOST_NET_NS": os.readlink("/proc/self/ns/net"),
@@ -212,11 +217,15 @@ def cluster(env, receipt):
         receipt["network"] = "none"
         db, user = identity(run)
         from psycopg import sql
+        from s07_beat_setup import lock_identity
 
         bootstrap = sql.SQL(
             "CREATE EXTENSION btree_gist;\nCREATE ROLE {} LOGIN NOSUPERUSER CREATEDB PASSWORD {};\n"
             "CREATE DATABASE {} OWNER {};\nALTER DATABASE {} SET airquality.s06_run = {};\n"
             "ALTER ROLE {} SET airquality.s06_run = {};\n"
+            "ALTER DATABASE {} SET airquality.s07_instance = {};\n"
+            "ALTER DATABASE {} SET airquality.beat_mode = 'host';\n"
+            "ALTER DATABASE {} SET airquality.beat_lock = {};\n"
         ).format(
             sql.Identifier(user),
             sql.Literal(env["POSTGRES_PASSWORD"]),
@@ -226,6 +235,11 @@ def cluster(env, receipt):
             sql.Literal(run),
             sql.Identifier(user),
             sql.Literal(run),
+            sql.Identifier(db),
+            sql.Literal(run),
+            sql.Identifier(db),
+            sql.Identifier(db),
+            sql.Literal(lock_identity((root / "stage" / "beat.lock").stat())),
         )
         docker(
             "exec",
@@ -307,6 +321,18 @@ def freeze_source(root):
             )
         for name in SOURCE_FILES:
             shutil.copy2(ROOT / name, snapshot / name)
+        for path in (*ROOT.glob("compose.*.yaml"), ROOT / "main.py"):
+            if path.is_file():
+                require(path.resolve(strict=True) == path, "invalid_root_source")
+                shutil.copyfile(path, snapshot / path.name, follow_symlinks=False)
+        optional = [ROOT / CONTRACT_SPEC, ROOT / "main.py", *ROOT.glob("compose.*.yaml")]
+        for path in optional:
+            if not path.is_file():
+                continue
+            require(path.resolve(strict=True) == path, "invalid_source_manifest")
+            target = snapshot / path.relative_to(ROOT)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, target, follow_symlinks=False)
         require(source_hash() == previous, "source_changed_during_snapshot")
         yield snapshot, previous
 

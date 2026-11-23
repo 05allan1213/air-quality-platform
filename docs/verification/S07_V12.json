@@ -1,0 +1,4808 @@
+{
+  "scope": "S07 V12 contract candidate",
+  "origin": "F/I",
+  "spec": "docs/api/openapi.v1.json",
+  "spec_sha256": "187e7d27b976442ded2524cc7248fd2abe66f388d64b47e4fb4ae8ea028f7e26",
+  "path_count": 49,
+  "operation_count": 66,
+  "by_operation": [
+    {
+      "operation": "issueCsrf",
+      "method": "GET",
+      "path": "/api/v1/auth/csrf/",
+      "security": [],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_timebound_rename_relocation_reuse_and_independent_source",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_block_crossing_window_without_rebinding",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_directory_disclosure_and_independent_disposition",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-1]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-1]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v05_v16_pre_manifest_failure_ledger",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v17_manual_submission_checks_session_after_job_wait",
+            "count": 6
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-3]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-4]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-5]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v11_optional_fields_binding_preview_and_physical_removal",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v17_c02_regrant_and_sweep_commit_orders[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v17_c02_regrant_and_sweep_commit_orders[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_complete_evidence_clearance_and_closed_unordered_conflict",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_candidates_from_closed_and_open_issues_are_all_covered",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_substantive_evidence_reopens_review_without_clearing_isolation",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_mapping_requires_retained_original_and_review",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_mapping_does_not_restore_an_unretained_original_time",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_candidate_and_adjudication_commit_order[case-1]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_candidate_and_adjudication_commit_order[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-1]",
+            "count": 6
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-2]",
+            "count": 6
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-1]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-1]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-3]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_disable_enable_keeps_untouched_old_cookie_invalid",
+            "count": 11
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions",
+            "count": 6
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 12
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_login_and_legacy_control_path_share_generation",
+            "count": 5
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-1]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-3]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_audit_and_mutation_rollback_together",
+            "count": 2
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_catalog_dependency_never_partially_archives",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected",
+            "count": 4
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 6
+          }
+        ],
+        "405": [
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1,
+            "method": "OPTIONS"
+          }
+        ]
+      }
+    },
+    {
+      "operation": "registerAccount",
+      "method": "POST",
+      "path": "/api/v1/auth/register/",
+      "security": [
+        {
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "201": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "400": [
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "loginSession",
+      "method": "POST",
+      "path": "/api/v1/auth/login/",
+      "security": [
+        {
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_timebound_rename_relocation_reuse_and_independent_source",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_block_crossing_window_without_rebinding",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_directory_disclosure_and_independent_disposition",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v05_v16_pre_manifest_failure_ledger",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v17_manual_submission_checks_session_after_job_wait",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-4]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-5]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v11_optional_fields_binding_preview_and_physical_removal",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v17_c02_regrant_and_sweep_commit_orders[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v17_c02_regrant_and_sweep_commit_orders[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_complete_evidence_clearance_and_closed_unordered_conflict",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_candidates_from_closed_and_open_issues_are_all_covered",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_substantive_evidence_reopens_review_without_clearing_isolation",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_mapping_requires_retained_original_and_review",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_mapping_does_not_restore_an_unretained_original_time",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_candidate_and_adjudication_commit_order[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_candidate_and_adjudication_commit_order[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-3]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_disable_enable_keeps_untouched_old_cookie_invalid",
+            "count": 5
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 6
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_login_and_legacy_control_path_share_generation",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-3]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_audit_and_mutation_rollback_together",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_catalog_dependency_never_partially_archives",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected",
+            "count": 2
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 3
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_disable_enable_keeps_untouched_old_cookie_invalid",
+            "count": 1
+          }
+        ],
+        "429": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "logoutSession",
+      "method": "POST",
+      "path": "/api/v1/auth/logout/",
+      "security": [
+        {
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "204": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "changePassword",
+      "method": "POST",
+      "path": "/api/v1/auth/password/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "204": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 2
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 2
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readProfile",
+      "method": "GET",
+      "path": "/api/v1/me/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_disable_enable_keeps_untouched_old_cookie_invalid",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions",
+            "count": 3
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_disable_enable_keeps_untouched_old_cookie_invalid",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 2
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "editProfile",
+      "method": "PATCH",
+      "path": "/api/v1/me/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "415": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "discoverObjects",
+      "method": "GET",
+      "path": "/api/v1/catalog/objects/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readNational",
+      "method": "GET",
+      "path": "/api/v1/overview/national/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readCity",
+      "method": "GET",
+      "path": "/api/v1/cities/{city}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readCityTrend",
+      "method": "GET",
+      "path": "/api/v1/cities/{city}/trend/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readStationDirectory",
+      "method": "GET",
+      "path": "/api/v1/cities/{city}/stations/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readStation",
+      "method": "GET",
+      "path": "/api/v1/stations/{station}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "queryObservations",
+      "method": "GET",
+      "path": "/api/v1/observations/query/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 2
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readExactObservation",
+      "method": "GET",
+      "path": "/api/v1/observations/current/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v17_c02_regrant_and_sweep_commit_orders[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v17_c02_regrant_and_sweep_commit_orders[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 3
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v17_c02_regrant_and_sweep_commit_orders[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v17_c02_regrant_and_sweep_commit_orders[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readStatistics",
+      "method": "POST",
+      "path": "/api/v1/analysis/statistics/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_complete_evidence_clearance_and_closed_unordered_conflict",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-1]",
+            "count": 5
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 6
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 5
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-3]",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "422": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "compareObservations",
+      "method": "POST",
+      "path": "/api/v1/analysis/compare/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_compare_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readResearchDetails",
+      "method": "POST",
+      "path": "/api/v1/analysis/details/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 5
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 5
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "listFavorites",
+      "method": "GET",
+      "path": "/api/v1/me/favorites/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "createFavorite",
+      "method": "POST",
+      "path": "/api/v1/me/favorites/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "201": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readFavorite",
+      "method": "GET",
+      "path": "/api/v1/me/favorites/{item_id}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "404": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "operation": "patchFavorite",
+      "method": "PATCH",
+      "path": "/api/v1/me/favorites/{item_id}/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "deleteFavorite",
+      "method": "DELETE",
+      "path": "/api/v1/me/favorites/{item_id}/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "204": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "listSavedQueries",
+      "method": "GET",
+      "path": "/api/v1/me/saved-queries/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "createSavedQuery",
+      "method": "POST",
+      "path": "/api/v1/me/saved-queries/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "201": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readSavedQuery",
+      "method": "GET",
+      "path": "/api/v1/me/saved-queries/{item_id}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "404": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "operation": "deleteSavedQuery",
+      "method": "DELETE",
+      "path": "/api/v1/me/saved-queries/{item_id}/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "204": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "patchSavedQuery",
+      "method": "PATCH",
+      "path": "/api/v1/me/saved-queries/{item_id}/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "listExportTickets",
+      "method": "GET",
+      "path": "/api/v1/me/exports/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "createExportTicket",
+      "method": "POST",
+      "path": "/api/v1/me/exports/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "201": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readExportTicket",
+      "method": "GET",
+      "path": "/api/v1/me/exports/{item_id}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "404": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "deleteExportTicket",
+      "method": "DELETE",
+      "path": "/api/v1/me/exports/{item_id}/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "204": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "runSavedQuery",
+      "method": "POST",
+      "path": "/api/v1/me/saved-queries/{item_id}/run/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "downloadExport",
+      "method": "GET",
+      "path": "/api/v1/me/exports/{item_id}/download/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "404": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_and_owner_boundaries",
+            "count": 3
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v06_watermark_content_and_precise_ticket",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-2]",
+            "count": 1
+          }
+        ],
+        "410": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_participant_f_sample",
+            "count": 1
+          }
+        ],
+        "503": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_download_transaction_releases_no_uncommitted_csv[case-3]",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "submitFixtureRun",
+      "method": "POST",
+      "path": "/api/v1/admin/fixture-runs/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "202": [
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readLegacyFixture",
+      "method": "GET",
+      "path": "/api/v1/fixtures/observations/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "listHistoryImports",
+      "method": "GET",
+      "path": "/api/v1/admin/history-imports/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_history_status_is_owned_or_reviewed_and_does_not_expose_staging",
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "submitHistoryImport",
+      "method": "POST",
+      "path": "/api/v1/admin/history-imports/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "202": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_history_status_is_owned_or_reviewed_and_does_not_expose_staging",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_history_status_is_owned_or_reviewed_and_does_not_expose_staging",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "503": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_history_status_is_owned_or_reviewed_and_does_not_expose_staging",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readHistoryImport",
+      "method": "GET",
+      "path": "/api/v1/admin/history-imports/{attempt_id}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_history_status_is_owned_or_reviewed_and_does_not_expose_staging",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_history_status_is_owned_or_reviewed_and_does_not_expose_staging",
+            "count": 2
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readObservationEvidence",
+      "method": "GET",
+      "path": "/api/v1/admin/observation-evidence/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v11_optional_fields_binding_preview_and_physical_removal",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 3
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions",
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions",
+            "count": 3
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "listCollectionJobs",
+      "method": "GET",
+      "path": "/api/v1/admin/collection-jobs/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 2
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "listCollectionRuns",
+      "method": "GET",
+      "path": "/api/v1/admin/collection-runs/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 4
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 2
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "submitCollectionRun",
+      "method": "POST",
+      "path": "/api/v1/admin/collection-runs/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "202": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v17_manual_submission_checks_session_after_job_wait",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v17_manual_submission_checks_session_after_job_wait",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readCollectionRun",
+      "method": "GET",
+      "path": "/api/v1/admin/collection-runs/{run_id}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v05_v16_pre_manifest_failure_ledger",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-5]",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v05_v16_pre_manifest_failure_ledger",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "redeliverCollectionRun",
+      "method": "POST",
+      "path": "/api/v1/admin/collection-runs/{run_id}/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "202": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-5]",
+            "count": 2
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-5]",
+            "count": 4
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-5]",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-5]",
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readCollectionJob",
+      "method": "GET",
+      "path": "/api/v1/admin/collection-jobs/{pk}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-4]",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "changeCollectionJob",
+      "method": "POST",
+      "path": "/api/v1/admin/collection-jobs/{pk}/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-3]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-4]",
+            "count": 2
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_legacy_and_idempotent_redelivery",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-2]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-3]",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-4]",
+            "count": 4
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-4]",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_v17_cross_job_control_and_same_reason_worker_pause[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-2]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-3]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v04_five_command_contracts[case-4]",
+            "count": 3
+          }
+        ]
+      }
+    },
+    {
+      "operation": "listCollectionWindows",
+      "method": "GET",
+      "path": "/api/v1/admin/collection-windows/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 4
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readCollectionWindow",
+      "method": "GET",
+      "path": "/api/v1/admin/collection-windows/{pk}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 6
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readOperationsHealth",
+      "method": "GET",
+      "path": "/api/v1/admin/operations/health/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readOperationsTrend",
+      "method": "GET",
+      "path": "/api/v1/admin/operations/trends/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_v17_trends_match_independent_sql",
+            "count": 2
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_v17_trends_match_independent_sql",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_v17_trends_match_independent_sql",
+            "count": 2
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readManagedAccount",
+      "method": "GET",
+      "path": "/api/v1/admin/accounts/{pk}/actions/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_disable_enable_keeps_untouched_old_cookie_invalid",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_login_and_legacy_control_path_share_generation",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_audit_and_mutation_rollback_together",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "404": [
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "changeManagedAccount",
+      "method": "POST",
+      "path": "/api/v1/admin/accounts/{pk}/actions/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_collection.py::test_v17_manual_submission_checks_session_after_job_wait",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_disable_enable_keeps_untouched_old_cookie_invalid",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions",
+            "count": 6
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_admin_login_and_legacy_control_path_share_generation",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-3]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_audit_and_mutation_rollback_together",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 2
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_audit_and_mutation_rollback_together",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_disable_enable_keeps_untouched_old_cookie_invalid",
+            "count": 5
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions",
+            "count": 2
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 2
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_two_http_connections_share_one_commit[case-3]",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 1
+          }
+        ],
+        "503": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_accounts.py::test_v03_audit_and_mutation_rollback_together",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "listQualityIssues",
+      "method": "GET",
+      "path": "/api/v1/admin/quality-issues/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 1
+          },
+          {
+            "round": "administrator_and_worker",
+            "case": null,
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readQualityIssue",
+      "method": "GET",
+      "path": "/api/v1/admin/quality-issues/{event_id}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_complete_evidence_clearance_and_closed_unordered_conflict",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_candidates_from_closed_and_open_issues_are_all_covered",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_substantive_evidence_reopens_review_without_clearing_isolation",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_mapping_requires_retained_original_and_review",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_mapping_does_not_restore_an_unretained_original_time",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_candidate_and_adjudication_commit_order[case-1]",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_candidate_and_adjudication_commit_order[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-1]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-2]",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "adjudicateQualityIssue",
+      "method": "POST",
+      "path": "/api/v1/admin/quality-issues/{event_id}/actions/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_complete_evidence_clearance_and_closed_unordered_conflict",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_candidates_from_closed_and_open_issues_are_all_covered",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_substantive_evidence_reopens_review_without_clearing_isolation",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_mapping_does_not_restore_an_unretained_original_time",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_candidate_and_adjudication_commit_order[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v08_v09_mapping_scope_and_exact_read_invalidation[case-3]",
+            "count": 1
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_complete_evidence_clearance_and_closed_unordered_conflict",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_complete_evidence_clearance_and_closed_unordered_conflict",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v07_mapping_requires_retained_original_and_review",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_role_and_adjudication_commit_order[case-1]",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-2]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_quality.py::test_v17_candidate_and_adjudication_commit_order[case-1]",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "prepareStationChange",
+      "method": "GET",
+      "path": "/api/v1/admin/stations/{station_id}/changes/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_timebound_rename_relocation_reuse_and_independent_source",
+            "count": 4
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_block_crossing_window_without_rebinding",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_directory_disclosure_and_independent_disposition",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-2]",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_directory_disclosure_and_independent_disposition",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_directory_disclosure_and_independent_disposition",
+            "count": 2
+          }
+        ]
+      }
+    },
+    {
+      "operation": "applyStationChange",
+      "method": "POST",
+      "path": "/api/v1/admin/stations/{station_id}/changes/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_timebound_rename_relocation_reuse_and_independent_source",
+            "count": 3
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_block_crossing_window_without_rebinding",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_directory_disclosure_and_independent_disposition",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v17_mapping_and_epoch_commit_order[case-2]",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_catalog.py::test_v08_timebound_rename_relocation_reuse_and_independent_source",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "previewProductDisposition",
+      "method": "GET",
+      "path": "/api/v1/admin/disposition-products/{product_id}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_operations.py::test_admin_discovery_filters_before_paging_and_links",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v11_optional_fields_binding_preview_and_physical_removal",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "prepareProductDisposition",
+      "method": "POST",
+      "path": "/api/v1/admin/disposition-products/{product_id}/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v11_optional_fields_binding_preview_and_physical_removal",
+            "count": 2
+          }
+        ],
+        "400": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v11_optional_fields_binding_preview_and_physical_removal",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readGrantControl",
+      "method": "GET",
+      "path": "/api/v1/admin/grants/{grant_id}/actions/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v11_optional_fields_binding_preview_and_physical_removal",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "withdrawGrant",
+      "method": "POST",
+      "path": "/api/v1/admin/grants/{grant_id}/actions/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_disposition.py::test_v11_optional_fields_binding_preview_and_physical_removal",
+            "count": 2
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-1]",
+            "count": 1
+          },
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s06_pending_http.py::test_v11_pending_regrant_cannot_revive_old_inputs_through_http[case-2]",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "prepareBackupSegment",
+      "method": "POST",
+      "path": "/api/v1/admin/backup-products/{product_id}/segments/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "201": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected",
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+            "count": 3
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_catalog_dependency_never_partially_archives",
+            "count": 2
+          }
+        ],
+        "409": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
+            "count": 1
+          }
+        ],
+        "503": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "publishBackupSegment",
+      "method": "POST",
+      "path": "/api/v1/admin/backup-segments/{segment_id}/publish/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected",
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+            "count": 5
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_directory_rights_withdrawal_between_preparation_commits_writes_nothing",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "createRestoreIntent",
+      "method": "POST",
+      "path": "/api/v1/admin/backup-segments/{segment_id}/restore-intents/",
+      "security": [
+        {
+          "Session": [],
+          "CsrfCookie": [],
+          "CsrfHeader": []
+        }
+      ],
+      "http": {
+        "201": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected",
+            "count": 1
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "operation": "readAuthorityMaterial",
+      "method": "GET",
+      "path": "/api/v1/admin/backup-authority/{action}/{operation_id}/",
+      "security": [
+        {
+          "Session": []
+        }
+      ],
+      "http": {
+        "200": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_legal_sibling_survives_revocation_and_regrant",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_unsigned_or_changed_material_never_opens_segment",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_missing_volume_is_pending_and_publish_loss_is_closed",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_one_new_session_reads_and_target_rolls_back",
+            "count": 5
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-3]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-4]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-5]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-6]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-7]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_failure_after_preflight_clears_every_target_row[case-8]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_restore_commit_failure_releases_no_body[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_successful_commit_observed_after_cutoff_is_withheld[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v14_rejects_no_right_or_current_external_request",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_cutoff_crossed_while_publisher_waits",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_publication_waits_for_withdrawal_commit",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_withdrawal_waits_for_publisher_commit",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-1]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v17_c01_restore_and_withdrawal_both_commit_orders[case-2]",
+            "count": 4
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-1]",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_release_receipt_commit_cannot_outlive_external_seal[case-2]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_unwitnessed_final_ack_is_unreadable_and_reconciled",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-1]",
+            "count": 2
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_withdraw_regrant_after_durable_ack_closes_physical_gate[case-2]",
+            "count": 3
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v17_publication_marker_finishing_after_seal_withholds_the_copy",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_retry_after_unwitnessed_copy_unlinked_and_cleanup_commit_rejected",
+            "count": 2
+          }
+        ],
+        "403": [
+          {
+            "round": "user_and_governance",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "native_auth_boundary",
+            "case": "tests/test_s07_contract_user_http.py::test_actual_cookie_errors_and_framework_boundaries",
+            "count": 1
+          },
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup.py::test_v13_current_proof_requires_committed_registration_witness",
+            "count": 1
+          }
+        ],
+        "409": [
+          {
+            "round": "backup",
+            "case": "tests/test_s06_backup_preparation.py::test_v13_failed_manifest_commit_retains_durable_cleanup_intent",
+            "count": 1
+          }
+        ]
+      }
+    }
+  ],
+  "evidence": {
+    "user_and_governance": {
+      "receipt": "tmp/s06-evidence/s06-78112e9b7ed9/pytest.json",
+      "source": "81c33f4160e08211f51c047ba4c443d4107c09a00d708a9a22a901426e362ba1",
+      "sha256": "591b6ce059bdbfdbbdc999a9e384992dfb262f1efd445588a027dcfe199a3aae",
+      "guard_receipt": "tmp/s06-evidence/s06-78112e9b7ed9/V01/result.json",
+      "guard_receipt_sha256": "28f1ac3cf6994b7e1f70080cf0f03235b6029a754c66e5505b976c79daad483b",
+      "summary": {
+        "PASS": 62,
+        "FAIL": 1,
+        "NOT RUN": 0
+      }
+    },
+    "native_auth_boundary": {
+      "receipt": "tmp/s06-evidence/s06-508e03ddf5fc/pytest.json",
+      "source": "36031e7aa59ee9dd25805031c81b685af86f791c94285f4b8d45ca20aea4cb7b",
+      "sha256": "9e99f3fe291c68092647ff4c9395cbd372907ec9825683e4558c327e29f4ad82",
+      "guard_receipt": "tmp/s06-evidence/s06-508e03ddf5fc/V01/result.json",
+      "guard_receipt_sha256": "2612740a1c57671ca55439d788db2a273088fd25c045754eaf0ab01a1faadbf6",
+      "summary": {
+        "PASS": 1,
+        "FAIL": 0,
+        "NOT RUN": 0
+      }
+    },
+    "backup": {
+      "receipt": "tmp/s06-evidence/s06-9177ca553f6d/pytest.json",
+      "source": "4593402e24afedbb28d0c37694d5230f51729f7d470f83f2f3b0544e3675031b",
+      "sha256": "b8771f8e3b10e469cfc4d82430f7abaff36490cca783f0b044dbbc31c6b7d273",
+      "guard_receipt": "tmp/s06-evidence/s06-9177ca553f6d/V01/result.json",
+      "guard_receipt_sha256": "d9aa9cae7e2f8ef1ac63a39f473b52506f4678731f3f0089820578d44f1d63db",
+      "summary": {
+        "PASS": 33,
+        "FAIL": 0,
+        "NOT RUN": 0
+      }
+    },
+    "fields_and_exact_version": {
+      "receipt": "tmp/s06-evidence/s06-9f37c6462bbd/pytest.json",
+      "source": "90274df332c97ad520eb73b41856d3cae2dea1f763eaa77652bbdf7d2b7cc81f",
+      "sha256": "85d5a28a79ffbf5d6e1914275e375a679b617549bddb7fef94bb4c71e7178aa6",
+      "guard_receipt": "tmp/s06-evidence/s06-9f37c6462bbd/V01/result.json",
+      "guard_receipt_sha256": "91fba0b73cfc062802e81ad6b1883c9e6da04ed337a830cf5b7908181ac21e6c",
+      "summary": {
+        "PASS": 26,
+        "FAIL": 0,
+        "NOT RUN": 0
+      }
+    },
+    "administrator_and_worker": {
+      "receipt": "tmp/s07-evidence/s07-b-9b1a54ecb492/V12/admin.json",
+      "source": "cda99f8c30c89686173e2a12a3d8222fa3e662f3142f3476dfeccf3d368193eb",
+      "sha256": "63b7b732329c081674bfd848d871192e890a61a2b1db6cae4430a898049852ce",
+      "guard_receipt": "tmp/s07-evidence/s07-b-9b1a54ecb492/V01/result.json",
+      "guard_receipt_sha256": "1747d3173311410bdb2a50467b58523c1a27ebe6368534790c819fcee2c9acd8",
+      "summary": "PASS"
+    },
+    "old_s05_sessions_tickets": {
+      "receipt": "tmp/s06-evidence/s06-4021ca35f5d9/upgrade.json",
+      "source": "e6036da4f794d454a6d2ec816695c6f3e9e5c8d4af6389220e2aa7e2314b0eb1",
+      "sha256": "5c319e7f15d669b0dffe505e3b783a065750ca24ec2d2fc858ce8067e443d4f7",
+      "guard_receipt": "tmp/s06-evidence/s06-4021ca35f5d9/V01/result.json",
+      "guard_receipt_sha256": "0312107b77030b776edea07605911001cb7aa15905edf16902243ec8f024935c",
+      "summary": "PASS"
+    }
+  },
+  "snapshot_notes": [
+    "The mixed R round preserved the expected attribution-change RED while the repair was made in the shared worktree. Only passing cases contribute to its HTTP matrix.",
+    "The attribution-change assertion and the planned exact-read consumers were re-run on the repaired snapshot. The separate F upgrade receipt checks actual S05-issued Session, cursor, saved query and CSV tickets.",
+    "History submit/status used F fixtures with injected broker outcomes. H licensed-input validation remains blocked."
+  ]
+}

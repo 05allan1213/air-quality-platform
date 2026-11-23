@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -20,6 +21,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
+    "django.contrib.staticfiles",
     "rest_framework",
     "django_celery_beat",
     "accounts",
@@ -30,6 +32,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "config.errors.BoundaryErrors",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -51,6 +54,9 @@ TEMPLATES = [
     }
 ]
 STATIC_URL = "/static/"
+STATIC_ROOT = Path(os.environ.get("AQ_STATIC_ROOT", "/app/staticfiles"))
+WHITENOISE_AUTOREFRESH = False
+WHITENOISE_USE_FINDERS = False
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -87,7 +93,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": ["accounts.parsers.BoundedJSONParser"],
     "EXCEPTION_HANDLER": "accounts.api.handle_exception",
 }
-CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_TASK_DEFAULT_QUEUE = "s01.fixture"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -117,7 +123,8 @@ CNEMC_MODE = os.environ.get("CNEMC_MODE", "off")
 if CNEMC_MODE not in {"off", "limited", "periodic"}:
     raise ImproperlyConfigured("Invalid CNEMC_MODE")
 
-S02_STAGE_DIR = "/run/s02-history"
+S02_STAGE_DIR = os.environ.get("S02_STAGE_DIR", "/run/s02-history")
+S02_STAGE_REQUIRE_VOLATILE = os.environ.get("AQ_HOST_OFFLINE") == "1"
 S06_BACKUP_DIR = os.environ.get("S06_BACKUP_DIR")
 S06_AUTHORITY_DIR = os.environ.get("S06_AUTHORITY_DIR")
 CELERY_TASK_ROUTES = {

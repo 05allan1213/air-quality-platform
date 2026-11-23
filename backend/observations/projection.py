@@ -5,6 +5,7 @@ from datetime import timedelta
 from .models import Receipt
 from .policy import Denied, Scope
 from .revisions import tables
+from .source_status import collection_status
 
 PROVENANCE = (
     "source_timezone",
@@ -82,6 +83,7 @@ def metadata(revision, receipt, permitted):
 def public_rows(ctx, product, revisions):
     original = originals(product, revisions)
     entity = tables(product.level)[2]
+    statuses = collection_status(ctx, product, revisions, entity)
     output = []
     for revision in revisions:
         key = revision.key
@@ -143,7 +145,17 @@ def public_rows(ctx, product, revisions):
                 fetched_at_basis="contributing_batch" if receipt else "unknown",
                 age_seconds=int((ctx.now - key.observed_at_utc).total_seconds()),
                 freshness="unknown",
-                source_status="unknown",
+                evaluated_at=ctx.now,
+                **(
+                    {
+                        "source_status": "unknown",
+                        "source_event": None,
+                        "source_event_at": None,
+                        "source_status_until": None,
+                        "execution_started_at": None,
+                    }
+                    | statuses.get(key.pk, {})
+                ),
                 attribution=product.attribution,
                 rights_attributions=list(base.attributions),
             )

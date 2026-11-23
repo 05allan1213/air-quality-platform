@@ -122,7 +122,41 @@ def _codes_at(segments, reference):
     return {s.code for s in segments if s.start <= reference < s.end}
 
 
-def _site_projection(product, epoch, at, codes):
+def _coordinates(ctx, product, epoch, at, codes):
+    if (
+        not codes
+        or epoch.certainty not in {"confirmed", "documented"}
+        or not epoch.location_evidence.strip()
+    ):
+        return None
+    if epoch.crs not in {"EPSG:4326", "WGS84", "WGS 84", "GCJ-02", "BD-09"}:
+        return None
+    if (
+        epoch.longitude is None
+        or epoch.latitude is None
+        or not (-180 <= epoch.longitude <= 180 and -90 <= epoch.latitude <= 90)
+    ):
+        return None
+    reference = _directory_instant(epoch.active_period, at)
+    day = reference.astimezone(ZoneInfo(product.source_timezone)).date()
+    if any(
+        ctx.basis(
+            product,
+            Scope(epoch.city.geography, code, indicator, day, day + timedelta(days=1)),
+            {"coordinates"},
+        )
+        for code in codes
+        for indicator in INDICATORS[product.shape]
+    ):
+        return {
+            "longitude": str(epoch.longitude),
+            "latitude": str(epoch.latitude),
+            "crs": epoch.crs,
+        }
+    return None
+
+
+def _site_projection(ctx, product, epoch, at, codes):
     has_catalog = bool(codes)
     return {
         "station": epoch.station_id,
@@ -135,8 +169,7 @@ def _site_projection(product, epoch, at, codes):
         "period_start": epoch.active_period.lower if has_catalog else None,
         "period_end": epoch.active_period.upper if has_catalog else None,
         "status": _status(epoch, at) if has_catalog else "unknown",
-        # Map acceptance and location evidence are handled independently of directory disclosure.
-        "coordinates": None,
+        "coordinates": _coordinates(ctx, product, epoch, at, codes),
         "link": observation_link(
             f"stations/{epoch.station_id}",
             product,
@@ -203,7 +236,7 @@ def _catalog_page(ctx, product, candidates, at, controls, route, conditions, *, 
             },
         )
     return {
-        "results": [_site_projection(product, row, at, codes[row.pk]) for row in rows[:size]],
+        "results": [_site_projection(ctx, product, row, at, codes[row.pk]) for row in rows[:size]],
         "page": {"page_size": size, "next_cursor": cursor},
     }
 
@@ -269,7 +302,8 @@ class FixtureStatus:
 
 def _apply_fixture_status(product, rows, fixture_status):
     if fixture_status is None or not product.synthetic:
-        return "unknown"
+        states = {row["source_status"] for row in rows}
+        return states.pop() if len(states) == 1 else "unknown"
     for row in rows:
         row["source_status"] = fixture_status.source_status
         if fixture_status.freshness_limit is not None:
@@ -364,7 +398,7 @@ def read_station(user_id, query, station, *, fixture_status=None):
     # epoch, use its last instant and still require that exact scope to allow catalog.
     reference = _directory_instant(epoch.active_period, as_of)
     catalog = _epoch_catalog(ctx, product, [epoch.pk], reference, current=True)
-    identity = _site_projection(product, epoch, as_of, _codes_at(catalog.segments, reference))
+    identity = _site_projection(ctx, product, epoch, as_of, _codes_at(catalog.segments, reference))
     source_status = _apply_fixture_status(product, rows, fixture_status)
     links = _history_links(product, epoch, scopes, rows, as_of)
     ctx.finish()

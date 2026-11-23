@@ -13,7 +13,8 @@ from django.db.models import Q
 from django.db.models.expressions import RawSQL
 from django_celery_beat.models import ClockedSchedule, IntervalSchedule, PeriodicTask
 
-from .controlled_storage import bound_directory, unlink_from
+from .controlled_storage import bound_directory, directory, unlink_from
+from .import_uci import MAX_ARCHIVE_BYTES
 from .models import (
     Batch,
     Change,
@@ -81,9 +82,29 @@ def private_dir():
         or st.st_mode & 0o077
     ):
         raise OSError("stage_directory_unavailable")
-    # In the deployed Worker this must be its own bounded tmpfs, never the image layer.
-    if str(path) == "/run/s02-history" and not os.path.ismount(path):
-        raise OSError("stage_mount_unavailable")
+    if str(path) == "/run/s02-history" or getattr(settings, "S02_STAGE_REQUIRE_VOLATILE", False):
+        with directory(path) as fd:
+            mounts = Path("/proc/self/mountinfo").read_text().splitlines()
+            mount_id = next(
+                line.split()[1]
+                for line in Path(f"/proc/self/fdinfo/{fd}").read_text().splitlines()
+                if line.startswith("mnt_id:")
+            )
+            mount = next((line.split() for line in mounts if line.split()[0] == mount_id), [])
+            escaped = str(path).replace("\\", "\\134").replace(" ", "\\040")
+            flags = set(mount[5].split(",")) if mount else set()
+            if (
+                not mount
+                or mount[3] != "/"
+                or mount[4] != escaped
+                or mount[mount.index("-") + 1] != "tmpfs"
+                or not {"rw", "nosuid", "nodev", "noexec"} <= flags
+            ):
+                raise OSError("stage_mount_unavailable")
+            fs = os.fstatvfs(fd)
+            capacity = fs.f_blocks * fs.f_frsize
+            if not MAX_ARCHIVE_BYTES <= capacity <= 32 * 1024**2:
+                raise OSError("stage_capacity_unavailable")
     return path
 
 

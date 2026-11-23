@@ -7,10 +7,11 @@ from datetime import datetime, timedelta
 
 from s01_runtime import Client, wait_for
 from s03_runtime import (
+    JOB_URL,
     RUN_URL,
     city_packet,
+    control_payload,
     hour,
-    job_control,
     list_packet,
     register_job,
     urllib_query,
@@ -675,16 +676,38 @@ def backoff_and_pause(p, account, job):
             == "t"
         ),
     )
-    resumed = job_control(account, job, "resume_source")
-    p.record(tag, "controlled job resume HTTP", resumed)
-    assert resumed[0] in {200, 202, 204}
+    route = f"{JOB_URL}{job}/"
+    status, diagnostic = account.call(route)
+    assert status == 200
+    source = diagnostic["targets"]["source"]
+    assert source["state"] == "paused"
+    command = control_payload("resume_source", source["control_version"])
+    resumed = account.call(route, command)
+    p.record(tag, "controlled source resume HTTP", resumed)
+    assert resumed[0] == 200
+    # Source-level actions have a shared version. Tie the HTTP command to both
+    # committed audit rows and to the actual source reached through this Job.
     p.equal(
         tag,
-        "resume identity recorded",
-        p.sql(
-            f"SELECT changed_by_id=(SELECT id FROM auth_user WHERE username='collector') FROM collection_job WHERE id={job}"
-        ),
-        "t",
+        "source resume actor, target, job, state and version committed once",
+        p.sql(f"""
+            SELECT count(*) FROM collection_controlevent e
+            JOIN accounts_governanceaction a ON a.id=e.receipt_id
+            JOIN auth_user u ON u.id=e.actor_id AND u.id=a.actor_id
+            JOIN collection_job j ON j.id=e.job_id
+            JOIN observations_product p ON p.id=j.product_id
+            JOIN observations_source s ON s.id=p.source_id
+            JOIN collection_collectioncontrol c ON c.source_id=s.id
+            WHERE e.job_id={int(job)} AND u.username='collector'
+              AND a.request_id='{command["request_id"]}' AND a.origin=j.id::text
+              AND e.action='resume_source' AND a.action=e.action AND a.outcome='applied'
+              AND a.target_kind='source' AND a.target=s.id::text AND s.namespace='s03.fixture'
+              AND a.before_state='paused' AND a.after_state='active'
+              AND a.before_version={int(source["control_version"])}
+              AND a.after_version=a.before_version+1 AND a.after_version=c.version
+              AND s.collection_pause='' AND s.collection_resume_after IS NULL
+        """),
+        "1",
     )
 
 

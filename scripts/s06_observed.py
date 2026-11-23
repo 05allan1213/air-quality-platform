@@ -79,3 +79,97 @@ def safe_observed(raw):
         )
     )
     return result
+
+
+CSV_PHASES = {"input_version", "hidden_version", "prepare", "stale", "download", "candidate_limit"}
+CSV_ERRORS = {
+    "query_too_large",
+    "input_changed",
+    "method_changed",
+    "expired",
+    "use_denied",
+    "permission_denied",
+    "not_authenticated",
+    "not_found",
+    "rate_limited",
+    "database_unavailable",
+    "invalid_request",
+    "csrf_failed",
+    "parse_error",
+}
+CSV_TRANSPORT_ERRORS = {
+    "ReadTimeout",
+    "WriteTimeout",
+    "ConnectTimeout",
+    "PoolTimeout",
+    "ConnectError",
+    "ReadError",
+    "WriteError",
+    "CloseError",
+    "RemoteProtocolError",
+    "LocalProtocolError",
+    "ProxyError",
+    "UnsupportedProtocol",
+}
+
+
+def bounded_metrics(raw, fields, limit):
+    return {
+        name: raw[name]
+        for name in fields.split()
+        if type(raw.get(name)) in (int, float) and 0 <= raw[name] <= limit
+    }
+
+
+def safe_csv_probe(raw):
+    """Describe a request made by the test without logging bodies, SQL, or ticket IDs."""
+    if not isinstance(raw, dict) or not isinstance(phase := raw.get("phase"), str):
+        return {}
+    if phase not in CSV_PHASES or raw.get("authorized_rows") not in (9999, 10000, 10001):
+        return {}
+    result = {"phase": phase, "authorized_rows": raw["authorized_rows"]}
+    result.update(
+        bounded_metrics(
+            raw,
+            "correlation http_ms sql_count sql_ms max_statement_ms response_bytes "
+            "csv_bytes load_1m test_rss_kib",
+            2**40,
+        )
+    )
+    for name, values in (("code", CSV_ERRORS), ("exception", CSV_TRANSPORT_ERRORS)):
+        if isinstance(value := raw.get(name), str) and value in values:
+            result[name] = value
+    if type(raw.get("status")) is int and 100 <= raw["status"] <= 599:
+        result["status"] = raw["status"]
+    if type(raw.get("response_started")) is bool:
+        result["response_started"] = raw["response_started"]
+    if isinstance(states := raw.get("sqlstates"), list):
+        result["sqlstates"] = sorted(
+            {
+                state
+                for state in states
+                if isinstance(state, str) and re.fullmatch("[0-9A-Z]{5}", state)
+            }
+        )
+    return result
+
+
+def safe_csv_environment(raw):
+    if not isinstance(raw, dict):
+        return {}
+    result = bounded_metrics(
+        raw,
+        "logical_cpus allowed_cpus memory_total_kib memory_available_kib "
+        "transaction_budget_ms statement_budget_ms lock_budget_ms http_client_timeout_ms",
+        2**40,
+    )
+    for name, pattern in (
+        ("architecture", r"x86_64|aarch64|arm64"),
+        ("python", r"[0-9]+\.[0-9]+\.[0-9]+"),
+        ("postgres", r"[0-9]+\.[0-9]+(?:\.[0-9]+)?"),
+        ("shared_buffers", r"[0-9]+(?:kB|MB|GB|TB)"),
+        ("work_mem", r"[0-9]+(?:kB|MB|GB|TB)"),
+    ):
+        if isinstance(value := raw.get(name), str) and re.fullmatch(pattern, value):
+            result[name] = value
+    return result

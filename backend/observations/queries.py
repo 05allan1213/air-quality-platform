@@ -1,9 +1,11 @@
 """Exact, authorization-scoped projections. The product lock includes serialization."""
 
+import json
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from django.db import transaction
+from django.utils.crypto import salted_hmac
 from samples.normalization import Rejected, parse_time
 
 from .catalog import catalog_change_span
@@ -62,14 +64,20 @@ def product_space(params):
     return product
 
 
-def input_version(key, current, product, basis):
-    return dict(
-        key=key.pk,
-        revision=current.pk,
-        qualification=key.qualification_version,
-        rights=product.rights_version,
-        grants=basis.ids,
-    )
+def exact_version(actor_id, purpose, key, current, fields):
+    """Bind an exact public projection to its final, local authorization basis."""
+    payload = [
+        actor_id,
+        purpose,
+        key.product_id,
+        key.pk,
+        current.pk,
+        key.qualification_version,
+        fields,
+    ]
+    return salted_hmac(
+        "observations.exact.v1", json.dumps(payload, separators=(",", ":")), algorithm="sha256"
+    ).hexdigest()
 
 
 def project_revision(r):
@@ -207,7 +215,6 @@ def read_current(actor_id, params, purpose="display"):
         standard_series=params["standard_series"],
         **condition,
     ).first()
-    basis = permitted[key.object_code] if key else next(iter(permitted.values()))
     results = []
     reason = "no_observation_at_time"
     if key and not key.retired:
@@ -256,20 +263,27 @@ def read_current(actor_id, params, purpose="display"):
                     standard_series=key.standard_series,
                     window_definition=window,
                     attribution=product.attribution,
-                    input_version=input_version(key, current, product, basis),
                 )
             )
             reason = None
         elif current:
             reason = current.quality
     end_clock = clock()
-    for field in extra_checks:
-        read_basis(product, scope, (field,), end_clock, grants, purpose=purpose)
     for code in permitted:
         permitted[code] = permissions(code, end_clock)
     basis = permitted[key.object_code] if key else next(iter(permitted.values()))
     if results:
-        results[0]["input_version"] = input_version(key, current, product, basis)
+        fields = [product.attribution]
+        for field in (None, *sorted(extra_checks)):
+            wanted = (field,) if field else REQUIRED
+            permitted_field = (
+                read_basis(product, scope, wanted, end_clock, grants, purpose=purpose)
+                if field
+                else basis
+            )
+            retained = applicable(product, "retain_normalized", scope, wanted, end_clock, grants)
+            fields.append((field, permitted_field.ids, permitted_field.attributions, retained.ids))
+        results[0]["input_version"] = exact_version(actor_id, purpose, key, current, fields)
     actor(actor_id, "review_observation" if purpose == "analyze" else None)
     return dict(
         count=len(results),

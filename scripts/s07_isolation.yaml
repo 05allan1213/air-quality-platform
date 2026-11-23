@@ -1,0 +1,16 @@
+# The S07 verifier provisions only fresh, labelled resources from this configuration.
+services:
+  db:
+    command: [postgres, -c, 'airquality.s07_instance=${AQ_INSTANCE_ID:?run required}']
+    labels: {airquality.s07.instance: '${AQ_INSTANCE_ID}'}
+  redis:
+    labels: {airquality.s07.instance: '${AQ_INSTANCE_ID}'}
+volumes:
+  pgdata:
+    labels: {airquality.s07.instance: '${AQ_INSTANCE_ID}'}
+networks:
+  front:
+    labels: {airquality.s07.instance: '${AQ_INSTANCE_ID}'}
+  backend:
+    internal: true
+    labels: {airquality.s07.instance: '${AQ_INSTANCE_ID}'}

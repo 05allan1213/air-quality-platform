@@ -6,12 +6,15 @@ import json
 import math
 import os
 import platform
+import resource
 import statistics
 from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
+from itertools import count
 from pathlib import Path
 from time import perf_counter, sleep
 
+import httpx
 import pytest
 from accounts.models import ExportTicket
 from accounts.research_exports import export_fields
@@ -19,7 +22,7 @@ from django.db import connection, transaction
 from observations.models import Product
 from observations.normalization import CONCENTRATIONS
 from s02_support import wait_for_block
-from s05_http import loopback
+from s05_http import TRACE_HEADER, RequestTrace, loopback
 from s05_support import authorize, city, grant, product
 from s05_volume import add_rows, coordinates, require_owned_database
 from test_s05_selection import parent
@@ -36,6 +39,7 @@ COMPARE = "/api/v1/analysis/compare/"
 DETAIL = "/api/v1/analysis/details/"
 EXPORT = "/api/v1/me/exports/"
 INDICATORS = ("AQI", *CONCENTRATIONS)
+CORRELATIONS = count(1)
 
 
 @pytest.fixture
@@ -58,25 +62,65 @@ def evidence(subdir, filename, data):
     (dest / filename).write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
 
-def call(web, records, verb, path, payload=None):
+def call(web, records, verb, path, payload=None, *, observe=None):
+    correlation = str(next(CORRELATIONS))
+    options = {"headers": {TRACE_HEADER: correlation}}
+    if payload is not None:
+        options["json"] = payload
     start = perf_counter()
-    if payload is None:
-        response = web.request(verb, path)
-    else:
-        response = web.request(verb, path, json=payload)
-    queries = records[-1]
-    return (
-        response,
-        {
-            "http_ms": (perf_counter() - start) * 1000,
-            "sql_count": len(queries),
-            "sql_ms": sum(query[2] for query in queries),
-            "max_statement_ms": max((query[2] for query in queries), default=0),
-            "response_bytes": len(response.content),
-            "status": response.status_code,
-        },
-        queries,
-    )
+    try:
+        response = web.request(verb, path, **options)
+    except httpx.TransportError as exc:
+        if observe is not None:
+            trace = records.get(correlation, RequestTrace())
+            observe(request_sample(correlation, trace, start) | {"exception": type(exc).__name__})
+        raise
+    trace = records[correlation]
+    sample = request_sample(correlation, trace, start) | {
+        "response_bytes": len(response.content),
+        "status": response.status_code,
+    }
+    if observe is not None:
+        if response.headers.get("content-type", "").startswith("text/csv"):
+            sample["csv_bytes"] = len(response.content)
+        if response.status_code >= 400 and response.headers.get("content-type", "").startswith(
+            "application/json"
+        ):
+            try:
+                code = response.json().get("code")
+            except (AttributeError, ValueError):
+                pass
+            else:
+                sample["code"] = code
+        observe(sample)
+    return response, sample, trace.queries
+
+
+def request_sample(correlation, trace, start):
+    queries = tuple(trace.queries)
+    return {
+        "correlation": int(correlation),
+        "http_ms": (perf_counter() - start) * 1000,
+        "sql_count": len(queries),
+        "sql_ms": sum(query[2] for query in queries),
+        "max_statement_ms": max((query[2] for query in queries), default=0),
+        "sqlstates": sorted(set(trace.sqlstates)),
+        "response_started": trace.response_started,
+    }
+
+
+def csv_observer(record_property, phase, authorized_rows):
+    def store(sample):
+        from s06_observed import safe_csv_probe
+
+        resource_sample = {
+            "load_1m": os.getloadavg()[0],
+            "test_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        }
+        probe = {"phase": phase, "authorized_rows": authorized_rows} | sample | resource_sample
+        record_property("s07_csv_probe", json.dumps(safe_csv_probe(probe)))
+
+    return store
 
 
 def nodes(plan):
@@ -179,6 +223,26 @@ def machine():
         "cache_conditions": "First HTTP after seeding and ANALYZE, then repeated identical HTTP. Writes may populate PG/OS caches. No cache eviction or server restart.",
         "source": "F templates via ingest_batch, PG bulk clones of key, revision and receipt",
     }
+
+
+def csv_environment():
+    from s06_observed import safe_csv_environment
+
+    host = machine()
+    meminfo = Path("/proc/meminfo").read_text().splitlines()
+    return safe_csv_environment(
+        {
+            **host,
+            "memory_total_kib": int(host["ram"].split()[0]),
+            "memory_available_kib": int(
+                next(line.split()[1] for line in meminfo if line.startswith("MemAvailable:"))
+            ),
+            "transaction_budget_ms": 10_000,
+            "statement_budget_ms": 5_000,
+            "lock_budget_ms": 1_000,
+            "http_client_timeout_ms": 12_000,
+        }
+    )
 
 
 def lock_probe(web, records, p, query):
@@ -298,8 +362,8 @@ def test_v12_json_response_budget_is_independent_of_candidate_cells(identities):
     )
 
 
-def export_body(web, records, query):
-    response, _, _ = call(web, records, "POST", DETAIL, query | {"page_size": 1})
+def export_body(web, records, query, *, observe=None):
+    response, _, _ = call(web, records, "POST", DETAIL, query | {"page_size": 1}, observe=observe)
     assert response.status_code == 200, response.content[:1024]
     return {
         "kind": "detail",
@@ -329,7 +393,7 @@ def verify_csv(response, ticket, expected_rows):
     assert {r["input_version"] for r in parsed} == set(ticket.input_versions)
 
 
-def test_v12_csv_rows_hidden_records_and_new_input(identities):
+def test_v12_csv_rows_hidden_records_and_new_input(identities, record_property):
     op, user = identities
     p = product("v12-rows", "C")
     cities = make_cities(op, p, ["101", "102", "103"])
@@ -339,18 +403,27 @@ def test_v12_csv_rows_hidden_records_and_new_input(identities):
     add_rows(op, p, cells[:9999])
     query = parent(p, cities[:2], hours=720, indicators=INDICATORS)
     report = {"candidate_cells": len(cells), "responses": {}}
+
+    def observe(phase, size):
+        return csv_observer(record_property, phase, size)
+
+    record_property("s07_csv_environment", json.dumps(csv_environment()))
     with loopback(user) as (web, records):
-        body = export_body(web, records, query)
+        body = export_body(web, records, query, observe=observe("input_version", 9999))
         previous = None
         for size in (9999, 10000, 10001):
             if previous:
                 add_rows(op, p, cells[size - 1 : size])
-                changed, sample, _ = call(web, records, "GET", previous)
+                changed, sample, _ = call(
+                    web, records, "GET", previous, observe=observe("stale", size)
+                )
                 assert_rejection(changed, "input_changed", 409)
                 report["responses"][f"stale_at_{size}"] = sample
-                body = export_body(web, records, query)
+                body = export_body(web, records, query, observe=observe("input_version", size))
             count = ExportTicket.objects.count()
-            prepared, sample, _ = call(web, records, "POST", EXPORT, body)
+            prepared, sample, _ = call(
+                web, records, "POST", EXPORT, body, observe=observe("prepare", size)
+            )
             report["responses"][f"prepare_{size}"] = sample
             if size == 10001:
                 assert_rejection(prepared, "query_too_large", 400)
@@ -364,14 +437,26 @@ def test_v12_csv_rows_hidden_records_and_new_input(identities):
                 # 24 real current rows raise PG cardinality above the limit but are outside the
                 # frozen two-city scope and have no export grant. The existing ticket still works.
                 add_rows(op, p, coordinates(["103"], ("CO",), range(24)))
-                assert export_body(web, records, query) == body
-            downloaded, sample, _ = call(web, records, "GET", previous)
+                assert (
+                    export_body(web, records, query, observe=observe("hidden_version", size))
+                    == body
+                )
+            downloaded, sample, _ = call(
+                web, records, "GET", previous, observe=observe("download", size)
+            )
             verify_csv(downloaded, ticket, size)
-            report["responses"][f"download_{size}"] = sample
+            assert ticket.format_version == "s05.csv.v1"
+            report["responses"][f"download_{size}"] = sample | {
+                "row_count": ticket.row_count,
+                "format_version": ticket.format_version,
+                "f_digest": ticket.data_sha256,
+            }
 
         beyond = parent(p, cities, hours=720, indicators=INDICATORS)
         oversized = body | {"groups": [beyond | {"input_version": "0" * 64}]}
-        failed, sample, trace = call(web, records, "POST", EXPORT, oversized)
+        failed, sample, trace = call(
+            web, records, "POST", EXPORT, oversized, observe=observe("candidate_limit", 10001)
+        )
         assert_rejection(failed, "query_too_large", 400)
         assert not any("observations_product" in sql for sql, _, _ in trace)
         assert ExportTicket.objects.count() == 2

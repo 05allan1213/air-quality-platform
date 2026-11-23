@@ -1,0 +1,12 @@
+# Docker publishes the host loopback port while creating this Web namespace.
+# The entry point drops its default routes and privileges before loading Django.
+services:
+  web:
+    command: [python, -I, /app/backend/config/offline_wsgi.py]
+    user: '0:0'
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN, SETUID, SETGID]
+    security_opt: ['no-new-privileges:true']
+    dns: [127.0.0.1]
+    environment:
+      AQ_HOST_NETNS: ${AQ_HOST_NETNS:?register the local engine host network namespace inode}
