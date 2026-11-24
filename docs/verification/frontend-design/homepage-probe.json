@@ -1,0 +1,634 @@
+{
+  "date": "2026-11-24",
+  "scope": "Local F national homepage only (temporary production build from prototype source).",
+  "browser": "158.0.8127.36",
+  "playwright": "1.65.1",
+  "locale": "zh-CN",
+  "assets": "same-origin GET only; no /api, external requests or WebSocket",
+  "runtime": {
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+    "language": "zh-CN",
+    "support": {
+      "filter": true,
+      "reduceTransparencyDefault": true
+    },
+    "fonts": {
+      "Noto Sans SC Variable": 12,
+      "InterPreview": 1
+    }
+  },
+  "checks": [
+    {
+      "name": "layout 1920×1080",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1440×900",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 1280×800",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 768×1024",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 390×844",
+      "status": "PASS"
+    },
+    {
+      "name": "layout 320×720",
+      "status": "PASS"
+    },
+    {
+      "name": "rail collapse/expand and heading/control alignment",
+      "status": "PASS"
+    },
+    {
+      "name": "map real center click keeps city on hover, metric, resize, drill-down, reset and reload",
+      "status": "PASS"
+    },
+    {
+      "name": "map and ranking/table share app selection",
+      "status": "FAIL",
+      "error": "{\"before\":\"成都，AQI 103 · 轻度污染，查看记录\",\"rank\":{\"selected\":\"成都，AQI 103 · 轻度污染，查看记录\",\"route\":\"成都\"},\"table\":{\"displayed\":\"太原\",\"selected\":\"成都，AQI 103 · 轻度污染，查看记录\",\"route\":\"成都\"},\"tableSelectedRows\":0,\"rankSelectedButtons\":0}"
+    },
+    {
+      "name": "ranking sort, table sort, filter, tooltip, and keyboard",
+      "status": "PASS"
+    },
+    {
+      "name": "mouse pan and keyboard roving focus",
+      "status": "PASS"
+    },
+    {
+      "name": "narrow drawer, focused controls, touch horz scroll and positioned popper",
+      "status": "PASS"
+    },
+    {
+      "name": "reduced motion and reduced transparency (Chromium CDP media)",
+      "status": "PASS"
+    },
+    {
+      "name": "CSS no-backdrop-filter fallback simulation",
+      "status": "PASS"
+    }
+  ],
+  "views": [
+    {
+      "viewport": [
+        1920,
+        1080,
+        1
+      ],
+      "documentWidth": [
+        1920,
+        1920
+      ],
+      "primaryToStatsGapPx": 16,
+      "gridGap": "16px",
+      "tableClientAndScrollWidth": [
+        1757,
+        1757
+      ]
+    },
+    {
+      "viewport": [
+        1440,
+        900,
+        1
+      ],
+      "documentWidth": [
+        1440,
+        1440
+      ],
+      "primaryToStatsGapPx": 12.96,
+      "gridGap": "12.96px",
+      "tableClientAndScrollWidth": [
+        1300,
+        1300
+      ]
+    },
+    {
+      "viewport": [
+        1280,
+        800,
+        1
+      ],
+      "documentWidth": [
+        1280,
+        1280
+      ],
+      "primaryToStatsGapPx": 11.51,
+      "gridGap": "11.52px",
+      "tableClientAndScrollWidth": [
+        1148,
+        1148
+      ]
+    },
+    {
+      "viewport": [
+        768,
+        1024,
+        1
+      ],
+      "documentWidth": [
+        768,
+        768
+      ],
+      "primaryToStatsGapPx": 9,
+      "gridGap": "9px",
+      "tableClientAndScrollWidth": [
+        714,
+        714
+      ]
+    },
+    {
+      "viewport": [
+        390,
+        844,
+        1
+      ],
+      "documentWidth": [
+        390,
+        390
+      ],
+      "primaryToStatsGapPx": 10,
+      "gridGap": "10px",
+      "tableClientAndScrollWidth": [
+        346,
+        720
+      ]
+    },
+    {
+      "viewport": [
+        320,
+        720,
+        1
+      ],
+      "documentWidth": [
+        320,
+        320
+      ],
+      "primaryToStatsGapPx": 10,
+      "gridGap": "10px",
+      "tableClientAndScrollWidth": [
+        276,
+        720
+      ]
+    }
+  ],
+  "selection": {
+    "before": "成都，AQI 103 · 轻度污染，查看记录",
+    "rank": {
+      "selected": "成都，AQI 103 · 轻度污染，查看记录",
+      "route": "成都"
+    },
+    "table": {
+      "displayed": "太原",
+      "selected": "成都，AQI 103 · 轻度污染，查看记录",
+      "route": "成都"
+    },
+    "tableSelectedRows": 0,
+    "rankSelectedButtons": 0
+  },
+  "selectionSteps": {
+    "selection": [
+      {
+        "name": "广州",
+        "h": "广州，AQI 64 · 良，查看记录",
+        "dot": {
+          "x": 477.0200500488281,
+          "y": 467.607177734375
+        }
+      },
+      {
+        "name": "上海",
+        "h": "上海，AQI 67 · 良，查看记录",
+        "dot": {
+          "x": 532.6422119140625,
+          "y": 410.5751190185547
+        }
+      },
+      {
+        "name": "成都",
+        "h": "成都，AQI 103 · 轻度污染，查看记录",
+        "dot": {
+          "x": 414.4419250488281,
+          "y": 414.4310607910156
+        }
+      }
+    ],
+    "postReload": "成都，AQI 103 · 轻度污染，查看记录"
+  },
+  "desktopAlignment": {
+    "toggleTop": 831.609375,
+    "expandedWidth": 210.234375,
+    "alignedY": 758.56,
+    "heights": [
+      34,
+      34,
+      34,
+      34,
+      34
+    ],
+    "primary": [
+      [
+        91.36,
+        200.5,
+        652.63,
+        343.42
+      ],
+      [
+        756.94,
+        200.5,
+        307.84,
+        343.42
+      ],
+      [
+        1077.73,
+        200.5,
+        347.86,
+        343.42
+      ],
+      [
+        1077.73,
+        200.5,
+        347.86,
+        206.23
+      ],
+      [
+        1077.73,
+        419.69,
+        347.86,
+        124.23
+      ]
+    ],
+    "stats": [
+      [
+        91.36,
+        556.88,
+        372.73,
+        177.73
+      ],
+      [
+        477.05,
+        556.88,
+        547.94,
+        177.73
+      ],
+      [
+        1037.94,
+        556.88,
+        387.66,
+        177.73
+      ]
+    ]
+  },
+  "keyboardMap": {
+    "before": "translate(-115.94 -63.845) scale(1.5)",
+    "after": "translate(-74.73071947504101 -40.29683970002343) scale(1.5)",
+    "opened": "和田",
+    "legend": "O₃ 等级\n1 级\n2 级\n3 级\n4 级\n5 级\n6 级\n缺测"
+  },
+  "touch": {
+    "verticalScroll": 2297,
+    "table": [
+      346,
+      720
+    ],
+    "scrolled": 374,
+    "dropdown": {
+      "x": 123,
+      "y": 592,
+      "width": 131.953125,
+      "height": 137.8165283203125
+    },
+    "drawerFocusRestored": true
+  },
+  "preferenceSamples": {
+    "flags": {
+      "motion": true,
+      "transparency": true
+    },
+    "motion": [
+      "0.14s, 0.14s",
+      "0s"
+    ],
+    "railBlur": [
+      "blur(18px) saturate(1.24)",
+      "none"
+    ],
+    "railBackground": [
+      "rgba(210, 232, 248, 0.64)",
+      "rgb(219, 238, 250)"
+    ],
+    "zoomBackground": "rgb(239, 247, 252)",
+    "kpiBackground": "linear-gradient(108deg, rgba(246, 251, 255, 0.863), rgba(232, 243, 251, 0.89))"
+  },
+  "withoutFilter": {
+    "styleChanges": 1,
+    "bg": "rgb(239, 247, 252)",
+    "blur": "none"
+  },
+  "menuSettled": [
+    {
+      "rect": {
+        "x": 954,
+        "y": 655,
+        "width": 118,
+        "height": 236,
+        "top": 655,
+        "right": 1072,
+        "bottom": 891,
+        "left": 954
+      },
+      "peak": 236,
+      "parentNode": "el-popper-container-313",
+      "placement": "bottom-start"
+    },
+    {
+      "rect": {
+        "x": 960,
+        "y": 661,
+        "width": 106,
+        "height": 31,
+        "top": 661,
+        "right": 1066,
+        "bottom": 692,
+        "left": 960
+      },
+      "focus": "el-select-dropdown__item is-selected is-hovering"
+    }
+  ],
+  "tooltipSettled": {
+    "rect": {
+      "x": 807.15625,
+      "y": 542.609375,
+      "width": 93.5625,
+      "height": 32,
+      "top": 542.609375,
+      "right": 900.71875,
+      "bottom": 574.609375,
+      "left": 807.15625
+    },
+    "tip": "18:00 · 42 城",
+    "background": "rgba(242, 250, 255, 0.65)"
+  },
+  "mobileLegend": [
+    {
+      "width": 390,
+      "labels": [
+        {
+          "content": "优 0–50",
+          "range": "0–50",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "良 51–100",
+          "range": "51–100",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "轻度污染 101–150",
+          "range": "101–150",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "中度污染 151–200",
+          "range": "151–200",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "重度污染 201–300",
+          "range": "201–300",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "严重污染 >300",
+          "range": ">300",
+          "rangeDisplayed": false
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "labels": [
+        {
+          "content": "优 0–50",
+          "range": "0–50",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "良 51–100",
+          "range": "51–100",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "轻度污染 101–150",
+          "range": "101–150",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "中度污染 151–200",
+          "range": "151–200",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "重度污染 201–300",
+          "range": "201–300",
+          "rangeDisplayed": false
+        },
+        {
+          "content": "严重污染 >300",
+          "range": ">300",
+          "rangeDisplayed": false
+        }
+      ]
+    }
+  ],
+  "consoleAndHttpProblems": [],
+  "blockedNetworkAttempts": [],
+  "computed": {
+    "heading": {
+      "font-size": "28.8px",
+      "font-weight": "760",
+      "line-height": "36.864px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "background-image": "none",
+      "border-radius": "0px",
+      "backdrop-filter": "none",
+      "z-index": "auto",
+      "transition-duration": "0s"
+    },
+    "panelHeading": {
+      "font-size": "17.712px",
+      "font-weight": "720",
+      "line-height": "23.9112px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "background-image": "none",
+      "border-radius": "0px",
+      "backdrop-filter": "none",
+      "z-index": "auto",
+      "transition-duration": "0s"
+    },
+    "reading": {
+      "font-size": "28.08px",
+      "font-weight": "690",
+      "line-height": "32.5728px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "background-image": "none",
+      "border-radius": "0px",
+      "backdrop-filter": "none",
+      "z-index": "auto",
+      "transition-duration": "0s"
+    },
+    "rankPanel": {
+      "font-size": "14px",
+      "font-weight": "400",
+      "line-height": "21.7px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "background-image": "linear-gradient(112deg, rgba(245, 250, 255, 0.95), rgba(231, 242, 250, 0.94))",
+      "border-radius": "16px",
+      "backdrop-filter": "none",
+      "z-index": "auto",
+      "transition-duration": "0s"
+    },
+    "kpi": {
+      "font-size": "14px",
+      "font-weight": "400",
+      "line-height": "21.7px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "background-image": "linear-gradient(108deg, rgba(246, 251, 255, 0.863), rgba(232, 243, 251, 0.89))",
+      "border-radius": "16px",
+      "backdrop-filter": "none",
+      "z-index": "auto",
+      "transition-duration": "0s"
+    },
+    "rail": {
+      "font-size": "14px",
+      "font-weight": "400",
+      "line-height": "21.7px",
+      "background-color": "rgba(210, 232, 248, 0.64)",
+      "background-image": "linear-gradient(155deg, rgba(246, 252, 255, 0.42), rgba(0, 0, 0, 0) 40%, rgba(133, 190, 226, 0.16) 74%, rgba(239, 250, 255, 0.32)), none",
+      "border-radius": "20px",
+      "backdrop-filter": "blur(18px) saturate(1.24)",
+      "z-index": "5",
+      "transition-duration": "0s"
+    },
+    "tableRow": {
+      "font-size": "13px",
+      "font-weight": "400",
+      "line-height": "20.15px",
+      "background-color": "rgba(249, 252, 255, 0.533)",
+      "background-image": "none",
+      "border-radius": "0px",
+      "backdrop-filter": "none",
+      "z-index": "auto",
+      "transition-duration": "0s"
+    },
+    "control": {
+      "font-size": "13px",
+      "font-weight": "400",
+      "line-height": "20.15px",
+      "background-color": "rgb(248, 252, 255)",
+      "background-image": "none",
+      "border-radius": "9px",
+      "backdrop-filter": "none",
+      "z-index": "auto",
+      "transition-duration": "0.2s"
+    },
+    "dialog": {
+      "font-size": "14px",
+      "font-weight": "400",
+      "line-height": "21.7px",
+      "background-color": "rgba(242, 250, 255, 0.65)",
+      "background-image": "linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0) 48%, rgba(183, 219, 244, 0.16)), none",
+      "border-radius": "20px",
+      "backdrop-filter": "blur(18px) saturate(1.24)",
+      "z-index": "auto",
+      "transition-duration": "0s"
+    },
+    "option": {
+      "font-size": "12px",
+      "font-weight": "400",
+      "line-height": "20px",
+      "background-color": "rgba(242, 250, 255, 0.65)",
+      "background-image": "linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0) 48%, rgba(183, 219, 244, 0.16)), none",
+      "border-radius": "12px",
+      "backdrop-filter": "blur(18px) saturate(1.24)",
+      "z-index": "2011",
+      "transition-duration": "0.3s, 0.3s"
+    }
+  },
+  "worktreeAtHandoff": {
+    "paths": "prototypes/frontend-preview/{src/**,public/**,package.json,package-lock.json,index.html,vite.config.ts}",
+    "files": 43,
+    "method": "Sort files by POSIX path relative to frontend-preview, ascending. For each file append <file SHA-256 lowercase hex><two spaces><relative path><LF>. SHA-256 the concatenated UTF-8 bytes.",
+    "sha256": "fbc714a1cf4e52873efd81382687df85845fbad14a526819d5a476661cb03616"
+  },
+  "desktopTargets": {
+    "listAction": [
+      1352.38,
+      837.06,
+      41.02,
+      22.59
+    ],
+    "metricOption": [
+      596.92,
+      216.73,
+      49.31,
+      25
+    ]
+  },
+  "settledCompositedColorSamples": [
+    {
+      "image": "1440.webp",
+      "element": "first KPI note",
+      "foreground": "#405f75",
+      "pixels": [
+        {
+          "xy": [
+            300,
+            161
+          ],
+          "background": "#eaf5fc",
+          "contrast": 6.09
+        },
+        {
+          "xy": [
+            313,
+            169
+          ],
+          "background": "#e9f4fc",
+          "contrast": 6.05
+        }
+      ]
+    },
+    {
+      "image": "1440-popper-settled.webp",
+      "element": "selected province option",
+      "foreground": "#124f80",
+      "pixels": [
+        {
+          "xy": [
+            1033,
+            675
+          ],
+          "background": "#eff7fd",
+          "contrast": 7.9
+        },
+        {
+          "xy": [
+            1039,
+            682
+          ],
+          "background": "#eff7fd",
+          "contrast": 7.9
+        }
+      ]
+    }
+  ]
+}

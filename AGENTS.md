@@ -7,6 +7,7 @@
   - `docs/design/城市空气质量监测数据分析平台_系统总体设计方案_V3.0.md` (V3.0): requirements, architecture, data semantics, decisions D01–D13, modules M01–M10, acceptance cases T01–T12.
   - `docs/design/总体实施方案.md` (plan): implementation stages S01–S09, dependencies, stage deliverables, acceptance boundaries.
 - Prior prototype and research evidence must not be treated as implementation or verification evidence for this formal repository.
+- For formal frontend work, including tasks started at the repository root, read [frontend/AGENTS.md](frontend/AGENTS.md) and [frontend/DESIGN.md](frontend/DESIGN.md).
 - Start with task-relevant sections using the navigation below. Expand to other sections or the complete documents when the task requires broader context:
 
 | Task area | Read first |
