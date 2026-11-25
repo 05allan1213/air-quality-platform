@@ -7,6 +7,7 @@ from jsonschema import Draft202012Validator
 from openapi_spec_validator import OpenAPIV31SpecValidator, validate
 from s07_contract import (
     METHODS,
+    NATIVE,
     PREFIX,
     dereference,
     routes,
@@ -61,7 +62,7 @@ def test_resolver_operation_diff_and_converter_contract():
     assert len({operation["operationId"] for operation in declared.values()}) == len(declared)
     assert {path for path, _, _, _ in resolved if not path.startswith(PREFIX)} == {
         "/admin/",
-        "/health/ready/",
+        *(path for path in NATIVE if not path.startswith(PREFIX)),
     }
     for path, converters, methods, view in resolved:
         if not path.startswith(PREFIX):

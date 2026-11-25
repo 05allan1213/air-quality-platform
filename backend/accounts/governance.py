@@ -7,6 +7,7 @@ from django.contrib.auth.models import Group, Permission
 from django.db import transaction
 from observations.policy import Denied, clock
 
+from .assigned_permissions import CONFIGURE_SCHEDULE, MAINTAIN_CITY_ALIAS
 from .models import AccountState, GovernanceAction
 from .research_session import SessionCheck
 
@@ -16,10 +17,12 @@ PERMISSIONS = frozenset(
         MANAGE,
         "accounts.adjudicate_quality",
         "accounts.manage_catalog",
+        MAINTAIN_CITY_ALIAS,
         "accounts.diagnose_operations",
         "accounts.manage_backups",
         "accounts.restore_backup",
         "observations.manage_collection",
+        CONFIGURE_SCHEDULE,
         "observations.run_collection",
         "observations.import_history",
         "observations.review_observation",

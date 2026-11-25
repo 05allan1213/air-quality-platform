@@ -7,16 +7,44 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.cache import never_cache
+from observations.policy import Denied
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import ValidationError as RequestError
 from rest_framework.response import Response
 
 from .api import error
+from .assigned_permissions import CONFIGURE_SCHEDULE, MAINTAIN_CITY_ALIAS, assigned_permissions
 from .limits import limited
+from .research_session import SessionCheck, lock_users_and_groups, reject, request_transaction
 from .session_generation import generation, matches_generation
 
 PROFILE_FIELDS = ("first_name", "last_name")
+CAPABILITY_REQUIREMENTS = (
+    ("run_collection", ("observations.run_collection",), False),
+    ("manage_collection", ("observations.manage_collection",), False),
+    (
+        "configure_collection_schedule",
+        (CONFIGURE_SCHEDULE,),
+        False,
+    ),
+    ("review_observation", ("observations.review_observation",), False),
+    (
+        "adjudicate_quality",
+        ("accounts.adjudicate_quality", "observations.review_observation"),
+        False,
+    ),
+    (
+        "manage_catalog",
+        ("accounts.manage_catalog", "observations.review_observation"),
+        False,
+    ),
+    ("import_history", ("observations.import_history",), False),
+    ("diagnose_operations", ("accounts.diagnose_operations",), False),
+    ("manage_grants", ("observations.manage_grants",), False),
+    ("manage_accounts", ("accounts.manage_accounts",), True),
+    ("maintain_city_search_alias", (MAINTAIN_CITY_ALIAS,), True),
+)
 
 
 def valid_text(value, max_length):
@@ -71,6 +99,34 @@ def profile(request):
                 setattr(user, field, value)
             user.save(update_fields=fields.keys())
     return Response({field: getattr(user, field) for field in ("username", *PROFILE_FIELDS)})
+
+
+@never_cache
+@api_view(["GET"])
+def capabilities(request):
+    if request.query_params:
+        return error("invalid_request", 400)
+    try:
+        with request_transaction():
+            current_user(request)
+            lock_users_and_groups([request.user.pk])
+            check = SessionCheck(request)
+            user = current_user(request)
+            permissions = assigned_permissions(user)
+            actions = [
+                action
+                for action, required, staff_only in CAPABILITY_REQUIREMENTS
+                if (not staff_only or user.is_staff) and permissions.issuperset(required)
+            ]
+            check.finish(())
+    except PermissionDenied:
+        return error("not_authenticated", 403)
+    except Denied as exc:
+        return reject(exc)
+    workspaces = ["user"]
+    if actions:
+        workspaces.append("manage")
+    return Response({"workspaces": workspaces, "actions": actions})
 
 
 @never_cache

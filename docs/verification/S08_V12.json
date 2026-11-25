@@ -1,0 +1,981 @@
+{
+  "format": "S08 incremental V12 witness v1",
+  "scope": "S08 实施计划 §6–6.2。本地隔离 PostgreSQL F/I，接续 S07_V12.json。",
+  "status": "PARTIAL",
+  "baseline": {
+    "tag": "s07-backend-v1",
+    "commit": "a3fde5b2239fbd55e83e54ad0006e034b26f57a1",
+    "openapi_sha256": "187e7d27b976442ded2524cc7248fd2abe66f388d64b47e4fb4ae8ea028f7e26",
+    "matrix": "docs/verification/S07_V12.json"
+  },
+  "openapi": {
+    "path": "docs/api/openapi.v1.json",
+    "sha256": "0584f4ad2d7512f3430774366b60f4d4cc1d547df347bb59a30b454b65530136",
+    "baseline_operations": 66,
+    "operations": 74,
+    "added": 8,
+    "removed": 0
+  },
+  "interpretation": "PASS 只覆盖已列节点及具体观测。未列状态码没有取得独立 HTTP 见证。升级、HTML 与复用原写信封另列。",
+  "operations": [
+    {
+      "id": "CAP",
+      "method": "GET",
+      "path": "/api/v1/me/capabilities/",
+      "operationId": "readCapabilities",
+      "change": "added",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-a2b704315583",
+          "nodeids": [
+            "tests/test_s08_capabilities.py::test_capabilities_reflect_current_permissions_and_session"
+          ],
+          "status": "PASS",
+          "observed": "真实 Session 200 闭合投影和 no-store，未知参数 400，会话失效 403。"
+        },
+        {
+          "receipt": "s06-a2b704315583",
+          "nodeids": [
+            "tests/test_s08_capabilities.py::test_staff_without_named_permission_stays_in_user_workspace"
+          ],
+          "status": "PASS",
+          "observed": "staff 无具名权为 user 工作区。"
+        },
+        {
+          "receipt": "s06-a2b704315583",
+          "nodeids": [
+            "tests/test_s08_capabilities.py::test_group_permission_projects_only_its_named_capability"
+          ],
+          "status": "PASS",
+          "observed": "组授权只投影获准动作。"
+        },
+        {
+          "receipt": "s06-a2b704315583",
+          "nodeids": [
+            "tests/test_s08_capabilities.py::test_session_revoked_during_capability_read"
+          ],
+          "status": "PASS",
+          "observed": "事务读取中撤销 Session 返回 403。"
+        }
+      ],
+      "unwitnessed": []
+    },
+    {
+      "id": "SERIES",
+      "method": "GET",
+      "path": "/api/v1/catalog/series/",
+      "operationId": "discoverResearchSeries",
+      "change": "added",
+      "status": "PARTIAL",
+      "witnesses": [
+        {
+          "receipt": "s06-e0e124763b42",
+          "nodeids": [
+            "tests/test_s08_series.py::test_series_requires_derived_analysis_rights_and_returns_bounded_options"
+          ],
+          "status": "PASS",
+          "observed": "F 派生用途组合和时段边界，缺用途 403。"
+        },
+        {
+          "receipt": "s06-e0e124763b42",
+          "nodeids": [
+            "tests/test_s08_series.py::test_series_cursor_is_stable_under_unpermitted_catalog_changes"
+          ],
+          "status": "PASS",
+          "observed": "权外变化游标可续读，可见变化 409，撤权 403。"
+        },
+        {
+          "receipt": "s06-e0e124763b42",
+          "nodeids": [
+            "tests/test_s08_series.py::test_series_can_return_empty_for_an_unsupported_indicator"
+          ],
+          "status": "PASS",
+          "observed": "F 的 H 形态请求不支持的指标时返回 200 空列表，缺授权时 403。"
+        },
+        {
+          "receipt": "s06-e0e124763b42",
+          "nodeids": [
+            "tests/test_s08_series.py::test_series_rejects_invalid_use_shape_and_oversized_page"
+          ],
+          "status": "PASS",
+          "observed": "不合法方法、重复参数和页长 400。"
+        },
+        {
+          "receipt": "s06-e0e124763b42",
+          "nodeids": [
+            "tests/test_s08_series.py::test_series_openapi_declares_discovery_responses"
+          ],
+          "status": "PASS",
+          "observed": "断言研究发现的 OpenAPI 响应集合，目录未声明分析提交使用的 422。"
+        }
+      ],
+      "unwitnessed": [
+        {
+          "status": "BLOCKED",
+          "scope": "当期获权 H 的同一数据集双站验证，待适用许可及样本。"
+        }
+      ]
+    },
+    {
+      "id": "MANAGE-CATALOG",
+      "method": "GET",
+      "path": "/api/v1/admin/catalog/products/",
+      "operationId": "listManagementProducts",
+      "change": "added",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-c1ef3ced8ede",
+          "nodeids": [
+            "tests/test_s08_management_catalog.py::test_execute_uses_admission_without_registering_or_reserving"
+          ],
+          "status": "PASS",
+          "observed": "具执行权识别 F 目标和最小投影，目录不登记或占用窗口与配额。"
+        },
+        {
+          "receipt": "s06-c1ef3ced8ede",
+          "nodeids": [
+            "tests/test_s08_management_catalog.py::test_ledger_quality_operations_use_different_witnesses"
+          ],
+          "status": "PASS",
+          "observed": "账本、质量、运维需要各自权利，返回可继续读取的链接。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_configure_only_and_original_receipt"
+          ],
+          "status": "PASS",
+          "observed": "仅配置权可读批准模板。"
+        },
+        {
+          "receipt": "s06-c1ef3ced8ede",
+          "nodeids": [
+            "tests/test_s08_management_catalog.py::test_strict_input_and_end_session_recheck"
+          ],
+          "status": "PASS",
+          "observed": "严格请求和末端 Session 复核。"
+        },
+        {
+          "receipt": "s06-c1ef3ced8ede",
+          "nodeids": [
+            "tests/test_s08_management_catalog.py::test_expiring_lookahead_cannot_create_a_continuation"
+          ],
+          "status": "PASS",
+          "observed": "页尾授权到期后不产生游标。"
+        },
+        {
+          "receipt": "s06-c1ef3ced8ede",
+          "nodeids": [
+            "tests/test_s08_management_catalog.py::test_operations_skips_catalog_only_locks"
+          ],
+          "status": "PASS",
+          "observed": "运维发现跳过仅支持目录的产品锁。"
+        }
+      ],
+      "unwitnessed": []
+    },
+    {
+      "id": "RECEIPT",
+      "method": "POST",
+      "path": "/api/v1/admin/command-receipts/lookup/",
+      "operationId": "lookupSelfCommandReceipt",
+      "change": "added",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-b7a2ca3f7b1c",
+          "nodeids": [
+            "tests/test_s08_receipts_session.py::test_execute_only_discovers_own_committed_submission_without_replaying[case-1]",
+            "tests/test_s08_receipts_session.py::test_execute_only_discovers_own_committed_submission_without_replaying[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "纯执行者查本人原命令，跨账号和不匹配命令 404，无重复提交。"
+        },
+        {
+          "receipt": "s06-b7a2ca3f7b1c",
+          "nodeids": [
+            "tests/test_s08_receipts_session.py::test_control_and_redelivery_receipts_keep_the_committed_identity"
+          ],
+          "status": "PASS",
+          "observed": "控制及重投回执保留原提交身份。"
+        },
+        {
+          "receipt": "s06-b7a2ca3f7b1c",
+          "nodeids": [
+            "tests/test_s08_receipts_session.py::test_schedule_lookup_uses_template_and_original_version_not_new_job_id"
+          ],
+          "status": "PASS",
+          "observed": "建草稿查回执使用原模板和版本。"
+        },
+        {
+          "receipt": "s06-b7a2ca3f7b1c",
+          "nodeids": [
+            "tests/test_s08_receipts_session.py::test_schedule_lookup_mirrors_command_replay_after_execution_use_withdrawn[case-1]",
+            "tests/test_s08_receipts_session.py::test_schedule_lookup_mirrors_command_replay_after_execution_use_withdrawn[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "撤权后查账与原命令重放授权一致。"
+        },
+        {
+          "receipt": "s06-b7a2ca3f7b1c",
+          "nodeids": [
+            "tests/test_s08_receipts_session.py::test_grant_withdrawal_checks_recorded_grant_and_current_manager"
+          ],
+          "status": "PASS",
+          "observed": "许可撤回查账复核原许可与当前管理者。"
+        },
+        {
+          "receipt": "s06-b7a2ca3f7b1c",
+          "nodeids": [
+            "tests/test_s08_receipts_session.py::test_quality_correction_rechecks_both_scopes_of_signed_original"
+          ],
+          "status": "PASS",
+          "observed": "跨键质量修正复核两侧证据范围。"
+        },
+        {
+          "receipt": "s06-b7a2ca3f7b1c",
+          "nodeids": [
+            "tests/test_s08_receipts_session.py::test_station_change_requires_both_directory_scopes"
+          ],
+          "status": "PASS",
+          "observed": "站址变更查账复核原动作目录范围。"
+        }
+      ],
+      "unwitnessed": []
+    },
+    {
+      "id": "AUDIT",
+      "method": "GET",
+      "path": "/api/v1/admin/object-audit/",
+      "operationId": "readObjectAudit",
+      "change": "added",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_object_audit.py::test_job_receipts_cursor_and_origin"
+          ],
+          "status": "PASS",
+          "observed": "按获权 Job 分页，投影操作者关系和游标边界。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_object_audit.py::test_schedule_audit_excludes_activation_after_partial_takeover_review_loss"
+          ],
+          "status": "PASS",
+          "observed": "接管范围部分撤权后移除启用记录并重算页尾。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_object_audit.py::test_run_requires_its_full_window_rights"
+          ],
+          "status": "PASS",
+          "observed": "Run 记录需完整窗口授权。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_object_audit.py::test_quality_cross_key_correction_checks_both_objects"
+          ],
+          "status": "PASS",
+          "observed": "跨键质量变更核两端权利。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_object_audit.py::test_station_loses_linked_history_and_grant_audit_is_minimal"
+          ],
+          "status": "PASS",
+          "observed": "站址撤权及许可审计最小投影。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_object_audit.py::test_malformed_and_stale_session"
+          ],
+          "status": "PASS",
+          "observed": "非法参数和失效 Session 分别 400/403。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_object_audit.py::test_object_audit_shares_management_workbench_rate_limit"
+          ],
+          "status": "PASS",
+          "observed": "共用逐用户管理工作台限额，超额 429。"
+        }
+      ],
+      "unwitnessed": []
+    },
+    {
+      "id": "SCHEDULE-CREATE",
+      "method": "POST",
+      "path": "/api/v1/admin/collection-jobs/",
+      "operationId": "createCollectionScheduleDraft",
+      "change": "added",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_configure_only_and_original_receipt"
+          ],
+          "status": "PASS",
+          "observed": "最小具名配置权 201 创建停用草稿及原回执，变更同 UUID 意图 409。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-1]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-2]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-3]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-4]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-5]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-6]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-7]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-8]"
+          ],
+          "status": "PASS",
+          "observed": "覆盖建草稿、提议及决议的末端权限变化和写回滚。"
+        }
+      ],
+      "unwitnessed": []
+    },
+    {
+      "id": "SCHEDULE-READ",
+      "method": "GET",
+      "path": "/api/v1/admin/collection-jobs/{pk}/schedule/",
+      "operationId": "readCollectionSchedule",
+      "change": "added",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_schedule_read_rejects_query_parameters"
+          ],
+          "status": "PASS",
+          "observed": "读取参数非法返回 400。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_future_window_blocks_activation[case-1]",
+            "tests/test_s08_schedule.py::test_future_window_blocks_activation[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "在审阅范围内返回占窗冲突预览。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_unreviewable_takeover_never_checks_future_ledger"
+          ],
+          "status": "PASS",
+          "observed": "开放接管段权利不足时屏蔽冲突线索。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_first_read_and_rejected_writes_do_not_settle_handoff"
+          ],
+          "status": "PASS",
+          "observed": "GET 与失败写请求不会结算交接。"
+        }
+      ],
+      "unwitnessed": []
+    },
+    {
+      "id": "SCHEDULE-CHANGE",
+      "method": "POST",
+      "path": "/api/v1/admin/collection-jobs/{pk}/schedule/",
+      "operationId": "changeCollectionSchedule",
+      "change": "added",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_fixed_phase_late_delivery_and_pause_at_boundary"
+          ],
+          "status": "PASS",
+          "observed": "通过命令建立与启用计划，核对固定相位、迟到投递、分界暂停。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_concurrent_predecessor_proposal_is_serialized"
+          ],
+          "status": "PASS",
+          "observed": "前驱并发提议只成功一次，返回 201/409。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_unreviewable_takeover_never_checks_future_ledger"
+          ],
+          "status": "PASS",
+          "observed": "不具完整范围权限则激活 403。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-1]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-2]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-3]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-4]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-5]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-6]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-7]",
+            "tests/test_s08_schedule.py::test_schedule_rechecks_execution_rights_at_transaction_exit[case-8]"
+          ],
+          "status": "PASS",
+          "observed": "末端许可变化约束更改和回滚，放弃按原动作权利核。"
+        }
+      ],
+      "unwitnessed": []
+    },
+    {
+      "id": "NAT-01",
+      "method": "GET",
+      "path": "/api/v1/overview/national/",
+      "operationId": "readNational",
+      "change": "enhanced",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s08_national_contract.py::test_legacy_and_home_national_responses_match_openapi"
+          ],
+          "status": "PASS",
+          "observed": "对照新旧请求、独立首页投影和闭合 OpenAPI。"
+        },
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s08_national_home.py::test_home_low_ranking_focus_map_and_stable_cursor"
+          ],
+          "status": "PASS",
+          "observed": "低值真零、跨页聚焦、不可用地图和首页游标。"
+        },
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s08_national_home.py::test_home_grade_filter_requires_known_series_and_keeps_denominator_unknown"
+          ],
+          "status": "PASS",
+          "observed": "分级需已知标准，未知分母不推算。"
+        },
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s08_national_home.py::test_home_only_ranks_permitted_subset_and_ignores_hidden_revision"
+          ],
+          "status": "PASS",
+          "observed": "榜单和分页只纳获权记录。"
+        },
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s08_national_home.py::test_home_rechecks_access_after_snapshot_before_releasing_response[case-1]",
+            "tests/test_s08_national_home.py::test_home_rechecks_access_after_snapshot_before_releasing_response[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "读取末端撤权，拒绝旧快照。"
+        }
+      ],
+      "unwitnessed": [],
+      "forward_upgrade_witness": {
+        "receipt": "tmp/s06-evidence/s06-075b16c61f77/upgrade.json",
+        "field": "legacy_national",
+        "status": "PASS",
+        "observed": "S07 默认城市序及 AQI 降序游标以原会话续读 200，原页内容保持一致。带 home=1 时 400/invalid_cursor。"
+      }
+    },
+    {
+      "id": "NAT-02",
+      "method": "GET",
+      "path": "/api/v1/catalog/objects/",
+      "operationId": "discoverObjects",
+      "change": "behavioral_correction",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s08_national_contract.py::test_catalog_link_reopens_the_same_l_snapshot[case-1]",
+            "tests/test_s08_national_contract.py::test_catalog_link_reopens_the_same_l_snapshot[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "已知或未知标准的 AQI 目录链接按实际小时窗和时刻重开全国结果。"
+        },
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s08_national_contract.py::test_l_catalog_links_to_the_readable_indicator_and_its_standard[case-1]",
+            "tests/test_s08_national_contract.py::test_l_catalog_links_to_the_readable_indicator_and_its_standard[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "同刻 AQI 优先，仅可读等级时打开带原指标和标准的明细链接。"
+        },
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s07_catalog.py::test_catalog_discovers_only_authorized_historical_references"
+          ],
+          "status": "PASS",
+          "observed": "普通目录依历史记录各自授权。"
+        }
+      ],
+      "unwitnessed": [],
+      "forward_upgrade_witness": {
+        "receipt": "tmp/s06-evidence/s06-075b16c61f77/upgrade.json",
+        "field": "legacy_catalog",
+        "status": "PASS",
+        "observed": "S07 签发的目录游标在尾行 L 链接勘误后返回原有 409/page_changed，重读首页并续页均为 200。"
+      }
+    },
+    {
+      "id": "HEALTH",
+      "method": "GET",
+      "path": "/api/v1/admin/operations/health/",
+      "operationId": "readOperationsHealth",
+      "change": "enhanced",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_operations.py::test_first_valid_write_is_window_bounded_and_fails_closed"
+          ],
+          "status": "PASS",
+          "observed": "旧健康无窗与新窗口证据对照，缺必要入参 400。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_operations.py::test_first_valid_write_requires_review_permission"
+          ],
+          "status": "PASS",
+          "observed": "仅诊断权可读旧投影，首次有效证据需追加审阅权。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_operations.py::test_first_valid_write_uses_the_first_eligible_transition[case-1]",
+            "tests/test_s08_operations.py::test_first_valid_write_uses_the_first_eligible_transition[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "先缺测或争议到首个有效修订。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_operations.py::test_first_valid_write_ignores_writes_to_unreviewable_fields"
+          ],
+          "status": "PASS",
+          "observed": "不可审字段写入不参与时刻。"
+        },
+        {
+          "receipt": "s06-e2acd338648a",
+          "nodeids": [
+            "tests/test_s08_operations.py::test_health_rechecks_original_run_page_at_session_finish[case-1]",
+            "tests/test_s08_operations.py::test_health_rechecks_original_run_page_at_session_finish[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "读取末端复核原 Run 页与截断范围。"
+        }
+      ],
+      "unwitnessed": []
+    },
+    {
+      "id": "ACCOUNT",
+      "method": "POST",
+      "path": "/api/v1/admin/accounts/{pk}/actions/",
+      "operationId": "changeManagedAccount",
+      "change": "enum_extension",
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-5d949ccc4299",
+          "nodeids": [
+            "tests/test_s06_accounts.py::test_v02_current_direct_and_group_permissions"
+          ],
+          "status": "PASS",
+          "observed": "原直接授权和角色权限保持兼容，在原会话复核新授予和撤销结果。"
+        },
+        {
+          "receipt": "s06-85514b391833",
+          "nodeids": [
+            "tests/test_s06_accounts.py::test_s08_direct_permission_grant_and_revoke[case-1]",
+            "tests/test_s06_accounts.py::test_s08_direct_permission_grant_and_revoke[case-2]"
+          ],
+          "status": "PASS",
+          "observed": "分别授予及撤销新增周期配置和别名维护权限。具名权经原主体 Session 投影，非获准代理 403，写操作审计记录与版本相符。"
+        }
+      ],
+      "unwitnessed": []
+    }
+  ],
+  "additional": {
+    "dictionary": {
+      "paths": [
+        "GET /admin/observations/city-search-alias/",
+        "GET /admin/observations/city-search-alias/{product}/{city}/",
+        "POST /admin/observations/city-search-alias/{product}/{city}/"
+      ],
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-ea602791108c",
+          "nodeids": [
+            "tests/test_s08_alias.py::test_alias_only_staff_can_set_clear_and_keep_monotonic_version"
+          ],
+          "status": "PASS",
+          "observed": "真实 Session 深链、去首尾空白、受控设置清除、幂等、CSRF 拒绝和版本冲突。"
+        },
+        {
+          "receipt": "s06-ea602791108c",
+          "nodeids": [
+            "tests/test_s08_alias.py::test_alias_directory_lists_only_authorized_targets_and_has_bounded_pages"
+          ],
+          "status": "PASS",
+          "observed": "目录仅列获权对象及有界页。"
+        },
+        {
+          "receipt": "s06-ea602791108c",
+          "nodeids": [
+            "tests/test_s08_alias.py::test_alias_route_requires_staff_permission_and_scoped_catalog_rights"
+          ],
+          "status": "PASS",
+          "observed": "需同时有 staff、具名权限、目标范围。"
+        },
+        {
+          "receipt": "s06-ea602791108c",
+          "nodeids": [
+            "tests/test_s08_alias.py::test_account_manager_does_not_gain_alias_permission"
+          ],
+          "status": "PASS",
+          "observed": "仅账号管理权不带字典权限。"
+        },
+        {
+          "receipt": "s06-ea602791108c",
+          "nodeids": [
+            "tests/test_s08_alias.py::test_disposition_clears_alias_but_keeps_job_city_anchor_and_version_watermark"
+          ],
+          "status": "PASS",
+          "observed": "处置清理元数据并保留任务身份与版本水位。"
+        }
+      ]
+    },
+    "forward_upgrade": {
+      "status": "PASS",
+      "receipt": "tmp/s06-evidence/s06-075b16c61f77/upgrade.json",
+      "isolation": "tmp/s06-evidence/s06-075b16c61f77/V01/result.json",
+      "source": "e6d329b7f1a679646af1b83952313f7b02c1c459e9e71fed9ba5b7750fa19080",
+      "script": "scripts/s08_contract_upgrade.py",
+      "old_writers_exited": true,
+      "preserved_tables": 56,
+      "legacy_jobs": {
+        "unchanged": 2,
+        "plan_state": "legacy",
+        "templates": 0
+      },
+      "legacy_ledger_rows": {
+        "collection_run": 2,
+        "collection_workwindow": 1
+      },
+      "run_lineage": {
+        "same_job": true,
+        "same_window": true,
+        "retry_attempt": 2
+      },
+      "permission_additions": [
+        [
+          "accounts",
+          "accountstate",
+          "maintain_city_search_alias"
+        ],
+        [
+          "observations",
+          "product",
+          "configure_collection_schedule"
+        ]
+      ],
+      "old_sessions": {
+        "manager": {
+          "profile": 200,
+          "job": 200,
+          "raw_run": 403,
+          "schedule": 403,
+          "actions": [
+            "manage_collection"
+          ]
+        },
+        "reviewer": {
+          "profile": 200,
+          "job": 403,
+          "raw_run": 200,
+          "schedule": 403,
+          "actions": [
+            "review_observation"
+          ]
+        },
+        "runner": {
+          "profile": 200,
+          "job": 403,
+          "raw_run": 403,
+          "schedule": 403,
+          "actions": [
+            "run_collection"
+          ]
+        },
+        "reader": {
+          "profile": 200,
+          "job": 403,
+          "raw_run": 403,
+          "schedule": 403,
+          "actions": []
+        }
+      },
+      "private_research": {
+        "detail_cursor_http": 200,
+        "saved_query_run_http": 200,
+        "export_download": {
+          "bytes": 1060,
+          "sha256": "3f775b7f86196dd9e7e141007eee723e316eeeb3b8d807f21472a3b9064f7990",
+          "status": 200
+        }
+      },
+      "baseline": {
+        "commit": "a3fde5b2239fbd55e83e54ad0006e034b26f57a1",
+        "backend_archive_sha256": "5faec108816a66c8b034f92ff1528e53ab53df632c98deaafe548b522be36710",
+        "mounted_subtree": "backend"
+      },
+      "legacy_national": {
+        "city": {
+          "s07_cursor_issued": true,
+          "continuation_http": 200,
+          "continuation_unchanged": true,
+          "home_cursor_http": 400,
+          "home_cursor_code": "invalid_cursor"
+        },
+        "aqi_desc": {
+          "s07_cursor_issued": true,
+          "continuation_http": 200,
+          "continuation_unchanged": true,
+          "home_cursor_http": 400,
+          "home_cursor_code": "invalid_cursor"
+        }
+      },
+      "legacy_catalog": {
+        "s07_cursor_issued": true,
+        "continuation_http": 409,
+        "continuation_code": "page_changed",
+        "restart_http": 200,
+        "restarted_continuation_http": 200,
+        "only_link_changed": true
+      }
+    },
+    "request_schema_reuse": {
+      "status": "PASS",
+      "scope": "六个旧写信封的本地 $ref 展开差集相等。POST collection-jobs/ 为独立新增操作。",
+      "operations": [
+        "submitCollectionRun",
+        "redeliverCollectionRun",
+        "changeCollectionJob",
+        "adjudicateQualityIssue",
+        "applyStationChange",
+        "withdrawGrant"
+      ]
+    },
+    "route_and_schema": {
+      "status": "PASS",
+      "witnesses": [
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s07_contract.py::test_resolver_operation_diff_and_converter_contract"
+          ],
+          "status": "PASS",
+          "observed": "路由分类及 operation 转换器对应。"
+        },
+        {
+          "receipt": "s06-b37bebf8410a",
+          "nodeids": [
+            "tests/test_s07_contract.py::test_spec_31_and_local_json_schema"
+          ],
+          "status": "PASS",
+          "observed": "OpenAPI 3.1 及本地 JSON Schema 校验。"
+        },
+        {
+          "receipt": "s06-4f1820e5a696",
+          "nodeids": [
+            "tests/test_s08_spa.py::test_shell_serves_build_and_revalidates_for_deep_links",
+            "tests/test_s08_spa.py::test_shell_rejects_missing_collected_references[case-1]",
+            "tests/test_s08_spa.py::test_shell_rejects_missing_collected_references[case-2]",
+            "tests/test_s08_spa.py::test_shell_rejects_missing_collected_references[case-3]",
+            "tests/test_s08_spa.py::test_shell_rejects_missing_collected_references[case-4]",
+            "tests/test_s08_spa.py::test_shell_rejects_unreadable_collected_reference",
+            "tests/test_s08_spa.py::test_shell_missing_build_fails_closed_and_does_not_capture_other_namespaces",
+            "tests/test_s08_spa.py::test_collected_hash_asset_is_immutable_and_missing_static_is_not_a_shell"
+          ],
+          "status": "PASS",
+          "observed": "壳深链、HEAD/ETag、旧哈希、入口 JS/CSS/modulepreload 缺失或不可读时 503/no-store，静态资产缓存和 URL namespace 边界。"
+        }
+      ]
+    },
+    "schedule_range": {
+      "status": "OPEN",
+      "scope": "SCH-01 有限授权与开放接管段。已见证缺完整范围时守卫拒绝，允许有界接管需要产品决策。"
+    }
+  },
+  "receipts": {
+    "s06-a2b704315583": {
+      "pytest": "tmp/s06-evidence/s06-a2b704315583/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-a2b704315583/V01/result.json",
+      "source": "38dd4c7b23c563b92d7afce0e17c1ad67053c35f75f9be960f6a89186e54e2bb",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 9,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-c1ef3ced8ede": {
+      "pytest": "tmp/s06-evidence/s06-c1ef3ced8ede/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-c1ef3ced8ede/V01/result.json",
+      "source": "9f2e3e8e968ae3d230a5071a6187c00ebd5b59a0f9c2847cf580bb43e3374524",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 8,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-e2acd338648a": {
+      "pytest": "tmp/s06-evidence/s06-e2acd338648a/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-e2acd338648a/V01/result.json",
+      "source": "971f9727b486135aa2e1d2764ed7126a96ec6ae2d7a4c6da735f9d1832c69be4",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 41,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-b7a2ca3f7b1c": {
+      "pytest": "tmp/s06-evidence/s06-b7a2ca3f7b1c/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-b7a2ca3f7b1c/V01/result.json",
+      "source": "6b192b1e8faddd3fb249b757131041da118ef5364252e7c93462c9167d02453f",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 40,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-b37bebf8410a": {
+      "pytest": "tmp/s06-evidence/s06-b37bebf8410a/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-b37bebf8410a/V01/result.json",
+      "source": "322f9056a85d92ebe738387d96a838bdd8cbf734f30b7b850ce3dfebec21b938",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 33,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-ea602791108c": {
+      "pytest": "tmp/s06-evidence/s06-ea602791108c/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-ea602791108c/V01/result.json",
+      "source": "f78549e372097fb93ff328d06b0275ae9876d26ac2633ba88ae20c857ef4f205",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 9,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-5d949ccc4299": {
+      "pytest": "tmp/s06-evidence/s06-5d949ccc4299/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-5d949ccc4299/V01/result.json",
+      "source": "0afa5d79a1258ccee44f4c52b87e1dfa698492de4df91ef58d04178112493bb7",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 647,
+        "FAIL": 0,
+        "NOT RUN": 33
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-85514b391833": {
+      "pytest": "tmp/s06-evidence/s06-85514b391833/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-85514b391833/V01/result.json",
+      "source": "65e385906fada7a9722cc22be9246024c90eaa75cd47b98cfad755df1f6ecaeb",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 90,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-4f1820e5a696": {
+      "pytest": "tmp/s06-evidence/s06-4f1820e5a696/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-4f1820e5a696/V01/result.json",
+      "source": "25804e779a818307e944aa8cafcdbe2b15aed92210e903522be158f4e06d2c47",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 10,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    },
+    "s06-e0e124763b42": {
+      "pytest": "tmp/s06-evidence/s06-e0e124763b42/pytest.json",
+      "isolation": "tmp/s06-evidence/s06-e0e124763b42/V01/result.json",
+      "source": "ea6056fffa1f1c9bd0a276083f3f9bb157ea55b2106199a02ced83fb70c1afaa",
+      "postgres": "16.16",
+      "origin": "F/I",
+      "summary": {
+        "PASS": 7,
+        "FAIL": 0,
+        "NOT RUN": 0
+      },
+      "guard": "PASS",
+      "cleanup": true
+    }
+  }
+}

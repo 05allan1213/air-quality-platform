@@ -44,6 +44,7 @@ class Product(models.Model):
         permissions = [
             ("manage_collection", "Manage collection jobs and pauses"),
             ("run_collection", "Execute authorized collection jobs"),
+            ("configure_collection_schedule", "Configure collection schedules"),
             ("import_history", "Import a controlled historical batch"),
             ("review_observation", "Review authorized observation evidence"),
             ("manage_grants", "Register and withdraw source uses"),
@@ -128,6 +129,21 @@ class City(models.Model):
     source = models.ForeignKey(Source, on_delete=models.PROTECT)
     name = text()
     geography = text()
+
+
+class CitySearchAlias(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="city_search_aliases"
+    )
+    city = models.ForeignKey(City, on_delete=models.CASCADE, related_name="search_aliases")
+    search_alias = text(32, blank=True)
+    version = models.PositiveBigIntegerField(default=0)
+
+    class Meta:
+        default_permissions = ()
+        constraints = [
+            models.UniqueConstraint(fields=("product", "city"), name="city_alias_product_city"),
+        ]
 
 
 class Station(models.Model):

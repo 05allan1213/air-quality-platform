@@ -31,6 +31,19 @@ class Job(models.Model):
     enabled = models.BooleanField(default=False)
     control_version = models.PositiveBigIntegerField(default=0)
     pause_reason = text(blank=True)
+    plan_state = text(12, default="legacy")
+    schedule_template = models.ForeignKey(
+        "ScheduleTemplate", null=True, on_delete=models.PROTECT, related_name="plans"
+    )
+    schedule_template_version = models.PositiveBigIntegerField(null=True)
+    schedule_anchor_at = models.DateTimeField(null=True)
+    effective_from = models.DateTimeField(null=True)
+    effective_until = models.DateTimeField(null=True)
+    predecessor = models.ForeignKey("self", null=True, on_delete=models.PROTECT, related_name="+")
+    pending_successor = models.OneToOneField(
+        "self", null=True, on_delete=models.PROTECT, related_name="+"
+    )
+    handoff_checked = models.BooleanField(default=False)
     changed_at = models.DateTimeField(default=timezone.now)
     changed_by = models.ForeignKey(USER, null=True, on_delete=models.PROTECT, related_name="+")
 
@@ -38,6 +51,47 @@ class Job(models.Model):
         constraints = [
             models.CheckConstraint(
                 condition=Q(cadence_seconds__gte=1), name="s03_positive_cadence"
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        plan_state="legacy",
+                        schedule_anchor_at=None,
+                        effective_from=None,
+                        effective_until=None,
+                        predecessor=None,
+                        pending_successor=None,
+                        schedule_template=None,
+                        schedule_template_version=None,
+                    )
+                    | Q(
+                        plan_state__in=("draft", "discarded"),
+                        enabled=False,
+                        next_due_at=None,
+                        effective_from=None,
+                        effective_until=None,
+                        pending_successor=None,
+                        schedule_anchor_at__isnull=False,
+                        schedule_template__isnull=False,
+                        schedule_template_version__isnull=False,
+                    )
+                    | (
+                        Q(
+                            plan_state="active",
+                            effective_from__isnull=False,
+                            schedule_anchor_at__isnull=False,
+                            schedule_template__isnull=False,
+                            schedule_template_version__isnull=False,
+                        )
+                        & (Q(effective_until=None) | Q(effective_until__gt=F("effective_from")))
+                    )
+                ),
+                name="s08_schedule_segment",
+            ),
+            models.UniqueConstraint(
+                fields=("predecessor",),
+                condition=Q(plan_state__in=("draft", "active")),
+                name="s08_schedule_successor",
             ),
             models.CheckConstraint(
                 condition=Q(disposed=False)
@@ -52,6 +106,35 @@ class Job(models.Model):
                 ),
                 name="cnemc_disposed_job_empty",
             ),
+        ]
+
+
+class ScheduleTemplate(models.Model):
+    """Host-approved frequencies for an already registered collection contract."""
+
+    basis_job = models.OneToOneField(Job, on_delete=models.PROTECT, related_name="host_template")
+    version = models.PositiveBigIntegerField(default=1)
+    allowed_cadences = models.JSONField()
+    delivery_minute = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        default_permissions = ()
+
+
+class ScheduleTemplateRevision(models.Model):
+    template = models.ForeignKey(
+        ScheduleTemplate, on_delete=models.PROTECT, related_name="revisions"
+    )
+    version = models.PositiveBigIntegerField()
+    allowed_cadences = models.JSONField()
+    delivery_minute = models.PositiveSmallIntegerField(default=0)
+    actor = models.ForeignKey(USER, null=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        default_permissions = ()
+        constraints = [
+            models.UniqueConstraint(fields=("template", "version"), name="s08_template_revision")
         ]
 
 
@@ -221,6 +304,7 @@ class ControlEvent(models.Model):
     legacy_protocol = models.BooleanField(default=False)
     response_enabled = models.BooleanField(null=True)
     response_reason = text(64, blank=True)
+    schedule_response = models.JSONField(null=True)
 
 
 class CollectionControl(models.Model):

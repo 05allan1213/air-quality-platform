@@ -1,7 +1,8 @@
 from accounts.management_api import accounts
 from accounts.operations import health
-from accounts.profile import profile
+from accounts.profile import capabilities, profile
 from accounts.restricted_admin import site
+from collection import s08_management_catalog, s08_schedule
 from collection import views as collection_views
 from django.db import DatabaseError, connection
 from django.http import JsonResponse
@@ -33,6 +34,10 @@ urlpatterns = [
     path("api/v1/admin/collection-runs/<uuid:run_id>/", collection_views.recover),
     path("api/v1/admin/collection-jobs/<int:pk>/", collection_views.jobs),
     path("api/v1/admin/collection-windows/<int:pk>/", collection_views.windows),
+    path("api/v1/admin/catalog/products/", s08_management_catalog.directory),
+    path("api/v1/", include("accounts.s08_object_audit")),
+    path("api/v1/", include("accounts.s08_receipts")),
+    path("api/v1/admin/collection-jobs/<int:pk>/schedule/", s08_schedule.schedule),
     path("api/v1/admin/history-imports/", observation_views.history_imports),
     path("api/v1/", include("collection.s07_urls")),
     path("api/v1/", include("observations.quality_urls")),
@@ -43,13 +48,16 @@ urlpatterns = [
     path("api/v1/", include("observations.s04_city")),
     path("api/v1/", include("observations.s04_station")),
     path("api/v1/", include("observations.research_api")),
+    path("api/v1/", include("observations.s08_series")),
     path("api/v1/observations/query/", read_view(read_detail)),
     path("api/v1/observations/current/", observation_views.observations),
     path("api/v1/admin/observation-evidence/", observation_views.evidence),
     path("api/v1/me/", profile),
+    path("api/v1/me/capabilities/", capabilities),
     path("api/v1/", include("accounts.s04_favorite_urls")),
     path("api/v1/", include("accounts.research_urls")),
     path("api/v1/auth/", include("accounts.urls")),
     path("api/v1/admin/fixture-runs/", sample_views.fixture_runs),
     path("api/v1/fixtures/observations/", sample_views.observations),
+    path("", include("config.spa")),
 ]

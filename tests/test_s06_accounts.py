@@ -13,6 +13,7 @@ from wsgiref.simple_server import WSGIServer, make_server
 
 import httpx
 import pytest
+from accounts.assigned_permissions import CONFIGURE_SCHEDULE, MAINTAIN_CITY_ALIAS
 from accounts.models import Favorite, GovernanceAction
 from accounts.research_exports import export_fields
 from accounts.session_generation import SESSION_GENERATION
@@ -266,6 +267,45 @@ def test_v02_current_direct_and_group_permissions(web_clients, identities):
     )
     denied(operator.post(route, json=payload), "permission_denied")
     assert operator.get(ME).status_code == 200
+
+
+@pytest.mark.parametrize("name", [CONFIGURE_SCHEDULE, MAINTAIN_CITY_ALIAS])
+def test_s08_direct_permission_grant_and_revoke(web_clients, identities, name):
+    _, staff, admin, root, password = identities
+    delegate = sign_in(web_clients(), admin, password)
+    bootstrap = sign_in(web_clients(), root, password)
+    subject = sign_in(web_clients(), staff, password)
+    action = name.split(".")[1]
+    route = destination(staff)
+    capabilities = "/api/v1/me/capabilities/"
+    before = version(delegate, staff)
+    grant = request_for("grant", before, permission=name)
+    denied(delegate.post(route, json=grant), "permission_denied")
+    assert version(delegate, staff) == before
+    assert not GovernanceAction.objects.filter(actor=admin, request_id=grant["request_id"]).exists()
+    assert action not in json_status(subject.get(capabilities), 200)["actions"]
+
+    result = json_status(bootstrap.post(route, json=grant), 200)
+    assert result["version"] == before + 1
+    assert staff.user_permissions.filter(pk=permission(name).pk).exists()
+    assert json_status(subject.get(capabilities), 200)["actions"] == [action]
+    revoke = request_for("revoke", result["version"], permission=name)
+    removed = json_status(bootstrap.post(route, json=revoke), 200)
+    assert removed["version"] == result["version"] + 1
+    assert not staff.user_permissions.filter(pk=permission(name).pk).exists()
+    assert json_status(subject.get(capabilities), 200)["actions"] == []
+    for command, response in [(grant, result), (revoke, removed)]:
+        record = GovernanceAction.objects.get(actor=root, request_id=command["request_id"])
+        assert str(record.pk) == response["action_id"]
+        assert (record.action, record.target, record.parameter) == (
+            command["action"],
+            str(staff.pk),
+            name,
+        )
+        assert (record.before_version, record.after_version) == (
+            command["expected_version"],
+            response["version"],
+        )
 
 
 def test_v02_admin_and_owner_boundaries(web_clients, identities):

@@ -317,7 +317,7 @@ def window_permission(window, job, grants, now, code=None, indicator=None):
 
 
 @transaction.atomic
-def read_window(actor_id, window_id, params=None):
+def read_window(actor_id, window_id, params=None, *, rechecks=None):
     actor(actor_id, "review_observation")
     params = params_once(params or {})
     if set(params) - {"after", "object_code", "indicator", "run", "run_after"}:
@@ -344,12 +344,27 @@ def read_window(actor_id, window_id, params=None):
     if requested_code is not None and not 0 < len(requested_code) <= 100:
         raise Denied("invalid_request")
 
-    def permit():
+    def permit(now):
         actor(actor_id, "review_observation")
-        return window_permission(window, first.job, grant_rows, clock(), requested_code, indicator)
+        return window_permission(window, first.job, grant_rows, now, requested_code, indicator)
 
-    projection = permit()
+    projection = permit(clock())
     full, allowed, indicators = projection
+    optional_checks = set()
+    detail_checks = set()
+
+    def confirm_projection(now):
+        if permit(now) != projection:
+            raise Denied()
+        for scope in detail_checks:
+            check_detail(product, scope, now, grant_rows, review=True)
+        for scope, field in optional_checks:
+            for op in ("review", "retain_normalized"):
+                applicable(product, op, scope, {field}, now, grant_rows)
+
+    # A composed read must recheck the exact page it used, under the same product lock.
+    if rechecks is not None:
+        rechecks.append(confirm_projection)
     if window.disposed:
         survivors = window.items.all()
         if requested_code:
@@ -360,8 +375,6 @@ def read_window(actor_id, window_id, params=None):
             return dict(window_id=window.pk, state="disposed", coverage=None)
     if indicator and indicator not in INDICATORS[product.shape]:
         return dict(window_id=window.pk, state="not_applicable", coverage=None)
-    optional_checks = set()
-    detail_checks = set()
     read_at = clock()
 
     def allow_detail(item):
@@ -475,14 +488,7 @@ def read_window(actor_id, window_id, params=None):
                     entry.setdefault("metadata", {})[field] = value
                     optional_checks.add((scope, field))
         receipts.append(entry)
-    if permit() != projection:
-        raise Denied()
-    now = clock()
-    for detail_scope in detail_checks:
-        check_detail(product, detail_scope, now, grant_rows, review=True)
-    for scope, field in optional_checks:
-        for op in ("review", "retain_normalized"):
-            applicable(product, op, scope, {field}, now, grant_rows)
+    confirm_projection(clock())
     return dict(
         window_id=window.pk,
         product=product.pk,

@@ -25,11 +25,13 @@ CONFIG_KEYS = (
     REQUIRED
     | OVERRIDES
     | {
+        "AQ_SPA_DIST",
         "AQ_STATIC_ROOT",
         "AQ_WORKER_NODE",
         "CNEMC_MODE",
         "CNEMC_FIXTURE_HTTP",
         "S03_FIXTURE_HTTP",
+        "AQ_S08_FIXTURE_SCHEDULE",
         "S02_STAGE_DIR",
         "S06_BACKUP_DIR",
         "S06_AUTHORITY_DIR",
@@ -153,6 +155,21 @@ def endpoints(values, *, allow_missing_broker=False):
         ("S03_FIXTURE_HTTP", "0"),
     ):
         require(values.setdefault(key, expected) == expected, f"offline_requires_{key}")
+    fixture = values.get("AQ_S08_FIXTURE_SCHEDULE", "0")
+    require(fixture in {"0", "1"}, "invalid_schedule_fixture_mode")
+    if fixture == "1":
+        # Normal offline instances cannot opt in. database()/broker_ready() verify
+        # the actual task-owned instance markers before any service is started.
+        suffix = values["AQ_INSTANCE_ID"][-12:]
+        require(
+            re.fullmatch(r"s08-b-[0-9a-f]{12}", values["AQ_INSTANCE_ID"])
+            and values["POSTGRES_DB"] == f"s08_db_{suffix}"
+            and values["POSTGRES_USER"] == f"s08_app_{suffix}"
+            and root == Path("/tmp/s08-host")
+            and values["POSTGRES_HOST"] == str(root / "pg")
+            and values["CELERY_BROKER_URL"] == f"redis+socket://{root}/broker/redis.sock",
+            "schedule_fixture_instance_required",
+        )
     db_port = number(values["POSTGRES_PORT"], 1, 65535, "invalid_POSTGRES_PORT")
     host = values["POSTGRES_HOST"]
     socket_only = host != "127.0.0.1"

@@ -148,6 +148,7 @@ class AccountState(models.Model):
             ("manage_accounts", "Manage subordinate accounts"),
             ("adjudicate_quality", "Adjudicate authorized quality evidence"),
             ("manage_catalog", "Govern authorized station identities"),
+            ("maintain_city_search_alias", "Maintain local city search aliases"),
             ("diagnose_operations", "Read authorized operational diagnostics"),
             ("manage_backups", "Prepare authorized backup segments"),
             ("restore_backup", "Restore authorized backup segments"),

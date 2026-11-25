@@ -6,14 +6,14 @@ from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.db import DatabaseError, transaction
-from django.db.models import BooleanField
+from django.db.models import BooleanField, Q
 from django.db.models.expressions import RawSQL
 from django_celery_beat.models import IntervalSchedule, PeriodicTask
 from kombu.exceptions import OperationalError
 from observations.policy import Denied, actor, applicable, clock
 from observations.quality_events import check_detail, record_run_issue
 
-from . import cnemc_jobs, control
+from . import cnemc_jobs, control, schedule_segments
 from .admission import (
     HOUR,
     LEDGER,
@@ -26,6 +26,7 @@ from .admission import (
     expected,
     lock_job,
     parse_hour,
+    schedule_fixture_caps,
     target_code,
 )
 from .models import ControlEvent, Job, Run, WorkWindow
@@ -116,7 +117,10 @@ def register(job, actor_id, target, reason, *, request_id=None, scheduled_for=No
     admission(job, actor_id, start, end, endpoint=endpoint)
     if reason == "review":
         actor(actor_id, "review_observation")
-    key = f"city:{job.city_id}" if job.city_id else "national"
+    now = clock()
+    if schedule_segments.handoff_pause_pending(job, now):
+        raise Denied("collection_paused")
+    key = schedule_segments.scope_key(job)
     if request_id:
         prior = (
             Run.objects.filter(actor_id=actor_id, request_id=request_id)
@@ -127,6 +131,7 @@ def register(job, actor_id, target, reason, *, request_id=None, scheduled_for=No
             if (prior.job_id, prior.reason, prior.window.target_end) != (job.pk, reason, end):
                 raise Denied("request_conflict")
             return prior
+    schedule_segments.check_owner(job, end - HOUR, now)
     # Even with E unknown, local identity and processing selectors must be independently proven.
     if (
         endpoint
@@ -213,10 +218,17 @@ def submit(actor_id, data, *, request=None):
     job = lock_job(data["job"])
     session = control.lock_principals(request, {job.executor_id}) if request else None
     target = parse_hour(data["target"])
-    run = register(job, actor_id, target, data["reason"], request_id=request_id)
-    if session:
-        admission(job, actor_id, *bounds(job, target), endpoint=run.endpoint)
-        session.finish(())
+    try:
+        run = register(job, actor_id, target, data["reason"], request_id=request_id)
+        if session:
+            admission(job, actor_id, *bounds(job, target), endpoint=run.endpoint)
+            session.finish(())
+    except Denied as exc:
+        # Pausing is not a distinct HTTP submission outcome; keep the domain code
+        # for the scanner/Worker and the existing use_denied response for callers.
+        if session and exc.code == "collection_paused":
+            raise Denied() from None
+        raise
     return run
 
 
@@ -253,6 +265,8 @@ def locked(run_id):
 def authorized(run):
     if run.window.disposed:
         raise Denied("window_disposed")
+    if schedule_segments.handoff_pause_pending(run.job, clock()):
+        raise Denied("collection_paused")
     if intent(run) == "review":
         actor(run.actor_id, "review_observation")
     if run.endpoint != cnemc_jobs.endpoint_for(run.job, intent(run)):
@@ -648,13 +662,23 @@ def retry_due(run_id):
 @transaction.atomic
 def scheduled(job_id):
     job = lock_job(job_id)
+    from accounts.research_session import lock_users_and_groups
+
     now = clock()
+    lock_users_and_groups({job.executor_id})
+    schedule_segments.settle_handoff(job, now)
     if not job.enabled or not job.next_due_at or job.next_due_at > now:
         return
     due = job.next_due_at
     cadence = timedelta(seconds=job.cadence_seconds)
-    if cnemc_jobs.managed(job):
-        latest_due = due + ((now - due) // cadence) * cadence
+    boundary = job.effective_until
+    if boundary and due >= boundary:
+        job.next_due_at = None
+        job.save(update_fields=["next_due_at"])
+        return
+    if cnemc_jobs.managed(job) or job.plan_state == "active":
+        limit = min(now, boundary - timedelta(microseconds=1)) if boundary else now
+        latest_due = due + ((limit - due) // cadence) * cadence
         if latest_due > due:
             ControlEvent.objects.create(
                 job=job,
@@ -664,8 +688,21 @@ def scheduled(job_id):
                 slot_end=latest_due,
             )
             due = latest_due
-    job.next_due_at = due + cadence
+    next_due = due + cadence
+    job.next_due_at = None if boundary and next_due >= boundary else next_due
     job.save(update_fields=["next_due_at"])
+    if job.plan_state == "active" and (
+        job.product.collection_pause or job.product.source.collection_pause
+    ):
+        if job.next_due_at:
+            ControlEvent.objects.create(
+                job=job,
+                actor_id=job.executor_id,
+                action="skipped_slots",
+                slot_start=due,
+                slot_end=job.next_due_at,
+            )
+        return
     try:
         register(
             job,
@@ -695,8 +732,12 @@ def reconcile_due():
 
     for pk in (
         Job.objects.filter(
-            profile=cnemc_jobs.PROFILE, enabled=True, disposed=False, next_due_at__isnull=False
+            profile=cnemc_jobs.PROFILE,
+            enabled=True,
+            disposed=False,
         )
+        .filter(Q(next_due_at__isnull=False) | Q(plan_state="active", effective_from__lte=now))
+        .filter(Q(effective_until=None) | Q(effective_until__gt=now - 25 * HOUR))
         .exclude(backfill_policy={})
         .order_by("pk")
         .values_list("pk", flat=True)[:PAGE]
@@ -746,13 +787,19 @@ def change_job(actor_id, job_id, action, *, request=None, data=None):
     job = lock_job(job_id)
     session = control.lock_principals(request, {job.executor_id}) if request else None
     actor(actor_id, "manage_collection")
+    if job.plan_state in {"draft", "discarded"}:
+        raise Denied("precondition_conflict")
+    now = clock()
     kind, target = control.target_for(job, action)
-    version = control.version(kind, target)
-    before = control.state(kind, target)
+    version = (
+        schedule_segments.effective_control_version(job, now)
+        if kind == "job"
+        else control.version(kind, target)
+    )
+    before = control.state(kind, target, now=now)
     if data is None:
         data = dict(action=action, request_id=None, reason_code="", expected_version=None)
     modern = data["request_id"] is not None
-    now = clock()
     if action != "pause":
         caps = authorize_resume(job)
         cnemc_jobs.check_total(job)
@@ -772,6 +819,7 @@ def change_job(actor_id, job_id, action, *, request=None, data=None):
     if action == "pause" and before == "paused":
         if modern:
             raise Denied("precondition_conflict")
+        schedule_segments.settle_handoff(job, now)
         if session:
             session.finish(())
         return control.job_result(job) if request else job
@@ -787,6 +835,14 @@ def change_job(actor_id, job_id, action, *, request=None, data=None):
         budget(job, caps, now)
         if kind == "job" and cnemc_jobs.managed(job):
             cnemc_jobs.ensure_schedule(job)
+        elif (
+            kind == "job"
+            and job.plan_state == "legacy"
+            and job.next_due_at
+            and (schedule_segments.overlapping_clocks(job).filter(plan_state="active").exists())
+        ):
+            raise Denied("precondition_conflict")
+    schedule_segments.settle_handoff(job, now)
     if kind == "job":
         job.enabled = action != "pause"
         job.pause_reason = "operator_pause" if action == "pause" else ""
@@ -809,7 +865,7 @@ def change_job(actor_id, job_id, action, *, request=None, data=None):
         kind,
         target,
         before,
-        control.state(kind, target),
+        control.state(kind, target, now=now),
         version,
         after_version,
         operator_id=actor_id,
@@ -1032,16 +1088,9 @@ def register_job(
         next_due_at=due,
         changed_by_id=actor_id,
     )
-    if cnemc_jobs.managed(job):
-        cnemc_jobs.configure(job)
-    elif any((selection, standard, backfill_policy, validation_grant_id)):
-        raise Denied("invalid_job")
-    target = (due or clock()).replace(minute=0, second=0, microsecond=0)
-    start, end = bounds(job, target)
-    admission(job, executor_id, start, end, allow_paused=True, registration=True)
-    expected(job, start, end)
-    if cnemc_jobs.managed(job) and job.selection.get("mode") == "include":
-        cnemc_jobs.scopes(job, start, end)
+    validate_job_registration(job, due or clock())
+    if due and schedule_segments.overlapping_clocks(job).filter(plan_state="active").exists():
+        raise Denied("duplicate_schedule")
     if cnemc_jobs.managed(job):
         if reuse and (prior := cnemc_jobs.same_job(job)):
             return prior
@@ -1049,3 +1098,23 @@ def register_job(
     job.save()
     ControlEvent.objects.create(job=job, actor_id=actor_id, action="register")
     return job
+
+
+def validate_job_registration(job, stamp, *, registration=True, fixture_preview=False):
+    """Apply the same registration contract to host Jobs and schedule candidates."""
+    if cnemc_jobs.managed(job):
+        cnemc_jobs.configure(job)
+    elif any((job.selection, job.standard, job.backfill_policy, job.validation_grant_id)):
+        raise Denied("invalid_job")
+    start, end = bounds(job, schedule_segments.hour(stamp))
+    caps = (
+        schedule_fixture_caps(job, start, end)
+        if fixture_preview
+        else admission(
+            job, job.executor_id, start, end, allow_paused=True, registration=registration
+        )
+    )
+    expected(job, start, end)
+    if cnemc_jobs.managed(job) and job.selection.get("mode") == "include":
+        cnemc_jobs.scopes(job, start, end)
+    return caps

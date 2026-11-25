@@ -1,0 +1,1428 @@
+{
+  "schema_version": 1,
+  "scope": "S08 locally integrated software. Approved F data and injected failures. Each count belongs to its recorded verifier.",
+  "baseline": {
+    "commit": "89f3c8a99e41b144cf0a785071dd717a7efd7049",
+    "s07_tag": "s07-backend-v1",
+    "s07_tag_commit": "a3fde5b2239fbd55e83e54ad0006e034b26f57a1"
+  },
+  "browser_source_sha256": "433c69dcd6e4fc37e9d27b2a3735fadea5ccc88b41b72b4c641bbdfad8ba4f50",
+  "source_definition": "s08_browser_host.py: sorted relative path, NUL, bytes, NUL for its backend, scripts, tests, main.py and frontend snapshot. Git commit and Docker inputs have separate identities.",
+  "input_sha256": {
+    "frontend/package.json": "bc7ed8592a4c53119910dd8286c84a7aa34554198b3b4979f375187584ecf7b5",
+    "frontend/package-lock.json": "0a80faf2213058cc486d63d7499c7fab40746aff87aef535952658a1d137e185",
+    "uv.lock": "f088f9ecf7fa705a957ab4aa4ef3be8b67a1667a29333b967e8963ce188ee84b",
+    "docs/api/openapi.v1.json": "0584f4ad2d7512f3430774366b60f4d4cc1d547df347bb59a30b454b65530136",
+    "Dockerfile": "6c40e77f734ec45b8fbd27adc99082aff91b452848d35b0236ab5b4a2939bb0c",
+    ".dockerignore": "58af18897603b409957044f92985548b6a28d3194f34fee00d9f76b25402348e"
+  },
+  "reproduce": "docs/operations/S08.md",
+  "visual_samples": "docs/verification/S08/visual/index.md",
+  "api_delta": "docs/verification/S08_CONTRACT_DELTA.md",
+  "guard": {
+    "database": "task-owned socket-only PostgreSQL in a network:none container",
+    "redis": "task-owned Unix socket",
+    "network_interfaces": [
+      "lo"
+    ],
+    "web": "Gunicorn/WhiteNoise, Vite proxy in dev",
+    "worker": "Celery",
+    "real_external_collection": "off",
+    "beat": "one in schedule runtime only",
+    "browser_reports": "tmp/s08-evidence/<run>/visual/{result,sandbox}.json",
+    "session": "real Django same-origin Session and CSRF, independent cookie jars for peer tests",
+    "evidence": "F/I, synthetic identities only"
+  },
+  "browser_runs": [
+    {
+      "run": "s08-b-d1812f613b3f",
+      "mode": "production",
+      "selectors": [
+        "e2e/session-resume.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:49:29.327285+00:00",
+      "finished_utc": "2026-11-25T04:50:11.167630+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 3,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "session-resume.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-73cf8c9a738a",
+      "mode": "production",
+      "selectors": [
+        "e2e/auth.spec.ts",
+        "e2e/scope.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:49:29.328550+00:00",
+      "finished_utc": "2026-11-25T04:50:18.257636+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 8,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "auth.spec.ts",
+        "scope.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-c629603eda24",
+      "mode": "governance-chain",
+      "selectors": [],
+      "started_utc": "2026-11-25T04:49:29.330779+00:00",
+      "finished_utc": "2026-11-25T04:50:04.102929+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "governance-chain.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-ada2ed4c1e8c",
+      "mode": "production",
+      "selectors": [
+        "e2e/observation-chain.spec.ts",
+        "e2e/favorite-rights.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:50:04.269213+00:00",
+      "finished_utc": "2026-11-25T04:50:51.599873+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 2,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "favorite-rights.spec.ts",
+        "observation-chain.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-d57bec0e84b0",
+      "mode": "production",
+      "selectors": [
+        "e2e/analysis.spec.ts",
+        "e2e/query.spec.ts",
+        "e2e/overlays.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:50:11.294446+00:00",
+      "finished_utc": "2026-11-25T04:51:10.148723+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 9,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "analysis.spec.ts",
+        "overlays.spec.ts",
+        "query.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-8a2964d8320a",
+      "mode": "production",
+      "selectors": [
+        "e2e/overview.spec.ts",
+        "e2e/monitor.spec.ts",
+        "e2e/presentation.spec.ts",
+        "e2e/overview-ratios.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:50:18.391943+00:00",
+      "finished_utc": "2026-11-25T04:51:20.266015+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 7,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "monitor.spec.ts",
+        "overview-ratios.spec.ts",
+        "overview.spec.ts",
+        "presentation.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-b71532c097f9",
+      "mode": "production",
+      "selectors": [
+        "e2e/collection.spec.ts",
+        "e2e/collection-ledger.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:50:51.724956+00:00",
+      "finished_utc": "2026-11-25T04:51:40.192994+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 5,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "collection-ledger.spec.ts",
+        "collection.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-7dc6b8c1747b",
+      "mode": "production",
+      "selectors": [
+        "e2e/quality.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:51:10.284774+00:00",
+      "finished_utc": "2026-11-25T04:51:53.196166+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 4,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "quality.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-06a79ad65232",
+      "mode": "production",
+      "selectors": [
+        "e2e/dictionary.spec.ts",
+        "e2e/operations.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:51:20.383889+00:00",
+      "finished_utc": "2026-11-25T04:52:05.195037+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 5,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "dictionary.spec.ts",
+        "operations.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-7396bca7c0e1",
+      "mode": "production",
+      "selectors": [
+        "e2e/my-space.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:51:40.308279+00:00",
+      "finished_utc": "2026-11-25T04:52:26.558746+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 2,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "my-space.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-a36df07deefe",
+      "mode": "production",
+      "selectors": [
+        "e2e/zoom.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:51:53.340764+00:00",
+      "finished_utc": "2026-11-25T04:52:31.315173+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 1,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "zoom.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-bbf56245d0c8",
+      "mode": "dev",
+      "selectors": [
+        "e2e/scope.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:52:05.320099+00:00",
+      "finished_utc": "2026-11-25T04:52:47.292242+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 2,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "scope.spec.ts"
+      ],
+      "http_smoke": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-622cb82e54cc",
+      "mode": "production",
+      "selectors": [
+        "e2e/research-coverage.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:52:26.687846+00:00",
+      "finished_utc": "2026-11-25T04:53:02.906461+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 2,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "research-coverage.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-061368ddb0a1",
+      "mode": "production",
+      "selectors": [
+        "e2e/performance.spec.ts"
+      ],
+      "started_utc": "2026-11-25T04:55:18.377339+00:00",
+      "finished_utc": "2026-11-25T04:56:06.178824+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "counts": {
+        "expected": 2,
+        "unexpected": 0,
+        "skipped": 0,
+        "flaky": 0
+      },
+      "files": [
+        "performance.spec.ts"
+      ],
+      "http_smoke": true,
+      "shell_immutable": true,
+      "sandbox_cleanup": true
+    },
+    {
+      "run": "s08-b-2860acab0240",
+      "mode": "national-profile",
+      "selectors": [],
+      "started_utc": "2026-11-25T04:56:06.297606+00:00",
+      "finished_utc": "2026-11-25T04:56:40.903610+00:00",
+      "sandbox_exit": 0,
+      "status": "PASS",
+      "cleanup": true,
+      "http_smoke": true,
+      "sandbox_cleanup": true
+    }
+  ],
+  "counts_by_mode": {
+    "production": {
+      "expected": 50,
+      "unexpected": 0,
+      "skipped": 0,
+      "flaky": 0
+    },
+    "governance-chain": {
+      "expected": 1,
+      "unexpected": 0,
+      "skipped": 0,
+      "flaky": 0
+    },
+    "dev": {
+      "expected": 2,
+      "unexpected": 0,
+      "skipped": 0,
+      "flaky": 0
+    }
+  },
+  "preceding_reviewed_candidate": {
+    "source_sha256": "542b4771b84454b73c3729924b681f63b800ea5d8b1ba779edbd4cd2421676fe",
+    "runs": [
+      "s08-b-e2d2e060945a",
+      "s08-b-1ee0c9163bb1",
+      "s08-b-bc238a4e4347",
+      "s08-b-0dd16eacf32c",
+      "s08-b-cbfda029282c",
+      "s08-b-befdb018338f",
+      "s08-b-514b309887d3",
+      "s08-b-5f4b018f0b55",
+      "s08-b-15046e952616"
+    ],
+    "browser_passed": 37,
+    "review": "Four original findings resolved on the nine isolated runs."
+  },
+  "accessibility": {
+    "overview-desktop": {
+      "origin": "F",
+      "version": "4.14.1",
+      "passedRules": 23,
+      "violations": [],
+      "needsManualReview": [
+        {
+          "rule": "color-contrast",
+          "impact": "serious",
+          "nodes": 181
+        }
+      ]
+    },
+    "observation-drawer": {
+      "origin": "F",
+      "version": "4.14.1",
+      "passedRules": 15,
+      "violations": [],
+      "needsManualReview": [
+        {
+          "rule": "color-contrast",
+          "impact": "serious",
+          "nodes": 7
+        }
+      ]
+    },
+    "management-narrow": {
+      "origin": "F",
+      "version": "4.14.1",
+      "passedRules": 13,
+      "violations": [],
+      "needsManualReview": []
+    }
+  },
+  "toolchain": {
+    "node": "24.19.0",
+    "npm": "12.0.2",
+    "python": "3.13.18",
+    "uv": "0.13.6",
+    "ruff": "0.17.6",
+    "playwright": "1.65.1",
+    "chromium": "158.0.8127.36",
+    "platform": "linux"
+  },
+  "chains": {
+    "observation": {
+      "stage": "complete",
+      "cityIndicators": 7,
+      "distinctLAndC": true,
+      "distinctCAndT": true,
+      "trendSlots": 24,
+      "trendGaps": 3,
+      "separateSiteEpochs": true,
+      "distinctLatestTimes": true,
+      "emptyHistoryWindow": true,
+      "outsideSiteEpoch": true,
+      "favorite_withdrawal": {
+        "stage": "complete",
+        "statuses": {
+          "register": 201,
+          "createCity": 201,
+          "createStation": 201,
+          "stationDetailsBefore": 200,
+          "details": 200,
+          "ticket": 201,
+          "withdrawDisplay": 200,
+          "cityAfter": 200,
+          "stationAfter": 200,
+          "stationDetailsAfter": 200,
+          "oldCityLink": 403,
+          "readWithIndependentExport": 200,
+          "withdrawExport": 200,
+          "invalidTicket": 403,
+          "exportAfter": 403
+        },
+        "stationUnchanged": true,
+        "intentOnly": true,
+        "sameSession": true,
+        "canceledRequest": true,
+        "heldStatus": 200,
+        "deliveredDownloads": 0
+      }
+    },
+    "research": {
+      "stage": "complete",
+      "whole_export": {
+        "preview": 200,
+        "ticket": 201,
+        "download": 200,
+        "rows": 24,
+        "matchesParentVersion": true
+      },
+      "no_page_error": true,
+      "annual": {
+        "catalogRequests": 3,
+        "monthCount": 12,
+        "seasonCount": 4,
+        "winterExpected": 2184,
+        "winterValid": 3,
+        "sourceCivilTime": true,
+        "weightedWinter": true,
+        "derivedOnly": true
+      },
+      "pearson": {
+        "pairs": 30,
+        "sufficient": "sufficient",
+        "coefficient": 1,
+        "constant": "zero_variance",
+        "constantCoefficient": null
+      },
+      "standalone_query": {
+        "latest": 200,
+        "details": [
+          200,
+          200
+        ],
+        "deniedField": 403,
+        "ticket": 201,
+        "download": 200,
+        "otherUser": 404,
+        "pages": [
+          2,
+          1
+        ],
+        "csvRows": 3,
+        "quality": [
+          "valid",
+          "censored",
+          "missing"
+        ],
+        "localScroll": true,
+        "viewport": 390
+      },
+      "sufficient_coverage": {
+        "origin": "F",
+        "columns": [
+          {
+            "E": 12,
+            "O": 12,
+            "V": 12
+          },
+          {
+            "E": 12,
+            "O": 12,
+            "V": 12
+          }
+        ],
+        "expectedCommon": 12,
+        "validPairs": 12,
+        "pairedCoverage": 1,
+        "conclusion": "sufficient",
+        "rankOrder": [
+          1,
+          0
+        ],
+        "difference": -1
+      },
+      "range_chart": {
+        "origin": "F",
+        "resolution": "range",
+        "bucketCount": 1000,
+        "widthSeconds": 5184,
+        "expectedSlots": 1440,
+        "populatedBucket": {
+          "minimum": 2,
+          "maximum": 4,
+          "valid": 2,
+          "gaps": 0
+        },
+        "emptyBucket": {
+          "valid": 0,
+          "gaps": 2
+        },
+        "detailsStatus": 200,
+        "supportRows": 2,
+        "sameParentVersion": true,
+        "keyboard": true
+      }
+    },
+    "governance": {
+      "browser": {
+        "stage": "complete",
+        "statuses": {
+          "discover": 200,
+          "submit": 202,
+          "own_receipt": 200,
+          "executor_run": 403,
+          "peer_receipt": 404,
+          "reviewer_catalog": 200,
+          "reviewer_windows": 200,
+          "reviewer_window": 200,
+          "reviewer_run": 200,
+          "health_catalog": 200,
+          "health": 200
+        },
+        "counts": {
+          "items": 7,
+          "receipts": 7
+        },
+        "submitRequests": 1
+      },
+      "pg_worker_reconciliation": {
+        "runs": 1,
+        "windows": 1,
+        "batches": 1,
+        "accepted_items": 7,
+        "receipts": 7,
+        "first_valid_revisions": 7,
+        "origin_requests": 1,
+        "command_correlated": true,
+        "first_valid_write_correlated": true,
+        "beat_started": false
+      },
+      "partial_scope_ledger": {
+        "cellsByPage": [
+          50,
+          13
+        ],
+        "window": {
+          "state": "open",
+          "result": "partial",
+          "E": 63,
+          "O": 1,
+          "V": 1
+        },
+        "emptyRun": {
+          "status": "finished",
+          "result": "no_new"
+        },
+        "narrow": {
+          "cells": 1,
+          "runs": 0,
+          "receipts": 1,
+          "unfilteredStatus": 403
+        }
+      },
+      "grant_handoff": {
+        "write": 200,
+        "lookup": 200,
+        "singleWrite": true,
+        "exactHandoffAndOriginalCommand": true
+      },
+      "window_clock": {
+        "catalog": 200,
+        "window": 200,
+        "trend": 200,
+        "firstValidWriteState": "known",
+        "allClockBindingsAsserted": true
+      }
+    },
+    "logout": {
+      "storage_quota": {
+        "beforeRetry": 200,
+        "afterRetry": 403,
+        "reloadLocked": true,
+        "otherTabLocked": true,
+        "existingTabLocked": true,
+        "attempts": 2
+      },
+      "response_loss": {
+        "committed": 204,
+        "sessionCheck": 403,
+        "deepLinkProtected": true
+      }
+    }
+  },
+  "postgres_regression": {
+    "receipts": "tmp/s06-evidence/<run>/{V01/result,pytest or upgrade}.json",
+    "distinct_nodes_passed": 711,
+    "all_33_skipped_restore_nodes_matched": true,
+    "source_note": "Re-hashing all 347 S06 inputs with only the three recorded .dockerignore versions reproduces all three snapshot IDs. Backend, tests and OpenAPI bytes agree.",
+    "runs": [
+      {
+        "run": "s06-4713d0f7b494",
+        "mode": "pytest",
+        "guard": "PASS",
+        "cleanup": true,
+        "source_before": "1d048a3b9270dc3df950f3da5380f544f2425a6ed6edc27942e63fae43202f79",
+        "source_mode": "readonly_snapshot",
+        "action_exit": 0,
+        "summary": {
+          "PASS": 678,
+          "FAIL": 0,
+          "NOT RUN": 33
+        }
+      },
+      {
+        "run": "s06-7a356e9b400a",
+        "mode": "restore",
+        "guard": "PASS",
+        "cleanup": true,
+        "source_before": "550bc43a05c62d84b4aee00d516e531dd7139d2a0e712443e556a7ae2b8e494e",
+        "source_mode": "readonly_snapshot",
+        "action_exit": 0,
+        "summary": {
+          "PASS": 33,
+          "FAIL": 0,
+          "NOT RUN": 0
+        }
+      },
+      {
+        "run": "s06-2fcb644b1d30",
+        "mode": "forward_upgrade",
+        "guard": "PASS",
+        "cleanup": true,
+        "source_before": "373ec61d50df44488c116c5bc1939115a0e8a3c7562b93ecdd2b82e80e1e340d",
+        "source_mode": "readonly_snapshot",
+        "action_exit": 0,
+        "first_migrations": 4,
+        "after_first": 0,
+        "after_second": 0,
+        "preserved_jobs": 2,
+        "preserved_sessions": 4,
+        "legacy_catalog": {
+          "s07_cursor_issued": true,
+          "continuation_http": 409,
+          "continuation_code": "page_changed",
+          "restart_http": 200,
+          "restarted_continuation_http": 200,
+          "only_link_changed": true
+        },
+        "legacy_national": {
+          "city": {
+            "s07_cursor_issued": true,
+            "continuation_http": 200,
+            "continuation_unchanged": true,
+            "home_cursor_http": 400,
+            "home_cursor_code": "invalid_cursor"
+          },
+          "aqi_desc": {
+            "s07_cursor_issued": true,
+            "continuation_http": 200,
+            "continuation_unchanged": true,
+            "home_cursor_http": 400,
+            "home_cursor_code": "invalid_cursor"
+          }
+        },
+        "detail_cursor": 200,
+        "saved_run": 200,
+        "download": 200
+      }
+    ]
+  },
+  "beat_worker_and_v12": [
+    {
+      "run": "s07-b-8e6abcb4ab7a",
+      "scenario": "boundary",
+      "origin": "F/I",
+      "status": "PASS",
+      "cleanup": true,
+      "source_sha256": "4dabc442a2b61dfe1b8722cc6c26f84b32645dfb5c37dd3e675dba1755975f02",
+      "started_utc": "2026-11-25T03:31:41.566484+00:00",
+      "finished_utc": "2026-11-25T03:32:16.660969+00:00",
+      "fixture_only": true,
+      "accepted_items": 21,
+      "remaining_processes": 0,
+      "stage": "complete",
+      "business_windows": 3
+    },
+    {
+      "run": "s07-b-2b33880c0273",
+      "scenario": "pause-source",
+      "origin": "F/I",
+      "status": "PASS",
+      "cleanup": true,
+      "source_sha256": "4dabc442a2b61dfe1b8722cc6c26f84b32645dfb5c37dd3e675dba1755975f02",
+      "started_utc": "2026-11-25T03:32:16.781439+00:00",
+      "finished_utc": "2026-11-25T03:32:47.326877+00:00",
+      "fixture_only": true,
+      "accepted_items": 14,
+      "remaining_processes": 0,
+      "stage": "complete",
+      "business_windows": 3,
+      "skipped_slots": 2
+    },
+    {
+      "run": "s07-b-fda055f71154",
+      "scenario": "pause-product",
+      "origin": "F/I",
+      "status": "PASS",
+      "cleanup": true,
+      "source_sha256": "4dabc442a2b61dfe1b8722cc6c26f84b32645dfb5c37dd3e675dba1755975f02",
+      "started_utc": "2026-11-25T03:32:47.445729+00:00",
+      "finished_utc": "2026-11-25T03:33:20.458761+00:00",
+      "fixture_only": true,
+      "accepted_items": 14,
+      "remaining_processes": 0,
+      "stage": "complete",
+      "business_windows": 3,
+      "skipped_slots": 2
+    },
+    {
+      "run": "s07-b-17347819b7c3",
+      "origin": "F/I",
+      "status": "PASS",
+      "cleanup": true,
+      "source_sha256": "4dabc442a2b61dfe1b8722cc6c26f84b32645dfb5c37dd3e675dba1755975f02",
+      "started_utc": "2026-11-25T03:33:20.573450+00:00",
+      "finished_utc": "2026-11-25T03:33:32.026552+00:00",
+      "mode": "contract",
+      "admin_status": "PASS",
+      "http_calls": 35
+    }
+  ],
+  "docker_context": {
+    "run": "s08-engineering-bji2z8fs",
+    "status": "PASS",
+    "temporary_copy_cleanup": true,
+    "file_count": 27,
+    "canaries_excluded": 18,
+    "positive_inputs_checked": 22,
+    "extra_license_samples": 5
+  },
+  "boundaries": {
+    "BLOCKED": [
+      "Licensed map assets with city identities, period locations and CRS",
+      "Applicable H dataset license and two compatible site epochs",
+      "Authorized local real-city observations"
+    ],
+    "NO-GO": [
+      "T11 city-online trial, continuous 168 hours and its independent decision"
+    ],
+    "NOT RUN": [
+      "S09 whole-machine offline delivery and restore",
+      "Firefox/WebKit/Safari, physical touch and real screen reader",
+      "Cross-boundary historical recovery followed from one browser Run",
+      "Single uninterrupted browser scenario combining the manual run with adjudication and rights withdrawal",
+      "Independent text-only 200% scaling",
+      "Back/forward cache round trip on a real browser",
+      "Real engine without backdrop-filter support"
+    ],
+    "details": "docs/verification/S08.md"
+  },
+  "session_resume": {
+    "grants": {
+      "origin": "F",
+      "stage": "complete",
+      "trustedAway": true,
+      "oneVerification": true,
+      "oldDomRemoved": true,
+      "independentStationVisible": true
+    },
+    "workspace": {
+      "origin": "F",
+      "stage": "complete",
+      "permissionRevoked": true,
+      "samePageDenied": 403,
+      "privateRouteDenied": true,
+      "overviewReachable": true,
+      "publicRouteReachable": true
+    },
+    "expired": {
+      "origin": "F",
+      "stage": "complete",
+      "firstCapabilityStatus": 200,
+      "latestStatus": 403,
+      "privateReads": 0
+    },
+    "research": {
+      "origin": "F",
+      "refreshedCatalog": 200,
+      "conditionsRestored": true,
+      "visibleSelectionRestored": true,
+      "focusRestored": true,
+      "automaticAnalysis": false
+    }
+  },
+  "overview_ratios": {
+    "font_requests_held": 39,
+    "issues": {
+      "external": 0,
+      "unknownApi": 0,
+      "http": 0,
+      "pageError": 0,
+      "console": 0,
+      "failed": 0
+    },
+    "captures": [
+      {
+        "name": "font-pending-full-390",
+        "viewport": {
+          "width": 390,
+          "height": 844,
+          "y": 0,
+          "landscape": false
+        },
+        "pixelCounts": [
+          98,
+          94
+        ]
+      },
+      {
+        "name": "font-pending-close-390",
+        "viewport": {
+          "width": 390,
+          "height": 844,
+          "y": 0,
+          "landscape": false
+        },
+        "pixelCounts": [
+          98,
+          94
+        ]
+      },
+      {
+        "name": "font-ready-full-390",
+        "viewport": {
+          "width": 390,
+          "height": 844,
+          "y": 0,
+          "landscape": false
+        },
+        "pixelCounts": [
+          111,
+          103
+        ]
+      },
+      {
+        "name": "scrolled-away-full-390",
+        "viewport": {
+          "width": 390,
+          "height": 844,
+          "y": 3137,
+          "landscape": false
+        },
+        "pixelCounts": [
+          111,
+          103
+        ]
+      },
+      {
+        "name": "scroll-return-close-390",
+        "viewport": {
+          "width": 390,
+          "height": 844,
+          "y": 0,
+          "landscape": false
+        },
+        "pixelCounts": [
+          111,
+          103
+        ]
+      },
+      {
+        "name": "reflow-full-320",
+        "viewport": {
+          "width": 320,
+          "height": 800,
+          "y": 0,
+          "landscape": false
+        },
+        "pixelCounts": [
+          105,
+          104
+        ]
+      },
+      {
+        "name": "landscape-close-844",
+        "viewport": {
+          "width": 844,
+          "height": 390,
+          "y": 0,
+          "landscape": true
+        },
+        "pixelCounts": [
+          113,
+          113
+        ]
+      },
+      {
+        "name": "solid-full-844",
+        "viewport": {
+          "width": 844,
+          "height": 390,
+          "y": 0,
+          "landscape": true
+        },
+        "pixelCounts": [
+          100,
+          77
+        ]
+      },
+      {
+        "name": "solid-close-844",
+        "viewport": {
+          "width": 844,
+          "height": 390,
+          "y": 0,
+          "landscape": true
+        },
+        "pixelCounts": [
+          100,
+          77
+        ]
+      }
+    ]
+  },
+  "query_dialog": {
+    "query-window-overlays": {
+      "origin": "F",
+      "selectFit": {
+        "viewport": 1440,
+        "left": 503,
+        "right": 937,
+        "withinDialog": true,
+        "onTop": true,
+        "opaque": true
+      },
+      "viewports": [
+        {
+          "width": 390,
+          "viewport": 390,
+          "left": 89,
+          "right": 361,
+          "withinDialog": true,
+          "onTop": true,
+          "opaque": true,
+          "fill": "rgb(245, 250, 255)",
+          "filter": "none",
+          "documentWidth": 390,
+          "nestedLayer": true
+        },
+        {
+          "width": 320,
+          "viewport": 320,
+          "left": 22,
+          "right": 294,
+          "withinDialog": true,
+          "onTop": true,
+          "opaque": true,
+          "fill": "rgb(245, 250, 255)",
+          "filter": "none",
+          "documentWidth": 320,
+          "nestedLayer": true
+        }
+      ],
+      "hourlyRead": 200,
+      "oldDraftSupported": true,
+      "backgroundLocked": true,
+      "nestedEscape": true,
+      "tooltipKeyboard": true
+    },
+    "query-daily-calendar": {
+      "origin": "F",
+      "dailyRead": 200,
+      "sourceLocalDate": true,
+      "keyboardSelection": true,
+      "axe": {
+        "passedRules": 22,
+        "violations": [],
+        "needsManualReview": [
+          {
+            "rule": "color-contrast",
+            "nodes": 3
+          }
+        ]
+      }
+    },
+    "query-time-tab-resume": {
+      "origin": "F",
+      "trustedAway": true,
+      "newAuthorization": true,
+      "currentCatalog": true,
+      "restoredPartialEdit": true,
+      "restoredFocus": true,
+      "staleResultsRemoved": true,
+      "automaticReadsAfterResume": 0
+    },
+    "query-handoff-tab-resume": {
+      "origin": "F",
+      "trustedAway": true,
+      "restoredFocus": true,
+      "preservedIntent": true
+    }
+  },
+  "native_browser_zoom": {
+    "browser": "Chrome/158.0.8127.36",
+    "zoomControl": "chrome://settings/appearance#zoomLevel",
+    "phase": "complete",
+    "http": {
+      "csrf": 200,
+      "login": 200,
+      "shell": 200,
+      "national": 200
+    },
+    "network": {
+      "external": 0,
+      "unknownApi": 0,
+      "badStatus": 0,
+      "failed": 0,
+      "cancelled": 0,
+      "consoleErrors": 0,
+      "pageErrors": 0
+    },
+    "localScrollLeft": 8.75,
+    "viewports": {
+      "100": {
+        "innerWidth": 1280,
+        "innerHeight": 713,
+        "documentWidth": 1280,
+        "visualScale": 1,
+        "dpr": 1
+      },
+      "200": {
+        "innerWidth": 640,
+        "innerHeight": 356,
+        "documentWidth": 640,
+        "visualScale": 1,
+        "dpr": 2
+      },
+      "400": {
+        "innerWidth": 320,
+        "innerHeight": 178,
+        "documentWidth": 320,
+        "visualScale": 1,
+        "dpr": 4
+      }
+    }
+  },
+  "browser_performance": {
+    "desktop": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "cacheReuse": {
+        "warmSamplesWithAssetCacheHit": 5
+      },
+      "cold": {
+        "n": 5,
+        "navigationToInteractiveMs": {
+          "n": 5,
+          "p50": 277,
+          "p95": 302
+        },
+        "navigationToChartMs": {
+          "n": 5,
+          "p50": 327.2,
+          "p95": 352
+        },
+        "tableToggleToNextPaintMs": {
+          "n": 5,
+          "p50": 29.2,
+          "p95": 29.6
+        },
+        "assets_transfer_bytes": {
+          "n": 5,
+          "p50": 3541902,
+          "p95": 3541902
+        }
+      },
+      "warm": {
+        "n": 5,
+        "navigationToInteractiveMs": {
+          "n": 5,
+          "p50": 268.1,
+          "p95": 271.9
+        },
+        "navigationToChartMs": {
+          "n": 5,
+          "p50": 334.2,
+          "p95": 338.5
+        },
+        "tableToggleToNextPaintMs": {
+          "n": 5,
+          "p50": 29.2,
+          "p95": 29.5
+        },
+        "assets_transfer_bytes": {
+          "n": 5,
+          "p50": 0,
+          "p95": 0
+        }
+      },
+      "mount_unmount_cycles": 3
+    },
+    "narrow": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "cacheReuse": {
+        "warmSamplesWithAssetCacheHit": 5
+      },
+      "cold": {
+        "n": 5,
+        "navigationToInteractiveMs": {
+          "n": 5,
+          "p50": 273.5,
+          "p95": 278.7
+        },
+        "navigationToChartMs": {
+          "n": 5,
+          "p50": 328.2,
+          "p95": 329.8
+        },
+        "tableToggleToNextPaintMs": {
+          "n": 5,
+          "p50": 29.3,
+          "p95": 29.6
+        },
+        "assets_transfer_bytes": {
+          "n": 5,
+          "p50": 3541902,
+          "p95": 3541902
+        }
+      },
+      "warm": {
+        "n": 5,
+        "navigationToInteractiveMs": {
+          "n": 5,
+          "p50": 268.4,
+          "p95": 270.5
+        },
+        "navigationToChartMs": {
+          "n": 5,
+          "p50": 318.4,
+          "p95": 320.5
+        },
+        "tableToggleToNextPaintMs": {
+          "n": 5,
+          "p50": 29.4,
+          "p95": 29.8
+        },
+        "assets_transfer_bytes": {
+          "n": 5,
+          "p50": 0,
+          "p95": 0
+        }
+      },
+      "mount_unmount_cycles": 3
+    }
+  },
+  "national_profile": {
+    "independent_sessions": 5,
+    "samples": 10,
+    "http_ms_range": [
+      632.67,
+      763.98
+    ],
+    "diagnostics": {
+      "legacy": {
+        "bytes": 457737,
+        "sql_count": 30,
+        "sql_ms": 268.69,
+        "wall_ms": 353.16
+      },
+      "home": {
+        "bytes": 42098,
+        "sql_count": 54,
+        "sql_ms": 59.97,
+        "wall_ms": 140.63
+      },
+      "filtered": {
+        "bytes": 2558,
+        "sql_count": 55,
+        "sql_ms": 42.85,
+        "wall_ms": 85.96
+      }
+    }
+  },
+  "million_key_performance": {
+    "run": "s07-b-49f6047219f8",
+    "source_sha256": "4dabc442a2b61dfe1b8722cc6c26f84b32645dfb5c37dd3e675dba1755975f02",
+    "status": "PASS",
+    "cleanup": true,
+    "independent_sessions": 5,
+    "shapes": {
+      "R1": {
+        "N": 50,
+        "correct": 50,
+        "P50_ms": 175.757901,
+        "P95_ms": 181.118644,
+        "error_rate": 0.0
+      },
+      "R2": {
+        "N": 50,
+        "correct": 50,
+        "P50_ms": 203.533878,
+        "P95_ms": 242.427175,
+        "error_rate": 0.0
+      },
+      "R3": {
+        "N": 50,
+        "correct": 50,
+        "P50_ms": 665.320257,
+        "P95_ms": 756.278529,
+        "error_rate": 0.0
+      },
+      "R4": {
+        "N": 50,
+        "correct": 50,
+        "P50_ms": 1611.79683,
+        "P95_ms": 1737.703383,
+        "error_rate": 0.0
+      }
+    }
+  },
+  "clean_engineering": {
+    "run": "s08-engineering-a2ygbqtl",
+    "browser_snapshot": {
+      "sha256": "433c69dcd6e4fc37e9d27b2a3735fadea5ccc88b41b72b4c641bbdfad8ba4f50",
+      "files": 451,
+      "bytes": 4525573
+    },
+    "engineering_snapshot": {
+      "sha256": "c5a0f1d59b52735b4e16758f65dd33988e383198b663064fde77f5aee121113f",
+      "files": 457,
+      "bytes": 5000923
+    },
+    "same_shell_sha256": true,
+    "status": "PASS",
+    "temporary_copy_cleanup": true,
+    "checks": {
+      "install": {
+        "status": "PASS",
+        "exit": 0,
+        "installed_packages": 304
+      },
+      "typecheck": {
+        "status": "PASS",
+        "exit": 0
+      },
+      "lint": {
+        "status": "PASS",
+        "exit": 0
+      },
+      "unit": {
+        "status": "PASS",
+        "exit": 0,
+        "tests": 57,
+        "passed": 57,
+        "failed": 0
+      },
+      "build": {
+        "status": "PASS",
+        "exit": 0,
+        "chunk_warning_over_500_kb": true
+      }
+    },
+    "dist": {
+      "file_count": 157,
+      "total_bytes": 8055548,
+      "index_sha256": "d1a0d615dd85ab6daf787a93aafd1a289498df3612ef0458b9c6cc64085535a6",
+      "asset_count": 140,
+      "font_count": 105,
+      "license_file_count": 16
+    },
+    "image": {
+      "build": "PASS",
+      "static_check": "PASS",
+      "cleanup": true,
+      "same_dist_bytes": true,
+      "same_static_bytes": true,
+      "collected_asset_count": 140,
+      "license_file_count": 16,
+      "no_sensitive_runtime_env_keys": true,
+      "runtime_source_comparison": {
+        "expected": 337,
+        "actual": 337,
+        "missing": 0,
+        "extra": 0,
+        "mismatched": 0
+      }
+    },
+    "direct_pins": 25,
+    "build_context": {
+      "status": "PASS",
+      "canaries_excluded": 18,
+      "file_count": 425,
+      "positive_inputs_checked": 22,
+      "complete_runtime_files_checked": 337,
+      "complete_frontend_source_and_license_files_checked": 82
+    },
+    "unchanged_production_bundle": {
+      "prior_receipt": "tmp/s08-evidence/s08-engineering-85tiiab8/engineering/rebuild-and-image.json",
+      "restored_browser_snapshot": {
+        "sha256": "a01635a562e1121051eff1836ee73789459d7ef66802629906b11d716c27b20d",
+        "files": 451,
+        "bytes": 4525575
+      },
+      "final_files_compared": 157,
+      "final_dist_matches_prior_rebuild_all_bytes": true,
+      "final_tree_digest": {
+        "sha256": "845369e67502016c59bbd9e23ad4c0e11a151ec13fdfba0507613efec5282f17",
+        "files": 157,
+        "bytes": 8055548
+      }
+    }
+  }
+}

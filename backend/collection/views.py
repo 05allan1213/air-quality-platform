@@ -84,8 +84,12 @@ def recover(request, run_id):
 
 
 @never_cache
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 def job_list(request):
+    if request.method == "POST":
+        from .s08_schedule import schedule_response
+
+        return schedule_response(request, None)
     return workbench(request, s07_admin.list_jobs)
 
 

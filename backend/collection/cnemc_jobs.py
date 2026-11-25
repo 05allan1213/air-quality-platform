@@ -274,26 +274,35 @@ def check_total(job):
             raise Denied("validation_budget_exhausted")
 
 
-def ensure_schedule(job):
+def ensure_schedule(job, *, due=None, replace=None):
     """Under the source lock, reject duplicate clocks and overlapping station request modes."""
-    if not job.next_due_at:
+    if not managed(job) or not (due or job.next_due_at):
         return
+    from django.db.models import Q
+
+    boundary = (due or job.next_due_at).replace(minute=0, second=0, microsecond=0)
     others = (
         Job.objects.filter(
             product__source_id=job.product.source_id,
             profile=PROFILE,
-            enabled=True,
-            next_due_at__isnull=False,
             disposed=False,
         )
-        .exclude(pk=job.pk)
+        .filter(
+            Q(plan_state="legacy", enabled=True, next_due_at__isnull=False)
+            | (Q(plan_state="active") & (Q(effective_until=None) | Q(effective_until__gt=boundary)))
+        )
+        .exclude(pk__in=[job.pk, replace.pk] if replace else [job.pk])
         .select_related("product")
     )
+    if job.effective_until:
+        others = others.exclude(effective_from__gte=job.effective_until)
     for other in others:
         if (
             other.product_id == job.product_id
             and other.city_id == job.city_id
-            and other.cadence_seconds == job.cadence_seconds
+            and (
+                due or other.plan_state == "active" or other.cadence_seconds == job.cadence_seconds
+            )
         ):
             raise Denied("duplicate_schedule")
         if {job.product.code, other.product.code} == {"station-national-hour", "station-city-hour"}:

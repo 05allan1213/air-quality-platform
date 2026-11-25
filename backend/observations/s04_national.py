@@ -5,14 +5,19 @@ from datetime import datetime, timedelta
 from itertools import pairwise
 from zoneinfo import ZoneInfo
 
+from accounts.research_session import SessionCheck
+from accounts.session_generation import SESSION_GENERATION
 from collection.models import WorkWindow
 from django.core.exceptions import EmptyResultSet
 from django.db import connection, transaction
 from django.db.models import Count, F, Max, Window
 from django.db.models.functions import DenseRank
 from django.urls import path
+from django.views.decorators.cache import never_cache
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
-from .models import City, Product
+from .models import City, CityRevision, Product
 from .normalization import (
     LEVELS,
     STANDARD_2012,
@@ -29,7 +34,6 @@ from .s04_http import (
     instant,
     page_size,
     params,
-    read_view,
 )
 from .s04_station import CATALOG, HOUR, HOURLY, synthetic_scope
 from .selection import TICK, ReadContext, Visibility
@@ -51,9 +55,14 @@ class Selection:
     name: str | None
     geography: str | None
     size: int
+    home: bool = False
+    grade: int | None = None
+    rank_preview: str = "aqi_desc"
+    focus_city: int | None = None
+    map_limit: int | None = None
 
     def conditions(self):
-        return {
+        conditions = {
             "product": self.product_id,
             "scope": "synthetic" if self.synthetic else None,
             "at": self.at,
@@ -65,9 +74,15 @@ class Selection:
             "geography": self.geography,
             "page_size": self.size,
         }
+        if self.home:
+            conditions["home"] = 1
+        if self.grade is not None:
+            conditions["grade"] = self.grade
+        return conditions
 
 
 def _selection(query):
+    home_keys = {"rank_preview", "focus_city", "map_limit"}
     values = params(
         query,
         {
@@ -82,8 +97,14 @@ def _selection(query):
             "geography",
             "page_size",
             "cursor",
-        },
+            "home",
+            "grade",
+        }
+        | home_keys,
     )
+    home = values.get("home") == "1"
+    if ("home" in values and not home) or (not home and home_keys.intersection(values)):
+        raise Denied("invalid_request")
     synthetic = synthetic_scope(values)
     order = values.get("order", "city")
     standard = values.get("standard_series")
@@ -91,11 +112,22 @@ def _selection(query):
     at = instant(values["at"]) if "at" in values else None
     as_of = instant(values["as_of"]) if "as_of" in values else None
     name, geography = values.get("q"), values.get("geography")
+    grade = pk(values["grade"]) if "grade" in values else None
+    rank_preview = values.get("rank_preview", "aqi_desc")
+    focus_city = pk(values["focus_city"]) if "focus_city" in values else None
+    map_limit = pk(values["map_limit"]) if "map_limit" in values else None
     if (
-        order not in ("city", "aqi_desc")
+        order not in ("city", "aqi_desc", "aqi_asc")
         or standard not in (None, UNKNOWN_STANDARD, *KNOWN)
-        or order == "aqi_desc"
+        or order in ("aqi_desc", "aqi_asc")
         and standard not in KNOWN
+        or grade is not None
+        and (grade not in range(1, 7) or standard not in KNOWN)
+        or rank_preview not in ("aqi_desc", "aqi_asc")
+        or "rank_preview" in values
+        and standard not in KNOWN
+        or map_limit is not None
+        and map_limit not in range(1, 401)
         or window not in HOURLY_WINDOWS
         or at is not None
         and as_of is not None
@@ -128,6 +160,11 @@ def _selection(query):
             name.strip() if name else None,
             geography.strip() if geography else None,
             size,
+            home,
+            grade,
+            rank_preview,
+            focus_city,
+            map_limit,
         ),
         values.get("cursor"),
     )
@@ -144,6 +181,10 @@ def _hour_rows(scope, selection):
 
 def _city_ids(rows):
     return rows.order_by().values("key__city_id")
+
+
+def _city_id_set(rows):
+    return set(rows.order_by().values_list("key__city_id", flat=True))
 
 
 def _empty_domain_permitted(ctx, product, *, end, start=None, summary=False):
@@ -164,10 +205,17 @@ def _empty_domain_permitted(ctx, product, *, end, start=None, summary=False):
     )
 
 
-def _matching_catalog(catalog, selection):
-    cities = City.objects.filter(pk__in={segment.entity_id for segment in catalog.segments})
+def _matching_catalog(catalog, selection, product):
+    cities = City.objects.filter(
+        pk__in={segment.entity_id for segment in catalog.segments}, source_id=product.source_id
+    )
     if selection.name:
-        cities = cities.filter(name__icontains=selection.name)
+        if selection.home:
+            from .city_search_alias import match_city_names
+
+            cities = match_city_names(cities, product, selection.name, catalog)
+        else:
+            cities = cities.filter(name__icontains=selection.name)
     if selection.geography:
         cities = cities.filter(geography=selection.geography)
     matched = set(cities.values_list("pk", flat=True))
@@ -184,9 +232,11 @@ def _rankable(eligible):
 
 
 def _summary(visible, eligible, rankable, selection):
-    eligible_cities = _city_ids(eligible).distinct()
-    coverage_complete = not visible.exclude(key__city_id__in=eligible_cities).exists()
-    eligible_count = eligible_cities.count()
+    # eligible is restricted to revision IDs in visible. Equal distinct city
+    # counts therefore prove full coverage without a nested anti-join over the
+    # authorized intervals. The uncovered city's count stays private.
+    eligible_count = _city_ids(eligible).distinct().count()
+    coverage_complete = _city_ids(visible).distinct().count() == eligible_count
     groups = {}
     if selection.standard in KNOWN:
         groups[selection.standard] = {"ranked_city_count": 0, "distribution": {}}
@@ -210,13 +260,14 @@ def _summary(visible, eligible, rankable, selection):
     }
 
 
-def _rank_rows(rankable, *, cities=None, last=None, size=None):
+def _rank_rows(rankable, *, cities=None, last=None, size=None, direction="aqi_desc"):
     # The outer predicates must not change the rows seen by DENSE_RANK.
+    value_order = F("value").asc() if direction == "aqi_asc" else F("value").desc()
     queryset = (
         rankable.order_by()
         .annotate(
             position=Window(
-                DenseRank(), partition_by=F("key__standard_series"), order_by=F("value").desc()
+                DenseRank(), partition_by=F("key__standard_series"), order_by=value_order
             )
         )
         .values_list("pk", "key__city_id", "value", "position")
@@ -231,10 +282,12 @@ def _rank_rows(rankable, *, cities=None, last=None, size=None):
         query += " WHERE city = ANY(%s)"
         binds = (*binds, cities)
     elif last is not None:
-        query += " WHERE aqi < %s OR (aqi = %s AND city > %s)"
+        comparison = ">" if direction == "aqi_asc" else "<"
+        query += f" WHERE aqi {comparison} %s OR (aqi = %s AND city > %s)"
         binds = (*binds, last.value, last.value, last.key.city_id)
     if size is not None:
-        query += " ORDER BY aqi DESC, city ASC LIMIT %s"
+        order = "ASC" if direction == "aqi_asc" else "DESC"
+        query += f" ORDER BY aqi {order}, city ASC LIMIT %s"
         binds = (*binds, size + 1)
     with connection.cursor() as cursor:
         cursor.execute(query, binds)
@@ -247,11 +300,11 @@ def _rank_digest(row):
 
 def _page(visible, rankable, selection, after):
     last_city = after["city"] if after else None
-    if selection.order == "aqi_desc":
+    if selection.order in ("aqi_desc", "aqi_asc"):
         last = rankable.filter(key__city_id=last_city).first() if after else None
         if after and (last is None or _rank_digest(last) != after.get("rank_digest")):
             raise Denied("page_changed")
-        ranked = _rank_rows(rankable, last=last, size=selection.size)
+        ranked = _rank_rows(rankable, last=last, size=selection.size, direction=selection.order)
         cities = [city for _, city, _, _ in ranked]
         return (
             cities[: selection.size],
@@ -267,13 +320,23 @@ def _page(visible, rankable, selection, after):
         .distinct()[: selection.size + 1]
     )
     current = cities[: selection.size]
-    ranked = _rank_rows(rankable, cities=current) if current and rankable is not None else []
+    direction = selection.order if selection.order in ("aqi_desc", "aqi_asc") else "aqi_desc"
+    ranked = (
+        _rank_rows(rankable, cities=current, direction=direction)
+        if current and rankable is not None
+        else []
+    )
     return current, {rid: pos for rid, _, _, pos in ranked}, len(cities) > selection.size
 
 
 def _roster(ctx, product, selection, anchor, catalog, summary, visible):
     """Use an independently recorded exact L roster only when its inputs can be disclosed."""
-    if anchor is None or summary["covered_city_count"] is None or selection.window != HOURLY:
+    if (
+        anchor is None
+        or summary["covered_city_count"] is None
+        or selection.window != HOURLY
+        or selection.grade is not None
+    ):
         return
     windows = list(
         WorkWindow.objects.filter(
@@ -322,7 +385,12 @@ def _roster(ctx, product, selection, anchor, catalog, summary, visible):
         return
     directory = City.objects.filter(pk__in=members, source_id=product.source_id)
     if selection.name:
-        directory = directory.filter(name__icontains=selection.name)
+        if selection.home:
+            from .city_search_alias import match_city_names
+
+            directory = match_city_names(directory, product, selection.name, catalog)
+        else:
+            directory = directory.filter(name__icontains=selection.name)
     if selection.geography:
         directory = directory.filter(geography=selection.geography)
     roster = directory.values("pk")
@@ -334,7 +402,9 @@ def _roster(ctx, product, selection, anchor, catalog, summary, visible):
     )
 
 
-def _project_page(ctx, product, anchor, selection, visible, catalog_rows, cities, ranks):
+def _project_page(
+    ctx, product, anchor, selection, visible, catalog_rows, cities, ranks, *, trend_links=True
+):
     if not cities:
         return [], None
     aqi_rows = list(
@@ -347,7 +417,11 @@ def _project_page(ctx, product, anchor, selection, visible, catalog_rows, cities
     }
     link_map = city_navigation(
         ctx,
-        (sibling for sibling in ctx.products.values() if sibling.pk != product.pk),
+        (
+            sibling
+            for sibling in ctx.products.values()
+            if sibling.pk != product.pk and (trend_links or sibling.shape != "T")
+        ),
         City.objects.filter(pk__in=cities).only("source_id"),
         anchor,
     )
@@ -382,11 +456,84 @@ def _project_page(ctx, product, anchor, selection, visible, catalog_rows, cities
     return list(display.values()), last
 
 
-@transaction.atomic
-def read_national(user_id, query):
+def _city_labels(product, catalog_rows, cities):
+    if not cities:
+        return {}
+    return {
+        city_id: {"name": name, "geography": geography}
+        for city_id, name, geography in City.objects.filter(
+            pk__in=set(cities) & _city_id_set(catalog_rows), source_id=product.source_id
+        ).values_list("pk", "name", "geography")
+    }
+
+
+def _home_digest(ctx, product, anchor, selection, visible, catalog_rows, rankable, summary):
+    projected = visible if selection.order == "city" else rankable
+    ids = sorted(_city_id_set(projected))
+    rows, _ = _project_page(
+        ctx, product, anchor, selection, visible, catalog_rows, ids, {}, trend_links=False
+    )
+    # Exclude independently evaluated source status and T links; they do not
+    # change the stable L relation or its page boundaries.
+    volatile = {
+        "age_seconds",
+        "evaluated_at",
+        "freshness",
+        "source_status",
+        "source_event",
+        "source_event_at",
+        "source_status_until",
+        "execution_started_at",
+    }
+    for row in rows:
+        for value in row["series"] + row["levels"]:
+            for key in volatile:
+                value.pop(key, None)
+    # The aggregate also fixes ranks when only some visible rows may be ranked.
+    eligible = (
+        list(rankable.order_by("pk").values_list("pk", flat=True)) if rankable is not None else []
+    )
+    return fingerprint({"rows": rows, "eligible": eligible, "summary": summary})
+
+
+def _rank_preview(ctx, product, catalog_rows, rankable, selection):
+    if rankable is None or selection.standard not in KNOWN:
+        return {"state": "unavailable", "rows": []}
+    series = rankable.filter(key__standard_series=selection.standard)
+    ranked = _rank_rows(series, size=5, direction=selection.rank_preview)
+    if not ranked:
+        return {"state": "ok", "rows": []}
+    ranked = ranked[:5]
+    revision_ids = [revision for revision, _, _, _ in ranked]
+    revisions = {
+        row.pk: row
+        for row in CityRevision.objects.select_related("key").filter(pk__in=revision_ids)
+    }
+    cities = [city for _, city, _, _ in ranked]
+    labels = _city_labels(product, catalog_rows, cities)
+    projected = {row["revision"]: row for row in ctx.project(product, list(revisions.values()))}
+    return {
+        "state": "ok",
+        "rows": [
+            {
+                "city": city,
+                "name": labels.get(city, {}).get("name"),
+                "geography": labels.get(city, {}).get("geography"),
+                "aqi": projected[revision_id]["value"],
+                "grade": projected[revision_id]["grade"],
+                "rank": position,
+            }
+            for revision_id, city, _value, position in ranked
+        ],
+    }
+
+
+def _read_national(user_id, query, session_binding=None):
     product, selection, token = _selection(query)
     conditions = selection.conditions()
-    after = decode_cursor(token, ROUTE, user_id, conditions)
+    route = ROUTE + "-home" if selection.home else ROUTE
+    binding = [user_id, session_binding] if selection.home else user_id
+    after = decode_cursor(token, route, binding, conditions)
     sibling_ids = Product.objects.filter(
         source_id=product.source_id, synthetic=product.synthetic, shape__in=("C", "T", "S", "H")
     ).values_list("pk", flat=True)
@@ -413,15 +560,22 @@ def read_national(user_id, query):
 
     catalog = ctx.scope(product, AQI, window=selection.window, fields=CATALOG, **bounds)
     filtered = bool(selection.name or selection.geography)
-    requested_catalog = _matching_catalog(catalog, selection) if filtered else catalog
+    requested_catalog = _matching_catalog(catalog, selection, product) if filtered else catalog
     visible = _hour_rows(base, selection) if anchor else _hour_rows(base, selection).none()
     # Bind directory eligibility to the same visible revision. A different source code
     # attached to the city must not make a hidden AQI row participate in name filtering.
-    catalog_rows = _hour_rows(requested_catalog, selection).filter(
-        pk__in=visible.order_by().values("pk")
+    # Inside this locked product snapshot every scope uses the same identity,
+    # grant-date cuts and instant. Intersect the *whole* segments (including
+    # the code and dates) before asking PostgreSQL for their revision keys.
+    base_segments = set(base.segments)
+    readable_catalog = Visibility(
+        product, [segment for segment in requested_catalog.segments if segment in base_segments]
     )
+    catalog_rows = _hour_rows(readable_catalog, selection)
+    if anchor is None:
+        catalog_rows = catalog_rows.none()
     if filtered:
-        visible = visible.filter(key__city_id__in=_city_ids(catalog_rows))
+        visible = visible.filter(key__city_id__in=_city_id_set(catalog_rows))
     # Authorize the filtered directory scope independently of current observations,
     # so a permitted city with no row can still yield an authorized empty ranking.
     ids = {s.entity_id for s in requested_catalog.segments} if filtered else None
@@ -432,18 +586,33 @@ def read_national(user_id, query):
     summary_permitted = summary_scope.permitted or _empty_domain_permitted(
         ctx, product, summary=True, **bounds
     )
-    if not summary_permitted and selection.order == "aqi_desc":
+    if not summary_permitted and (
+        selection.order in ("aqi_desc", "aqi_asc") or selection.grade is not None
+    ):
         raise Denied()
 
     rankable = None
     summary = {"state": "unavailable"}
     if summary_permitted:
-        eligible = _hour_rows(summary_scope, selection).filter(
-            pk__in=visible.order_by().values("pk")
-        )
+        # Summary segments require the base observation fields as well as
+        # aggregation rights. With a name filter they also carry catalog rights
+        # for that same code. Every eligible revision is therefore visible.
+        eligible = _hour_rows(summary_scope, selection)
+        if anchor is None:
+            eligible = eligible.none()
         rankable = _rankable(eligible)
+        if selection.grade is not None:
+            rankable = rankable.filter(provenance__grade=selection.grade)
+            visible = eligible = rankable
         summary = _summary(visible, eligible, rankable, selection)
         _roster(ctx, product, selection, anchor, catalog, summary, visible)
+    projection_digest = None
+    if selection.home:
+        projection_digest = _home_digest(
+            ctx, product, anchor, selection, visible, catalog_rows, rankable, summary
+        )
+        if after and after.get("projection_digest") != projection_digest:
+            raise Denied("page_changed")
     cities, ranks, more = _page(visible, rankable, selection, after)
     results, last = _project_page(
         ctx, product, anchor, selection, visible, catalog_rows, cities, ranks
@@ -451,11 +620,49 @@ def read_national(user_id, query):
     next_cursor = None
     if more:
         tail = {"city": cities[-1], "snapshot_at": anchor.isoformat()}
-        if selection.order == "aqi_desc":
+        if selection.order in ("aqi_desc", "aqi_asc"):
             tail["rank_digest"] = _rank_digest(last)
-        next_cursor = encode_cursor(ROUTE, user_id, conditions, tail)
+        if selection.home:
+            tail["projection_digest"] = projection_digest
+        next_cursor = encode_cursor(route, binding, conditions, tail)
+
+    ranking = None
+    focused = None
+    map_projection = None
+    if selection.home:
+        ranking = (
+            _rank_preview(ctx, product, catalog_rows, rankable, selection)
+            if summary_permitted
+            else {"state": "unavailable", "rows": []}
+        )
+        if selection.focus_city is not None:
+            focusable = visible if selection.order == "city" else rankable
+            if focusable.filter(key__city_id=selection.focus_city).exists():
+                focus_ranks = {}
+                if rankable is not None:
+                    direction = "aqi_asc" if selection.order == "aqi_asc" else "aqi_desc"
+                    ranked_focus = _rank_rows(
+                        rankable,
+                        cities=[selection.focus_city],
+                        direction=direction,
+                    )
+                    focus_ranks = {revision: rank for revision, _, _, rank in ranked_focus}
+                focused_rows, _ = _project_page(
+                    ctx,
+                    product,
+                    anchor,
+                    selection,
+                    visible,
+                    catalog_rows,
+                    [selection.focus_city],
+                    focus_ranks,
+                )
+                focused = focused_rows[0] if focused_rows else None
+        if selection.map_limit is not None:
+            # The repository has no verified, distributable national geometry yet.
+            map_projection = {"state": "unavailable", "items": [], "has_more": False}
     ctx.finish()
-    return {
+    result = {
         "selection": conditions | {"source": product.source.namespace},
         "synthetic": product.synthetic,
         "snapshot_at": anchor,
@@ -465,6 +672,55 @@ def read_national(user_id, query):
         "results": results,
         "page": {"page_size": selection.size, "next_cursor": next_cursor},
     }
+    if selection.home:
+        result["ranking"] = ranking
+        result["focused"] = focused
+        if map_projection is not None:
+            result["map"] = map_projection
+    return result, ctx
 
 
-urlpatterns = [path("overview/national/", read_view(read_national))]
+def read_national(user_id, query, request=None):
+    raw_home = (
+        query.getlist("home") == ["1"] if hasattr(query, "getlist") else query.get("home") == "1"
+    )
+    if not raw_home:
+        with transaction.atomic():
+            result, _ = _read_national(user_id, query)
+            return result
+
+    session_binding = None
+    if request is not None:
+        with transaction.atomic():
+            SessionCheck(request)
+        session_binding = [request.session.session_key, request.session.get(SESSION_GENERATION, 0)]
+    with transaction.atomic():
+        with connection.cursor() as cursor:
+            cursor.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+        result, snapshot = _read_national(user_id, query, session_binding)
+    # This new READ COMMITTED transaction sees rights and Session changes that
+    # happened while the response projection was being assembled.
+    with transaction.atomic():
+        current = ReadContext(user_id, snapshot.products, result["synthetic"])
+        now = SessionCheck(request).now if request is not None else current.now
+        if any(current._decide(key, now) != basis for key, basis in snapshot._checks.items()):
+            raise Denied()
+    return result
+
+
+@never_cache
+@api_view(["GET"])
+def national_overview(request):
+    try:
+        return Response(read_national(request.user.pk, request.query_params, request))
+    except Denied as exc:
+        status = {
+            "not_authenticated": 403,
+            "use_denied": 403,
+            "permission_denied": 403,
+            "page_changed": 409,
+        }.get(exc.code, 400)
+        return Response({"code": exc.code}, status=status)
+
+
+urlpatterns = [path("overview/national/", national_overview)]

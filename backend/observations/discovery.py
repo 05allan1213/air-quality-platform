@@ -4,11 +4,11 @@ from datetime import timedelta
 from zoneinfo import ZoneInfo
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Case, Q, When
 from django.urls import path
 
 from .models import Product, UseGrant
-from .normalization import INDICATORS, WINDOWS
+from .normalization import INDICATORS, STANDARD_2012, STANDARD_2026, WINDOWS
 from .policy import Denied, Scope
 from .queries import pk
 from .revisions import tables
@@ -70,16 +70,23 @@ def candidates(ctx, product, at, lower, limit):
         else:
             revisions = visibility.revisions().filter(key__observed_at_utc__lte=at)
             stamp_field = "key__observed_at_utc"
+        # Only AQI can anchor a national snapshot. At the same observed instant,
+        # prefer a readable AQI over a pollutant grade before breaking ties by key.
+        tie = [Case(When(key__indicator="AQI", then=0), default=1)] if product.shape == "L" else []
         found = (
             revisions.filter(key__window_definition=window, **{ref + "__gte": lower})
             .select_related("key__" + entity)
-            .order_by(ref, "-" + stamp_field, "-key_id")
+            .order_by(ref, "-" + stamp_field, *tie, "-key_id")
             .distinct(ref)[:limit]
         )
         for revision in found:
             key = revision.key
             identity = getattr(key, entity + "_id")
-            order = (key.observed_at_utc or key.local_report_date, key.pk)
+            order = (
+                key.observed_at_utc or key.local_report_date,
+                product.shape == "L" and key.indicator == "AQI",
+                key.pk,
+            )
             if identity not in selected or order > selected[identity][0]:
                 selected[identity] = order, key
     return [selected[i][1] for i in sorted(selected)[:limit]]
@@ -124,8 +131,23 @@ def entry(ctx, product, key):
             href = observation_link(f"cities/{obj.pk}", product, at=stamp.isoformat())
         elif product.shape == "T":
             href = observation_link(f"cities/{obj.pk}/trend", product, anchor=stamp.isoformat())
+        elif key.indicator != "AQI":
+            # A city may expose only a grade, or its latest grade may be newer
+            # than AQI. Link to the authorized observation at its actual window.
+            href = history
         else:
-            href = observation_link("overview/national", product, at=stamp.isoformat())
+            series = (
+                {"standard_series": key.standard_series}
+                if key.standard_series in (STANDARD_2012, STANDARD_2026)
+                else {}
+            )
+            href = observation_link(
+                "overview/national",
+                product,
+                at=stamp.isoformat(),
+                window_definition=key.window_definition,
+                **series,
+            )
     return {
         "product": product.pk,
         "shape": product.shape,

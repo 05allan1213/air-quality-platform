@@ -1,0 +1,24 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h1>城市检索别名</h1>
+{% if targets %}
+<table>
+  <thead>
+    <tr><th scope="col">产品 ID</th><th scope="col">城市</th><th scope="col">行政区划</th></tr>
+  </thead>
+  <tbody>
+  {% for target in targets %}
+    <tr>
+      <td>{{ target.product_id }}</td>
+      <td><a href="{% url 'admin:city_search_alias' target.product_id target.city_id %}">{{ target.city_name }}</a></td>
+      <td>{{ target.geography }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if next_cursor %}<p><a rel="next" href="?cursor={{ next_cursor|urlencode }}">下一页</a></p>{% endif %}
+{% else %}
+<p>没有获准维护的城市。</p>
+{% endif %}
+{% endblock %}

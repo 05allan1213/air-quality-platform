@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "城市空气质量监测数据分析平台 API",
-    "version": "v1-s07-candidate",
-    "description": "S07 同源后端契约候选。GET 的正式域通常省略 scope，部分管理端显式接收 formal。F 用 synthetic。受保护操作使用 Django Session，变更操作还需当前 CSRF Cookie 与 X-CSRFToken。两类 Cookie 的 Secure 取 COOKIE_SECURE。sessionid 为 HttpOnly、SameSite=Lax，Session 有效期 8 小时。登录后重新获取 token。请求 JSON 上限 16 KiB。URL 保留末尾斜杠。"
+    "version": "v1-s08-candidate",
+    "description": "S07 冻结同源 API 的 S08 向后兼容增量候选。S07 标签和历史 V12 收据保持不变。GET 的正式域通常省略 scope，部分管理端显式接收 formal。F 用 synthetic。受保护操作使用 Django Session，变更操作还需当前 CSRF Cookie 与 X-CSRFToken。两类 Cookie 的 Secure 取 COOKIE_SECURE。sessionid 为 HttpOnly、SameSite=Lax，Session 有效期 8 小时。登录后重新获取 token。请求 JSON 上限 16 KiB。URL 保留末尾斜杠。"
   },
   "paths": {
     "/api/v1/auth/csrf/": {
@@ -342,6 +342,88 @@
         }
       }
     },
+    "/api/v1/me/capabilities/": {
+      "get": {
+        "operationId": "readCapabilities",
+        "summary": "读取本人工作区能力",
+        "description": "按当前有效 Session、具名权限和 staff 状态投影可进入的工作区及动作；不替代目标、对象或来源用途授权。无查询参数。响应私有且不得缓存。",
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "当前会话的工作区与具名动作投影。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "workspaces": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": ["user", "manage"]
+                      },
+                      "uniqueItems": true,
+                      "minItems": 1,
+                      "maxItems": 2
+                    },
+                    "actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "run_collection",
+                          "manage_collection",
+                          "configure_collection_schedule",
+                          "review_observation",
+                          "adjudicate_quality",
+                          "manage_catalog",
+                          "import_history",
+                          "diagnose_operations",
+                          "manage_grants",
+                          "manage_accounts",
+                          "maintain_city_search_alias"
+                        ]
+                      },
+                      "uniqueItems": true
+                    }
+                  },
+                  "required": ["workspaces", "actions"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest2"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccessDenied2"
+          },
+          "405": {
+            "$ref": "#/components/responses/WrongMethod2"
+          },
+          "406": {
+            "$ref": "#/components/responses/UnacceptableMedia"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedHtml"
+          }
+        }
+      }
+    },
     "/api/v1/me/": {
       "get": {
         "operationId": "readProfile",
@@ -518,11 +600,11 @@
         }
       }
     },
-    "/api/v1/overview/national/": {
+    "/api/v1/catalog/series/": {
       "get": {
-        "operationId": "readNational",
-        "summary": "同一来源观测时刻的 L 城市列表",
-        "description": "需要本人有效 Session，按产品、对象、期间及字段核对数据使用权。 at 与 as_of 互斥。aqi_desc 需要确认 AQI 系列和排名权。污染物等级按等级呈现。 分页及顺序。默认 50，最多 100，筛选并鉴权后按稳定顺序分页。 默认 city ID 升序。aqi_desc 按 AQI 降序及城市键消歧。",
+        "operationId": "discoverResearchSeries",
+        "summary": "发现当前用途可选的研究数据系列",
+        "description": "按一个研究方法、产品、对象和最长 30 天半开窗口列出获准的本地日期片段。需要 retained normalized data 与 analysis 权；目录名称和原始读权限不由此授予。正式域默认；F 显式使用 scope=synthetic。结果按稳定的产品、对象、指标、窗口、标准和许可片段起点分页，游标最多有效一小时。读取结束复核 Session 与授权。",
         "security": [
           {
             "Session": []
@@ -530,7 +612,146 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/QueryProduct2"
+            "name": "purpose",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "const": "analysis" }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "enum": ["statistics", "compare", "pearson"] }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "带偏移时间；窗口为半开区间。"
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "$ref": "#/components/parameters/QueryScope"
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1, "maximum": 9223372036854775807 }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1, "maximum": 9223372036854775807 }
+          },
+          {
+            "name": "site_epoch",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1, "maximum": 9223372036854775807 },
+            "description": "city 与 site_epoch 互斥。"
+          },
+          {
+            "name": "indicator",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["AQI", "PM2.5", "PM10", "SO2", "NO2", "CO", "O3"] }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 25 }
+          },
+          {
+            "$ref": "#/components/parameters/QueryCursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "当前用途授权下的数据系列选项。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "source": { "type": "string" },
+                          "product": { "type": "integer", "format": "int64", "minimum": 1 },
+                          "shape": { "type": "string", "enum": ["C", "S", "H"] },
+                          "city": { "type": "integer", "format": "int64", "minimum": 1 },
+                          "site_epoch": { "type": "integer", "format": "int64", "minimum": 1 },
+                          "indicator": { "type": "string", "enum": ["AQI", "PM2.5", "PM10", "SO2", "NO2", "CO", "O3"] },
+                          "unit": { "type": "string" },
+                          "report_kind": { "type": "string" },
+                          "window_definition": { "type": "string" },
+                          "standard_series": { "type": "string" },
+                          "source_timezone": { "type": "string" },
+                          "permitted_from": { "type": "string", "format": "date-time" },
+                          "permitted_until": { "type": "string", "format": "date-time" }
+                        },
+                        "required": ["source", "product", "shape", "indicator", "unit", "report_kind", "window_definition", "standard_series", "source_timezone", "permitted_from", "permitted_until"],
+                        "additionalProperties": false,
+                        "description": "city 或 site_epoch 恰有一个，按 shape 对应。"
+                      }
+                    },
+                    "page": {
+                      "type": "object",
+                      "properties": {
+                        "page_size": { "type": "integer", "minimum": 1, "maximum": 50 },
+                        "next_cursor": { "type": ["string", "null"], "maxLength": 2048 }
+                      },
+                      "required": ["page_size", "next_cursor"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": ["results", "page"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": { "$ref": "#/components/headers/NoStore" }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest2" },
+          "403": { "$ref": "#/components/responses/AccessDenied2" },
+          "405": { "$ref": "#/components/responses/WrongMethod2" },
+          "406": { "$ref": "#/components/responses/UnacceptableMedia" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "503": { "$ref": "#/components/responses/DatabaseUnavailable" },
+          "500": { "$ref": "#/components/responses/UnexpectedHtml" }
+        }
+      }
+    },
+    "/api/v1/overview/national/": {
+      "get": {
+        "operationId": "readNational",
+        "summary": "同一来源观测时刻的 L 城市列表",
+        "description": "需要有效 Session。先确定同一获权 L 快照，再筛选、排序和分页。at 与 as_of 互斥；at 必须是源地方整点。正式域省略 product 时查询 cnemc/city-list-hour；scope=synthetic 时 product 必填。AQI 排序、grade 和显式 rank_preview 要求已知 standard_series；AQI 排序或 grade 缺汇总许可时返回 403，而普通城市序可返回列表及不可用的汇总或榜。rank_preview、focus_city、map_limit 仅用于 home=1。首页游标另绑定 Session，不可与旧请求互换。污染物 *Level 为等级，不是浓度。",
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "description": "L 产品 ID；正式域可省略，F 请求必填。",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 9223372036854775807 }
           },
           {
             "$ref": "#/components/parameters/QueryScope"
@@ -553,10 +774,7 @@
               "enum": [
                 "hourly_label_unspecified",
                 "hourly_left_label",
-                "hourly_right_label",
-                "rolling_8h_right_label",
-                "rolling_24h_right_label",
-                "local_daily"
+                "hourly_right_label"
               ],
               "default": "hourly_label_unspecified"
             }
@@ -565,14 +783,51 @@
             "name": "order",
             "in": "query",
             "required": false,
+            "description": "只控制表格顺序。city 按城市 ID 升序；AQI 顺序同值以城市 ID 消歧。",
             "schema": {
               "type": "string",
               "enum": [
                 "city",
-                "aqi_desc"
+                "aqi_desc",
+                "aqi_asc"
               ],
               "default": "city"
             }
+          },
+          {
+            "name": "grade",
+            "in": "query",
+            "required": false,
+            "description": "按已核 AQI 标准的单个等级筛选；在分页前生效。",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 6 }
+          },
+          {
+            "name": "home",
+            "in": "query",
+            "required": false,
+            "description": "传 1 启用同一快照的首页投影；省略时保留旧响应。",
+            "schema": { "type": "integer", "const": 1 }
+          },
+          {
+            "name": "rank_preview",
+            "in": "query",
+            "required": false,
+            "description": "仅用于 home=1。须明确已知标准；取同刻获权的高值或低值前五城，不改变表格排序。",
+            "schema": { "type": "string", "enum": ["aqi_desc", "aqi_asc"], "default": "aqi_desc" }
+          },
+          {
+            "name": "focus_city",
+            "in": "query",
+            "required": false,
+            "description": "仅用于 home=1。可定位当前筛选和排序下任一获权城市，不受页界限制。",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 9223372036854775807 }
+          },
+          {
+            "name": "map_limit",
+            "in": "query",
+            "required": false,
+            "description": "仅用于 home=1。请求地图投影；当前无获准地理映射，始终返回不可用且无点位。",
+            "schema": { "type": "integer", "minimum": 1, "maximum": 400 }
           },
           {
             "name": "q",
@@ -601,7 +856,7 @@
         ],
         "responses": {
           "200": {
-            "description": "当前授权下的结果或回执。",
+            "description": "同一授权快照下的列表，或请求 home=1 时的首页投影。",
             "content": {
               "application/json": {
                 "schema": {
@@ -3443,6 +3698,431 @@
             "$ref": "#/components/responses/UnexpectedHtml"
           }
         }
+      },
+      "post": {
+        "operationId": "createCollectionScheduleDraft",
+        "summary": "按已批准模板建立停用草稿",
+        "description": "需要 observations.configure_collection_schedule。此操作只创建 disabled 草稿，不发起采集；来源用途、窗口、配额和执行者仍由服务端复核。request_id 用于幂等查账。",
+        "security": [
+          {
+            "Session": [],
+            "CsrfCookie": [],
+            "CsrfHeader": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "草稿及提交回执。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S08ScheduleReceipt"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest2"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccessDenied2"
+          },
+          "405": {
+            "$ref": "#/components/responses/WrongMethod2"
+          },
+          "406": {
+            "$ref": "#/components/responses/UnacceptableMedia"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMedia"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited2"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedHtml"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/S08CreateScheduleDraft"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/catalog/products/": {
+      "get": {
+        "operationId": "listManagementProducts",
+        "summary": "发现获准管理工作台目标",
+        "description": "purpose=configure 需要 observations.configure_collection_schedule，并保持原模板 DTO；execute 需要 observations.run_collection，reason=review 再需 observations.review_observation；ledger/quality 需要 observations.review_observation；operations 还需 accounts.diagnose_operations。execute 使用带时区的整点 target 和 reason，仅 ledger、quality 和 operations 使用源地方日期 [start,end)，最多 30 天。仅返回当前获准产品/目标，游标绑定用户、域、条件和页长。",
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "configure",
+                "execute",
+                "ledger",
+                "quality",
+                "operations"
+              ]
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryScope2"
+          },
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 25
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryCursor"
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "execute 必需：带时区的 UTC 整点。"
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "review",
+                "backfill"
+              ]
+            },
+            "description": "execute 必需。"
+          },
+          {
+            "$ref": "#/components/parameters/QueryStart"
+          },
+          {
+            "$ref": "#/components/parameters/QueryEnd"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "configure 返回原模板目录；execute 返回获准运行目标；ledger/quality/operations 返回获准产品与同源工作台链接。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManagementCatalogPage"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidManagementCatalogRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccessDenied2"
+          },
+          "405": {
+            "$ref": "#/components/responses/WrongMethod2"
+          },
+          "406": {
+            "$ref": "#/components/responses/UnacceptableMedia"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited2"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedHtml"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/command-receipts/lookup/": {
+      "post": {
+        "operationId": "lookupSelfCommandReceipt",
+        "summary": "核对本人已提交的命令",
+        "description": "提交原操作的 family、原入口 target 与包含原 request_id 的完整 command，按当前 Session、具名权限和目标范围查询已提交记录。redeliver 的 target 是 Run UUID，其他是正 int64。缺少可披露回执统一返回 404。",
+        "security": [
+          {
+            "Session": [],
+            "CsrfCookie": [],
+            "CsrfHeader": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "本人已提交命令的最小回执。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SelfReceipt"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest2"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccessDenied2"
+          },
+          "405": {
+            "$ref": "#/components/responses/WrongMethod2"
+          },
+          "406": {
+            "$ref": "#/components/responses/UnacceptableMedia"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMedia"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited2"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedHtml"
+          },
+          "404": {
+            "$ref": "#/components/responses/PrivateNotFound"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelfReceiptRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/object-audit/": {
+      "get": {
+        "operationId": "readObjectAudit",
+        "summary": "读取单一对象的获权操作审计",
+        "description": "需要当前会话及目标所需的具名权限，只返回在指定时间窗和当前授权内可披露的记录。Run 的 id 使用 UUID，其余 kind 使用正 int64。范围为带时区的半开区间，最长 30 天。游标绑定主体、对象和范围。与采集管理工作台共用逐用户限流。",
+        "security": [{"Session": []}],
+        "parameters": [
+          {"name": "kind", "in": "query", "required": true, "schema": {"type": "string", "enum": ["job", "run", "quality_issue", "station", "grant"]}},
+          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 36}},
+          {"name": "start", "in": "query", "required": true, "schema": {"type": "string", "format": "date-time"}},
+          {"name": "end", "in": "query", "required": true, "schema": {"type": "string", "format": "date-time"}},
+          {"name": "page_size", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 50, "default": 25}},
+          {"$ref": "#/components/parameters/QueryCursor"}
+        ],
+        "responses": {
+          "200": {
+            "description": "当前授权下的审计记录页。",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/S08ObjectAuditPage"}}},
+            "headers": {"Cache-Control": {"$ref": "#/components/headers/NoStore"}}
+          },
+          "400": {"$ref": "#/components/responses/InvalidRequest2"},
+          "403": {"$ref": "#/components/responses/AccessDenied2"},
+          "405": {"$ref": "#/components/responses/WrongMethod2"},
+          "406": {"$ref": "#/components/responses/UnacceptableMedia"},
+          "429": {"$ref": "#/components/responses/RateLimited2"},
+          "503": {"$ref": "#/components/responses/DatabaseUnavailable"},
+          "500": {"$ref": "#/components/responses/UnexpectedHtml"}
+        }
+      }
+    },
+    "/api/v1/admin/collection-jobs/{pk}/schedule/": {
+      "get": {
+        "operationId": "readCollectionSchedule",
+        "summary": "读取计划及生效边界",
+        "description": "需要 observations.configure_collection_schedule。逐次读取当前任务、模板、来源用途与本地 Session。拒绝查询参数。",
+        "security": [
+          {
+            "Session": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PathPk"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "当前获准计划。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S08SchedulePlan"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest2"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccessDenied2"
+          },
+          "405": {
+            "$ref": "#/components/responses/WrongMethod2"
+          },
+          "406": {
+            "$ref": "#/components/responses/UnacceptableMedia"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited2"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedHtml"
+          }
+        }
+      },
+      "post": {
+        "operationId": "changeCollectionSchedule",
+        "summary": "提议、生效或丢弃调度计划",
+        "description": "需要 observations.configure_collection_schedule。每次写入绑定控制版本、模板版本及前任版本；冲突时重新读取计划，不自动重放。激活只登记未来获准运行，不代表来源请求已完成。",
+        "security": [
+          {
+            "Session": [],
+            "CsrfCookie": [],
+            "CsrfHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PathPk"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "计划动作及提交回执。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S08ScheduleReceipt"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            }
+          },
+          "201": {
+            "description": "新后继计划及提交回执。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S08ScheduleReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest2"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccessDenied2"
+          },
+          "405": {
+            "$ref": "#/components/responses/WrongMethod2"
+          },
+          "406": {
+            "$ref": "#/components/responses/UnacceptableMedia"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMedia"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited2"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedHtml"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/S08ChangeSchedule"
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/collection-runs/": {
@@ -3650,39 +4330,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "job": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9223372036854775807
-                  },
-                  "request_id": {
-                    "type": "string",
-                    "maxLength": 36,
-                    "format": "uuid",
-                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-                  },
-                  "reason": {
-                    "type": "string",
-                    "enum": [
-                      "manual",
-                      "review",
-                      "backfill"
-                    ]
-                  },
-                  "target": {
-                    "type": "string",
-                    "format": "date-time"
-                  }
-                },
-                "required": [
-                  "job",
-                  "request_id",
-                  "reason",
-                  "target"
-                ],
-                "additionalProperties": false
+                "$ref": "#/components/schemas/SubmittedRunCommand"
               }
             }
           }
@@ -3817,41 +4465,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "redeliver"
-                    ]
-                  },
-                  "reason_code": {
-                    "type": "string",
-                    "enum": [
-                      "operator_pause",
-                      "operator_resume",
-                      "operator_recovery",
-                      "incident_review"
-                    ]
-                  },
-                  "request_id": {
-                    "type": "string",
-                    "maxLength": 36,
-                    "format": "uuid",
-                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-                  },
-                  "expected_version": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "action",
-                  "reason_code",
-                  "request_id",
-                  "expected_version"
-                ],
-                "additionalProperties": false
+                "$ref": "#/components/schemas/SubmittedRedeliveryCommand"
               }
             }
           }
@@ -3976,44 +4590,7 @@
               "schema": {
                 "oneOf": [
                   {
-                    "type": "object",
-                    "properties": {
-                      "action": {
-                        "type": "string",
-                        "enum": [
-                          "pause",
-                          "resume",
-                          "resume_source",
-                          "resume_product"
-                        ]
-                      },
-                      "reason_code": {
-                        "type": "string",
-                        "enum": [
-                          "operator_pause",
-                          "operator_resume",
-                          "operator_recovery",
-                          "incident_review"
-                        ]
-                      },
-                      "request_id": {
-                        "type": "string",
-                        "maxLength": 36,
-                        "format": "uuid",
-                        "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-                      },
-                      "expected_version": {
-                        "type": "integer",
-                        "minimum": 0
-                      }
-                    },
-                    "required": [
-                      "action",
-                      "reason_code",
-                      "request_id",
-                      "expected_version"
-                    ],
-                    "additionalProperties": false
+                    "$ref": "#/components/schemas/SubmittedJobControlCommand"
                   },
                   {
                     "type": "object",
@@ -4197,7 +4774,7 @@
       "get": {
         "operationId": "readOperationsHealth",
         "summary": "查看当前组件及获准窗口诊断",
-        "description": "需要 accounts.diagnose_operations。窗口参数出现时另核审阅权限。脉冲仅在有效期内证明服务状态。",
+        "description": "需要 accounts.diagnose_operations。窗口参数出现时另核审阅权限。脉冲仅在有效期内证明服务状态。 include=first_valid_write 附加当前可见页的等待、错误与首次有效写入依据。",
         "security": [
           {
             "Session": []
@@ -4212,6 +4789,18 @@
           },
           {
             "$ref": "#/components/parameters/QueryIndicator"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "description": "带 window 时可选，按当前获准的窗口范围核对各键首次有效写入。",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "first_valid_write"
+              ]
+            }
           }
         ],
         "responses": {
@@ -4529,10 +5118,12 @@
                           "accounts.manage_accounts",
                           "accounts.adjudicate_quality",
                           "accounts.manage_catalog",
+                        "accounts.maintain_city_search_alias",
                           "accounts.diagnose_operations",
                           "accounts.manage_backups",
                           "accounts.restore_backup",
                           "observations.manage_collection",
+                        "observations.configure_collection_schedule",
                           "observations.run_collection",
                           "observations.import_history",
                           "observations.review_observation",
@@ -4923,59 +5514,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "claim",
-                      "hold",
-                      "close",
-                      "correct_source",
-                      "correct_mapping"
-                    ]
-                  },
-                  "reason_code": {
-                    "type": "string",
-                    "enum": [
-                      "claim_review",
-                      "retain_isolation",
-                      "review_complete",
-                      "verified_correction",
-                      "registered_mapping"
-                    ]
-                  },
-                  "request_id": {
-                    "type": "string",
-                    "maxLength": 36,
-                    "format": "uuid",
-                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-                  },
-                  "expected_version": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "evidence_ref": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "maxLength": 2048,
-                        "minLength": 1
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "action",
-                  "reason_code",
-                  "request_id",
-                  "expected_version",
-                  "evidence_ref"
-                ],
-                "additionalProperties": false
+                "$ref": "#/components/schemas/SubmittedQualityCommand"
               }
             }
           }
@@ -5235,48 +5774,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "rename",
-                      "relocate",
-                      "reuse_code"
-                    ]
-                  },
-                  "reason_code": {
-                    "type": "string",
-                    "enum": [
-                      "documented_rename",
-                      "documented_relocation",
-                      "documented_code_reuse"
-                    ]
-                  },
-                  "request_id": {
-                    "type": "string",
-                    "maxLength": 36,
-                    "format": "uuid",
-                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-                  },
-                  "expected_version": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "evidence_ref": {
-                    "type": "string",
-                    "maxLength": 2048,
-                    "minLength": 1
-                  }
-                },
-                "required": [
-                  "action",
-                  "reason_code",
-                  "request_id",
-                  "expected_version",
-                  "evidence_ref"
-                ],
-                "additionalProperties": false
+                "$ref": "#/components/schemas/SubmittedStationCommand"
               }
             }
           }
@@ -5691,40 +6189,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "withdraw"
-                    ]
-                  },
-                  "reason_code": {
-                    "type": "string",
-                    "enum": [
-                      "terms_ended",
-                      "retention_withdrawn",
-                      "rights_review"
-                    ]
-                  },
-                  "request_id": {
-                    "type": "string",
-                    "maxLength": 36,
-                    "format": "uuid",
-                    "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-                  },
-                  "expected_version": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "action",
-                  "reason_code",
-                  "request_id",
-                  "expected_version"
-                ],
-                "additionalProperties": false
+                "$ref": "#/components/schemas/SubmittedWithdrawalCommand"
               }
             }
           }
@@ -8054,7 +8519,7 @@
         "type": "object",
         "properties": {
           "selection": {
-            "type": "object"
+            "$ref": "#/components/schemas/NationalSelection"
           },
           "synthetic": {
             "type": "boolean"
@@ -8082,16 +8547,35 @@
             ]
           },
           "summary": {
-            "type": "object"
+            "$ref": "#/components/schemas/NationalSummary"
           },
           "results": {
             "type": "array",
-            "items": {
-              "type": "object"
-            }
+            "maxItems": 100,
+            "items": { "$ref": "#/components/schemas/NationalCity" }
           },
           "page": {
             "$ref": "#/components/schemas/CursorPage"
+          },
+          "ranking": {
+            "$ref": "#/components/schemas/NationalRanking"
+          },
+          "focused": {
+            "anyOf": [
+              { "$ref": "#/components/schemas/NationalCity" },
+              { "type": "null" }
+            ]
+          },
+          "map": {
+            "type": "object",
+            "description": "当前无可披露的地理映射；请求 map_limit 时返回此状态，不含点位或坐标。",
+            "properties": {
+              "state": { "const": "unavailable" },
+              "items": { "type": "array", "maxItems": 0 },
+              "has_more": { "const": false }
+            },
+            "required": ["state", "items", "has_more"],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -8104,7 +8588,203 @@
           "results",
           "page"
         ],
-        "additionalProperties": true
+        "additionalProperties": false,
+        "if": { "properties": { "selection": { "required": ["home"] } } },
+        "then": { "required": ["ranking", "focused"] },
+        "else": { "not": { "anyOf": [{ "required": ["ranking"] }, { "required": ["focused"] }, { "required": ["map"] }] } }
+      },
+      "NationalSelection": {
+        "type": "object",
+        "properties": {
+          "product": { "$ref": "#/components/schemas/PublicRow/properties/product" },
+          "source": { "type": "string" },
+          "scope": { "enum": ["synthetic", null] },
+          "at": { "type": ["string", "null"], "format": "date-time" },
+          "as_of": { "type": ["string", "null"], "format": "date-time" },
+          "standard_series": { "enum": ["HJ633-2012", "HJ633-2026", "unknown", null] },
+          "window_definition": { "enum": ["hourly_label_unspecified", "hourly_left_label", "hourly_right_label"] },
+          "order": { "enum": ["city", "aqi_desc", "aqi_asc"] },
+          "q": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
+          "geography": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
+          "page_size": { "$ref": "#/components/schemas/CursorPage/properties/page_size" },
+          "home": { "const": 1 },
+          "grade": { "type": "integer", "minimum": 1, "maximum": 6 }
+        },
+        "required": ["product", "source", "scope", "at", "as_of", "standard_series", "window_definition", "order", "q", "geography", "page_size"],
+        "additionalProperties": false,
+        "anyOf": [
+          { "properties": { "at": { "type": "null" } } },
+          { "properties": { "as_of": { "type": "null" } } }
+        ]
+      },
+      "NationalSummary": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": { "state": { "const": "unavailable" } },
+            "required": ["state"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": { "const": "ok" },
+              "covered_city_count": { "type": ["integer", "null"], "minimum": 0 },
+              "summary_eligible_city_count": { "type": "integer", "minimum": 0 },
+              "groups": {
+                "type": "object",
+                "propertyNames": { "enum": ["HJ633-2012", "HJ633-2026"] },
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "ranked_city_count": { "type": "integer", "minimum": 0 },
+                    "distribution": {
+                      "type": "object",
+                      "propertyNames": { "enum": ["1", "2", "3", "4", "5", "6"] },
+                      "additionalProperties": { "type": "integer", "minimum": 1 }
+                    }
+                  },
+                  "required": ["ranked_city_count", "distribution"],
+                  "additionalProperties": false
+                }
+              },
+              "expected": { "type": ["integer", "null"], "minimum": 0 },
+              "completeness": { "enum": ["unknown", "partial", "complete"] }
+            },
+            "required": ["state", "covered_city_count", "summary_eligible_city_count", "groups", "expected", "completeness"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "NationalCity": {
+        "type": "object",
+        "properties": {
+          "city": { "$ref": "#/components/schemas/PublicRow/properties/city" },
+          "name": { "type": ["string", "null"] },
+          "geography": { "type": ["string", "null"] },
+          "series": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/NationalObservation",
+              "properties": { "indicator": { "const": "AQI" }, "unit": { "const": "1" } }
+            }
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NationalObservation",
+              "properties": {
+                "indicator": { "enum": ["PM2.5Level", "PM10Level", "SO2Level", "NO2Level", "COLevel", "O3Level"] },
+                "unit": { "const": "grade" }
+              },
+              "not": { "required": ["rank"] }
+            }
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "city": { "$ref": "#/components/schemas/CityLinks/properties/city" },
+              "trend": { "$ref": "#/components/schemas/CityLinks/properties/trend" },
+              "stations": { "$ref": "#/components/schemas/CityLinks/properties/stations" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": ["city", "name", "geography", "series", "levels", "links"],
+        "additionalProperties": false
+      },
+      "NationalObservation": {
+        "type": "object",
+        "properties": {
+          "product": { "$ref": "#/components/schemas/PublicRow/properties/product" },
+          "source": { "$ref": "#/components/schemas/PublicRow/properties/source" },
+          "synthetic": { "$ref": "#/components/schemas/PublicRow/properties/synthetic" },
+          "indicator": { "$ref": "#/components/schemas/PublicRow/properties/indicator" },
+          "observed_at": { "type": "string", "format": "date-time" },
+          "standard_series": { "enum": ["HJ633-2012", "HJ633-2026", "unknown", "not_applicable"] },
+          "window_definition": { "$ref": "#/components/schemas/NationalSelection/properties/window_definition" },
+          "attribution": { "$ref": "#/components/schemas/PublicRow/properties/attribution" },
+          "revision_no": { "$ref": "#/components/schemas/PublicRow/properties/revision_no" },
+          "value": { "$ref": "#/components/schemas/PublicRow/properties/value" },
+          "unit": { "$ref": "#/components/schemas/PublicRow/properties/unit" },
+          "quality": { "$ref": "#/components/schemas/PublicRow/properties/quality" },
+          "censor_limit": { "$ref": "#/components/schemas/PublicRow/properties/censor_limit" },
+          "censor_direction": { "$ref": "#/components/schemas/PublicRow/properties/censor_direction" },
+          "source_timezone": { "$ref": "#/components/schemas/PublicRow/properties/source_timezone" },
+          "timezone_basis": { "$ref": "#/components/schemas/PublicRow/properties/timezone_basis" },
+          "window_start": { "$ref": "#/components/schemas/PublicRow/properties/window_start" },
+          "window_end": { "$ref": "#/components/schemas/PublicRow/properties/window_end" },
+          "label_position": { "$ref": "#/components/schemas/PublicRow/properties/label_position" },
+          "standard_basis": { "$ref": "#/components/schemas/PublicRow/properties/standard_basis" },
+          "standard_evidence": { "$ref": "#/components/schemas/PublicRow/properties/standard_evidence" },
+          "source_published_at": { "$ref": "#/components/schemas/PublicRow/properties/source_published_at" },
+          "mapping": { "$ref": "#/components/schemas/PublicRow/properties/mapping" },
+          "grade": { "type": ["integer", "null"], "minimum": 1, "maximum": 6 },
+          "color": { "$ref": "#/components/schemas/PublicRow/properties/color" },
+          "comparable": { "$ref": "#/components/schemas/PublicRow/properties/comparable" },
+          "issue": { "$ref": "#/components/schemas/PublicRow/properties/issue" },
+          "source_time": { "$ref": "#/components/schemas/PublicRow/properties/source_time" },
+          "source_description": { "$ref": "#/components/schemas/PublicRow/properties/source_description" },
+          "source_grade": { "type": ["integer", "null"], "minimum": 1, "maximum": 6 },
+          "primary_pollutant": { "$ref": "#/components/schemas/PublicRow/properties/primary_pollutant" },
+          "city": { "$ref": "#/components/schemas/PublicRow/properties/city" },
+          "key": { "$ref": "#/components/schemas/PublicRow/properties/key" },
+          "revision": { "$ref": "#/components/schemas/PublicRow/properties/revision" },
+          "qualification_version": { "$ref": "#/components/schemas/PublicRow/properties/qualification_version" },
+          "source_local_date": { "$ref": "#/components/schemas/PublicRow/properties/source_local_date" },
+          "report_kind": { "const": "hourly" },
+          "rights_attributions": { "$ref": "#/components/schemas/PublicRow/properties/rights_attributions" },
+          "evaluated_at": { "$ref": "#/components/schemas/PublicRow/properties/evaluated_at" },
+          "fetched_at": { "$ref": "#/components/schemas/PublicRow/properties/fetched_at" },
+          "source_status": { "$ref": "#/components/schemas/PublicRow/properties/source_status" },
+          "age_seconds": { "$ref": "#/components/schemas/PublicRow/properties/age_seconds" },
+          "freshness": { "$ref": "#/components/schemas/PublicRow/properties/freshness" },
+          "fetched_at_basis": { "$ref": "#/components/schemas/PublicRow/properties/fetched_at_basis" },
+          "source_event": { "$ref": "#/components/schemas/PublicRow/properties/source_event" },
+          "source_event_at": { "$ref": "#/components/schemas/PublicRow/properties/source_event_at" },
+          "source_status_until": { "$ref": "#/components/schemas/PublicRow/properties/source_status_until" },
+          "execution_started_at": { "$ref": "#/components/schemas/PublicRow/properties/execution_started_at" },
+          "rank": { "type": "integer", "minimum": 1 }
+        },
+        "required": [
+          "product", "source", "synthetic", "indicator", "observed_at", "standard_series", "window_definition",
+          "attribution", "revision_no", "value", "unit", "quality", "censor_limit", "censor_direction",
+          "source_timezone", "timezone_basis", "window_start", "window_end", "label_position", "standard_basis",
+          "standard_evidence", "source_published_at", "mapping", "grade", "color", "comparable", "issue",
+          "source_time", "source_description", "source_grade", "primary_pollutant", "city", "key", "revision",
+          "qualification_version", "source_local_date", "report_kind", "rights_attributions", "evaluated_at",
+          "fetched_at", "source_status", "age_seconds", "freshness", "fetched_at_basis", "source_event",
+          "source_event_at", "source_status_until", "execution_started_at"
+        ],
+        "additionalProperties": false
+      },
+      "NationalRanking": {
+        "type": "object",
+        "properties": {
+          "state": { "enum": ["ok", "unavailable"] },
+          "rows": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "type": "object",
+              "properties": {
+                "city": { "$ref": "#/components/schemas/NationalCity/properties/city" },
+                "name": { "$ref": "#/components/schemas/NationalCity/properties/name" },
+                "geography": { "$ref": "#/components/schemas/NationalCity/properties/geography" },
+                "aqi": { "type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$" },
+                "grade": { "type": "integer", "minimum": 1, "maximum": 6 },
+                "rank": { "type": "integer", "minimum": 1, "maximum": 5 }
+              },
+              "required": ["city", "name", "geography", "aqi", "grade", "rank"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["state", "rows"],
+        "additionalProperties": false,
+        "if": { "properties": { "state": { "const": "unavailable" } } },
+        "then": { "properties": { "rows": { "maxItems": 0 } } }
       },
       "ResearchSelection": {
         "type": "object",
@@ -9502,6 +10182,193 @@
         ],
         "additionalProperties": false
       },
+      "OperationsWindow": {
+        "type": "object",
+        "properties": {
+          "window_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "state": {
+            "type": "string"
+          },
+          "result": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "visible_pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "visible_sent_not_started": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "visible_quota_wait": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "visible_unconfirmed_dispatch": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "visible_retry": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "visible_running": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "oldest_visible_pending_age_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "next_visible_quota_check_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "first_valid_write_state": {
+            "enum": [
+              "known",
+              "none",
+              "unavailable"
+            ]
+          },
+          "first_valid_write_page_truncated": {
+            "type": "boolean"
+          },
+          "latest_first_valid_write_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "oldest_visible_pending_created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "latest_visible_fetched_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "visible_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "error_code": {
+                  "type": "string"
+                },
+                "result": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "request_state": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "error_code",
+                "result",
+                "request_state"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "window_id",
+          "state",
+          "result",
+          "coverage",
+          "truncated",
+          "visible_pending",
+          "visible_sent_not_started",
+          "visible_quota_wait",
+          "visible_unconfirmed_dispatch",
+          "visible_retry",
+          "visible_running",
+          "oldest_visible_pending_age_seconds",
+          "next_visible_quota_check_at"
+        ],
+        "additionalProperties": false,
+        "dependentRequired": {
+          "first_valid_write_state": [
+            "first_valid_write_page_truncated",
+            "latest_first_valid_write_at",
+            "oldest_visible_pending_created_at",
+            "latest_visible_fetched_at",
+            "visible_errors"
+          ],
+          "first_valid_write_page_truncated": [
+            "first_valid_write_state",
+            "latest_first_valid_write_at",
+            "oldest_visible_pending_created_at",
+            "latest_visible_fetched_at",
+            "visible_errors"
+          ],
+          "latest_first_valid_write_at": [
+            "first_valid_write_state",
+            "first_valid_write_page_truncated",
+            "oldest_visible_pending_created_at",
+            "latest_visible_fetched_at",
+            "visible_errors"
+          ],
+          "oldest_visible_pending_created_at": [
+            "first_valid_write_state",
+            "first_valid_write_page_truncated",
+            "latest_first_valid_write_at",
+            "latest_visible_fetched_at",
+            "visible_errors"
+          ],
+          "latest_visible_fetched_at": [
+            "first_valid_write_state",
+            "first_valid_write_page_truncated",
+            "latest_first_valid_write_at",
+            "oldest_visible_pending_created_at",
+            "visible_errors"
+          ],
+          "visible_errors": [
+            "first_valid_write_state",
+            "first_valid_write_page_truncated",
+            "latest_first_valid_write_at",
+            "oldest_visible_pending_created_at",
+            "latest_visible_fetched_at"
+          ]
+        }
+      },
       "Health": {
         "type": "object",
         "properties": {
@@ -9534,9 +10401,9 @@
             "additionalProperties": false
           },
           "window": {
-            "anyOf": [
+            "oneOf": [
               {
-                "type": "object"
+                "$ref": "#/components/schemas/OperationsWindow"
               },
               {
                 "type": "null"
@@ -9786,6 +10653,755 @@
         ],
         "additionalProperties": true
       },
+      "SubmittedRunCommand": {
+        "type": "object",
+        "properties": {
+          "job": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 36,
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "review",
+              "backfill"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "job",
+          "request_id",
+          "reason",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "SubmittedJobControlCommand": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "pause",
+              "resume",
+              "resume_source",
+              "resume_product"
+            ]
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "operator_pause",
+              "operator_resume",
+              "operator_recovery",
+              "incident_review"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 36,
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "action",
+          "reason_code",
+          "request_id",
+          "expected_version"
+        ],
+        "additionalProperties": false
+      },
+      "SubmittedRedeliveryCommand": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "redeliver"
+            ]
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "operator_pause",
+              "operator_resume",
+              "operator_recovery",
+              "incident_review"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 36,
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "action",
+          "reason_code",
+          "request_id",
+          "expected_version"
+        ],
+        "additionalProperties": false
+      },
+      "SubmittedQualityCommand": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "claim",
+              "hold",
+              "close",
+              "correct_source",
+              "correct_mapping"
+            ]
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "claim_review",
+              "retain_isolation",
+              "review_complete",
+              "verified_correction",
+              "registered_mapping"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 36,
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "evidence_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2048,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "action",
+          "reason_code",
+          "request_id",
+          "expected_version",
+          "evidence_ref"
+        ],
+        "additionalProperties": false
+      },
+      "SubmittedStationCommand": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "rename",
+              "relocate",
+              "reuse_code"
+            ]
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "documented_rename",
+              "documented_relocation",
+              "documented_code_reuse"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 36,
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "evidence_ref": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "action",
+          "reason_code",
+          "request_id",
+          "expected_version",
+          "evidence_ref"
+        ],
+        "additionalProperties": false
+      },
+      "SubmittedWithdrawalCommand": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "withdraw"
+            ]
+          },
+          "reason_code": {
+            "type": "string",
+            "enum": [
+              "terms_ended",
+              "retention_withdrawn",
+              "rights_review"
+            ]
+          },
+          "request_id": {
+            "type": "string",
+            "maxLength": 36,
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "action",
+          "reason_code",
+          "request_id",
+          "expected_version"
+        ],
+        "additionalProperties": false
+      },
+      "SelfReceiptRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "family": {
+                "const": "manual_run"
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "command": {
+                "$ref": "#/components/schemas/SubmittedRunCommand"
+              }
+            },
+            "required": [
+              "family",
+              "target",
+              "command"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "family": {
+                "const": "job_control"
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "command": {
+                "$ref": "#/components/schemas/SubmittedJobControlCommand"
+              }
+            },
+            "required": [
+              "family",
+              "target",
+              "command"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "family": {
+                "const": "redeliver"
+              },
+              "target": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "command": {
+                "$ref": "#/components/schemas/SubmittedRedeliveryCommand"
+              }
+            },
+            "required": [
+              "family",
+              "target",
+              "command"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "family": {
+                "const": "quality"
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "command": {
+                "$ref": "#/components/schemas/SubmittedQualityCommand"
+              }
+            },
+            "required": [
+              "family",
+              "target",
+              "command"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "family": {
+                "const": "station_change"
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "command": {
+                "$ref": "#/components/schemas/SubmittedStationCommand"
+              }
+            },
+            "required": [
+              "family",
+              "target",
+              "command"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "family": {
+                "const": "grant_withdraw"
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "command": {
+                "$ref": "#/components/schemas/SubmittedWithdrawalCommand"
+              }
+            },
+            "required": [
+              "family",
+              "target",
+              "command"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "family": {
+                "const": "schedule"
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "command": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/S08CreateScheduleDraft"
+                  },
+                  {
+                    "$ref": "#/components/schemas/S08ChangeSchedule"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "family",
+              "target",
+              "command"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "SelfReceipt": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "recorded_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "action_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "state",
+              "action",
+              "recorded_at",
+              "action_id",
+              "version"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "recorded_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "action_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "job": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              }
+            },
+            "required": [
+              "state",
+              "action",
+              "recorded_at",
+              "action_id",
+              "version",
+              "job"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "const": "submitted"
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "recorded_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "run_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "window_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "dispatch": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "action",
+              "recorded_at",
+              "run_id",
+              "window_id",
+              "dispatch",
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "recorded_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "action_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "run_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "window_id": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              "dispatch": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "state",
+              "action",
+              "recorded_at",
+              "action_id",
+              "version",
+              "run_id",
+              "window_id",
+              "dispatch",
+              "status"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ManagementExecuteOption": {
+        "type": "object",
+        "properties": {
+          "product": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+          "job": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
+          "reason": {"type": "string", "enum": ["manual", "review", "backfill"]},
+          "target": {"type": "string", "format": "date-time"}
+        },
+        "required": ["product", "job", "reason", "target"],
+        "additionalProperties": false
+      },
+      "ManagementProductOption": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "shape": {
+            "type": "string",
+            "enum": [
+              "L",
+              "C",
+              "S",
+              "T",
+              "D",
+              "H"
+            ]
+          },
+          "links": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "windows": {
+                    "type": "string",
+                    "pattern": "^/api/v1/admin/collection-windows/(?:\\?|$)"
+                  },
+                  "runs": {
+                    "type": "string",
+                    "pattern": "^/api/v1/admin/collection-runs/(?:\\?|$)"
+                  }
+                },
+                "required": [
+                  "windows",
+                  "runs"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "quality_issues": {
+                    "type": "string",
+                    "pattern": "^/api/v1/admin/quality-issues/(?:\\?|$)"
+                  }
+                },
+                "required": [
+                  "quality_issues"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "trends": {
+                    "type": "string",
+                    "pattern": "^/api/v1/admin/operations/trends/(?:\\?|$)"
+                  }
+                },
+                "required": [
+                  "trends"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "product",
+          "source",
+          "shape",
+          "links"
+        ],
+        "additionalProperties": false
+      },
+      "ManagementCatalogPage": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ManagementExecuteOption"
+                },
+                {
+                  "$ref": "#/components/schemas/ManagementProductOption"
+                },
+                {
+                  "$ref": "#/components/schemas/S08ScheduleTemplateOption"
+                }
+              ]
+            },
+            "maxItems": 50
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "results",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "S08ObjectAuditRecord": {
+        "type": "object",
+        "properties": {
+          "at": {"type": "string", "format": "date-time"},
+          "action": {"type": "string"},
+          "outcome": {"type": "string"},
+          "actor_relation": {"type": "string", "enum": ["self", "other", "system"]},
+          "before_version": {"type": ["integer", "null"], "minimum": 0},
+          "after_version": {"type": ["integer", "null"], "minimum": 0}
+        },
+        "required": ["at", "action", "outcome", "actor_relation", "before_version", "after_version"],
+        "additionalProperties": false
+      },
+      "S08ObjectAuditPage": {
+        "type": "object",
+        "properties": {
+          "results": {"type": "array", "items": {"$ref": "#/components/schemas/S08ObjectAuditRecord"}, "maxItems": 50},
+          "page": {"$ref": "#/components/schemas/CursorPage50Default25"}
+        },
+        "required": ["results", "page"],
+        "additionalProperties": false
+      },
+      "CursorPage50Default25": {
+        "type": "object",
+        "properties": {
+          "page_size": {"type": "integer", "minimum": 1, "maximum": 50, "default": 25},
+          "next_cursor": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": ["page_size", "next_cursor"],
+        "additionalProperties": false
+      },
       "CollectionJobPage": {
         "type": "object",
         "properties": {
@@ -9805,6 +11421,505 @@
           "page"
         ],
         "additionalProperties": false
+      },
+      "S08ScheduleTemplateOption": {
+        "type": "object",
+        "properties": {
+          "template": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "template_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "product": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "source": {
+            "type": "string"
+          },
+          "contract_version": {
+            "type": "string"
+          },
+          "scope_label": {
+            "type": "string"
+          },
+          "allowed_cadences": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 3600,
+              "maximum": 86400,
+              "multipleOf": 3600
+            },
+            "uniqueItems": true
+          },
+          "delivery_minute": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 59
+          },
+          "plan_state": {
+            "type": "string",
+            "enum": [
+              "unconfigured",
+              "draft",
+              "active"
+            ]
+          },
+          "job": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "template",
+          "template_version",
+          "product",
+          "source",
+          "contract_version",
+          "scope_label",
+          "allowed_cadences",
+          "delivery_minute",
+          "plan_state",
+          "job"
+        ],
+        "additionalProperties": false
+      },
+      "S08ScheduleTemplatePage": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/S08ScheduleTemplateOption"
+            },
+            "maxItems": 50
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2048
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "results",
+          "next_cursor"
+        ],
+        "additionalProperties": false
+      },
+      "S08SchedulePreview": {
+        "type": "object",
+        "properties": {
+          "boundary": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "previous_last_due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_due_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gap_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "conflict": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "registered_window"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "boundary",
+          "previous_last_due_at",
+          "first_due_at",
+          "gap_seconds",
+          "conflict"
+        ],
+        "additionalProperties": false
+      },
+      "S08SchedulePlanFields": {
+        "type": "object",
+        "properties": {
+          "job": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "active",
+              "discarded"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "template": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "template_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "current_template_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cadence_seconds": {
+            "type": "integer",
+            "minimum": 3600,
+            "maximum": 86400,
+            "multipleOf": 3600
+          },
+          "first_due_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "predecessor": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "predecessor_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pending_successor": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "preview": {
+            "$ref": "#/components/schemas/S08SchedulePreview"
+          }
+        },
+        "required": [
+          "job",
+          "state",
+          "version",
+          "template",
+          "template_version",
+          "current_template_version",
+          "cadence_seconds",
+          "first_due_at",
+          "predecessor",
+          "predecessor_version",
+          "pending_successor",
+          "effective_from",
+          "effective_until",
+          "preview"
+        ]
+      },
+      "S08SchedulePlan": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/S08SchedulePlanFields"
+          }
+        ],
+        "unevaluatedProperties": false
+      },
+      "S08ScheduleReceipt": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/S08SchedulePlanFields"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "action_id"
+            ]
+          }
+        ],
+        "unevaluatedProperties": false
+      },
+      "S08CreateScheduleDraft": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "const": "create_draft"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9223372036854775807
+          },
+          "request_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "reason_code": {
+            "type": "string",
+            "const": "schedule_create"
+          },
+          "template": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "cadence_seconds": {
+            "type": "integer",
+            "minimum": 3600,
+            "maximum": 86400,
+            "multipleOf": 3600
+          },
+          "first_due_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "action",
+          "expected_version",
+          "request_id",
+          "reason_code",
+          "template",
+          "cadence_seconds",
+          "first_due_at"
+        ],
+        "additionalProperties": false
+      },
+      "S08ChangeSchedule": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "const": "propose"
+              },
+              "expected_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "reason_code": {
+                "type": "string",
+                "const": "schedule_change"
+              },
+              "template_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cadence_seconds": {
+                "type": "integer",
+                "minimum": 3600,
+                "maximum": 86400,
+                "multipleOf": 3600
+              },
+              "first_due_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "action",
+              "expected_version",
+              "request_id",
+              "reason_code",
+              "template_version",
+              "cadence_seconds",
+              "first_due_at"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "const": "activate"
+              },
+              "expected_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "reason_code": {
+                "type": "string",
+                "const": "schedule_activate"
+              },
+              "template_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expected_predecessor_version": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "action",
+              "expected_version",
+              "request_id",
+              "reason_code",
+              "template_version",
+              "expected_predecessor_version"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "const": "discard"
+              },
+              "expected_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "request_id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              },
+              "reason_code": {
+                "type": "string",
+                "const": "schedule_discard"
+              },
+              "template_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expected_predecessor_version": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "action",
+              "expected_version",
+              "request_id",
+              "reason_code",
+              "template_version",
+              "expected_predecessor_version"
+            ],
+            "additionalProperties": false
+          }
+        ]
       },
       "CollectionRunPage": {
         "type": "object",
@@ -10493,6 +12608,38 @@
             }
           }
         }
+      },
+      "InvalidManagementCatalogRequest": {
+        "description": "修正请求后重试。 原生请求体超限由外层中间件处理。它可以省略 Cache-Control。",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "enum": [
+                    "invalid_cursor",
+                    "invalid_request",
+                    "invalid_target",
+                    "parse_error",
+                    "query_too_large"
+                  ]
+                }
+              },
+              "required": [
+                "code"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "headers": {
+          "Cache-Control": {
+            "$ref": "#/components/headers/NoStore"
+          }
+        },
+        "x-cache-control-optional": true
       },
       "InvalidRequest2": {
         "description": "修正请求后重试。 原生请求体超限由外层中间件处理。它可以省略 Cache-Control。",

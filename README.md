@@ -1,6 +1,12 @@
 # 城市空气质量监测数据分析平台
 
-这是城市和站点空气质量监测分析平台。PostgreSQL 保存权利、观测和任务事实，Web、Celery Worker 和唯一 Beat 分进程运行。当前交付进入 S07 后端独立验收准备阶段。
+这是城市和站点空气质量监测分析平台。PostgreSQL 保存权利、观测和任务事实，Web、Celery Worker 和唯一 Beat 分进程运行。S08 提供同源 Vue 前端，支持城市和站点观察、研究查询与受控管理。
+
+## S08 本地前端
+
+在已配置的独立实例上构建前端、执行 `collectstatic`，然后用 `.venv/bin/python main.py web` 启动 Gunicorn。默认浏览器入口为 `http://127.0.0.1:8000/app/`。开发模式用 Vite 代理同源 API。安装步骤、构建路径和隔离测试命令见[运行手册](docs/operations/S08.md)。
+
+验收使用合成 F 和真实 Session、PostgreSQL、Redis 与 Worker。地图需要获准地理资产，当期 H 需要适用的历史数据许可。城市在线和整机交付各有独立验收条件。[验收矩阵](docs/verification/S08.md) · [接口差集](docs/verification/S08_CONTRACT_DELTA.md)
 
 ## S07 后端入口
 

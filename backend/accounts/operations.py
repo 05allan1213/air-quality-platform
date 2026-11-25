@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.views.decorators.cache import never_cache
 from observations.policy import Denied, clock
@@ -12,7 +13,8 @@ from rest_framework.response import Response
 
 from .management_api import rejection
 from .models import ServicePulse
-from .research_session import SessionCheck
+from .operations_first_write import FirstWrite, Unproved
+from .research_session import SessionCheck, lock_users_and_groups, reject, request_transaction
 
 
 def proof(state, at, kind, *, reason="", ttl=None):
@@ -83,47 +85,82 @@ def health(request):
     try:
         params = request.query_params
         if (
-            set(params) - {"window", "object_code", "indicator"}
+            set(params) - {"window", "object_code", "indicator", "include"}
             or any(len(params.getlist(k)) != 1 for k in params)
             or (params and "window" not in params)
+            or ("include" in params and params["include"] != "first_valid_write")
         ):
             raise Denied("invalid_request")
         if not request.user.has_perm("accounts.diagnose_operations"):
             raise Denied("permission_denied")
         broker = broker_probe()
-        with transaction.atomic():
-            projected = None
+        enhanced = "include" in params
+        with request_transaction() if enhanced else transaction.atomic():
+            projected = evidence = latest = None
+            first_write_state = "unavailable"
+            window_rechecks = []
             if "window" in params:
                 pk = params["window"]
                 if not pk.isascii() or not pk.isdigit() or len(pk) > 18:
                     raise Denied("invalid_request")
+                selectors = {k: params[k] for k in ("object_code", "indicator") if k in params}
                 projected = read_window(
-                    request.user.pk, int(pk), {k: params[k] for k in params if k != "window"}
+                    request.user.pk, int(pk), selectors, rechecks=window_rechecks
                 )
+            if enhanced:
+                lock_users_and_groups([request.user.pk])
             check = SessionCheck(request)
-            from django.contrib.auth import get_user_model
-
+            first_write_page_truncated = bool(projected and projected.get("next_after"))
             if (
-                not get_user_model()
-                .objects.get(pk=request.user.pk)
-                .has_perm("accounts.diagnose_operations")
+                enhanced
+                and not first_write_page_truncated
+                and projected["state"] not in {"disposed", "not_applicable"}
+            ):
+                evidence = FirstWrite(
+                    projected["window_id"],
+                    selectors,
+                    check.now,
+                    [cell["item_key"] for cell in projected.get("cells", ())],
+                )
+                try:
+                    latest = evidence.latest()
+                except Unproved:
+                    pass
+                else:
+                    first_write_state = "none" if latest is None else "known"
+            rows = ServicePulse.objects.in_bulk(["worker", "beat"])
+            user = get_user_model().objects.get(pk=request.user.pk)
+            if not user.has_perm("accounts.diagnose_operations") or (
+                enhanced and not user.has_perm("observations.review_observation")
             ):
                 raise Denied("permission_denied")
-            rows = ServicePulse.objects.in_bulk(["worker", "beat"])
             now = check.finish(())
+            for recheck in window_rechecks:
+                recheck(now)
+            if evidence is not None:
+                evidence.finish(now)
             components = {
                 "web": proof("ok", now, "http_request"),
                 "pg": proof("ok", now, "postgres_clock"),
                 "redis": broker,
                 **{k: pulse(k, rows.get(k), now) for k in ("worker", "beat")},
             }
+            window = window_state(projected, now) if projected else None
+            if enhanced:
+                window.update(
+                    window_evidence(
+                        projected, first_write_state, latest, first_write_page_truncated
+                    )
+                )
         return Response(
             {
                 "components": components,
-                "window": window_state(projected, now) if projected else None,
+                "window": window,
             }
         )
     except Denied as exc:
+        if exc.code == "database_unavailable":
+            return reject(exc)
         return rejection(exc)
 
 
@@ -154,4 +191,25 @@ def window_state(projected, now):
         ),
         "visible_retry": sum(r.get("next_retry_at") is not None for r in runs),
         "visible_running": sum(r.get("status") == "running" for r in runs),
+    }
+
+
+def window_evidence(projected, state, latest, page_truncated):
+    # No error text or counters from outside the authorized Run page.
+    runs = projected.get("runs", ())
+    return {
+        "first_valid_write_state": state,
+        "first_valid_write_page_truncated": page_truncated,
+        "latest_first_valid_write_at": latest,
+        "oldest_visible_pending_created_at": min(
+            (r["created_at"] for r in runs if r["status"] == "pending"), default=None
+        ),
+        "latest_visible_fetched_at": max(
+            (r["fetched_at"] for r in runs if r["fetched_at"] is not None), default=None
+        ),
+        "visible_errors": [
+            {k: r[k] for k in ("error_code", "result", "request_state")}
+            for r in runs
+            if r["error_code"]
+        ],
     }

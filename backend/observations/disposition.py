@@ -265,6 +265,11 @@ def reconcile_catalog(product, siblings, now):
             if not station or p.level == "station"
         )
 
+    from .city_search_alias import reconcile_retention
+
+    for sibling in siblings:
+        reconcile_retention(sibling, grants[sibling.pk], now)
+
     # Establish Source -> Product -> Job -> Window -> Station order before inspecting epochs.
     list(Job.objects.select_for_update().filter(product__source_id=source_id).order_by("pk"))
     list(WorkWindow.objects.select_for_update().filter(product__source_id=source_id).order_by("pk"))
@@ -378,6 +383,9 @@ def reconcile_product(product_id, *, expected_jobs=None):
         else:
             reconcile_data(product, grants, now)
             reconcile_private(product, now=now)
+            from .city_search_alias import reconcile_retention
+
+            reconcile_retention(product, grants, now)
             product.rights_version += 1
             product.save(update_fields=["rights_version"])
             Change.objects.create(

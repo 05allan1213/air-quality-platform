@@ -49,15 +49,10 @@ def lock_job(job_id):
     return job
 
 
-def registry(job, endpoint="", *, registration=False):
-    if cnemc_jobs.managed(job):
-        return cnemc_jobs.registry(
-            job, endpoint or cnemc_jobs.endpoint_for(job, "manual"), registration=registration
-        )
+def is_fixture_profile(job):
     p = job.product
-    if not (
-        settings.S03_FIXTURE_HTTP
-        and p.source.namespace == "s03.fixture"
+    return (
+        p.source.namespace == "s03.fixture"
         and p.synthetic
         and p.family == "F"
         and p.shape in {"L", "C", "S", "T"}
@@ -68,7 +63,15 @@ def registry(job, endpoint="", *, registration=False):
             (p.shape == "L" and job.city_id is None)
             or (p.shape != "L" and job.city_id and job.city.source_id == p.source_id)
         )
-    ):
+    )
+
+
+def registry(job, endpoint="", *, registration=False):
+    if cnemc_jobs.managed(job):
+        return cnemc_jobs.registry(
+            job, endpoint or cnemc_jobs.endpoint_for(job, "manual"), registration=registration
+        )
+    if not (settings.S03_FIXTURE_HTTP and is_fixture_profile(job)):
         raise Denied("unregistered_profile")
 
 
@@ -121,6 +124,17 @@ def data_scope(job, start, end):
 def admission(job, actor_id, start, end, *, allow_paused=False, endpoint="", registration=False):
     endpoint = endpoint or cnemc_jobs.endpoint_for(job, "manual")
     registry(job, endpoint, registration=registration)
+    return _authorized_caps(job, actor_id, start, end, allow_paused, endpoint)
+
+
+def schedule_fixture_caps(job, start, end):
+    """Preview an isolated host template without opening the execution registry."""
+    if not settings.S08_FIXTURE_SCHEDULE or not is_fixture_profile(job):
+        raise Denied("unregistered_profile")
+    return _authorized_caps(job, job.executor_id, start, end, True, "")
+
+
+def _authorized_caps(job, actor_id, start, end, allow_paused, endpoint):
     actor(actor_id, "run_collection")
     actor(job.executor_id, "run_collection")
     if not allow_paused and (

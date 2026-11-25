@@ -2,10 +2,11 @@
 
 from datetime import datetime
 
+from accounts.research_session import lock_users_and_groups
 from django.db import transaction
 from observations.policy import Denied, clock
 
-from . import cnemc_jobs
+from . import cnemc_jobs, schedule_segments
 from .admission import HOUR, lock_job
 from .models import WorkWindow
 
@@ -43,20 +44,32 @@ def scan_gaps(job_id):
     from .services import register
 
     job = lock_job(job_id)
+    now = clock()
+    lock_users_and_groups({job.executor_id})
+    schedule_segments.settle_handoff(job, now)
+    phase = job.schedule_anchor_at or job.next_due_at
     if (
-        not (job.enabled and job.next_due_at and job.backfill_policy)
+        not (job.enabled and phase and job.backfill_policy)
         or job.pause_reason
         or job.product.collection_pause
         or job.product.source.collection_pause
     ):
         return 0
     policy = job.backfill_policy
-    stamp = cnemc_jobs.anchor(job, clock())
+    stamp = cnemc_jobs.anchor(job, now)
     if stamp is None:
         return 0
     earliest = max(
         datetime.fromisoformat(policy["operating_from"]), stamp - HOUR * policy["lookback_hours"]
     )
+    if job.effective_from:
+        if now < job.effective_from:
+            return 0
+        earliest = max(earliest, job.effective_from)
+    if job.effective_until:
+        stamp = min(stamp, job.effective_until - HOUR)
+    if stamp < earliest:
+        return 0
     target = job.backfill_cursor
     if target is None or not earliest <= target <= stamp:
         target = earliest
@@ -72,7 +85,7 @@ def scan_gaps(job_id):
         )
     }
     # Calendar hours, not the number of rows in a national response, define missed slots.
-    schedule = job.next_due_at.replace(minute=0, second=0, microsecond=0)
+    schedule = schedule_segments.hour(phase)
     started = 0
     while target <= page_end and started < policy["max_requests_per_scan"]:
         window = windows.get(target)

@@ -1,0 +1,11 @@
+{% extends "admin/index.html" %}
+
+{% block content %}
+{{ block.super }}
+{% if can_maintain_search_alias %}
+<div class="module">
+  <h2>城市字典</h2>
+  <p><a href="{% url 'admin:city_search_alias_directory' %}">城市检索别名</a></p>
+</div>
+{% endif %}
+{% endblock %}

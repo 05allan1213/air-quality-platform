@@ -138,6 +138,10 @@ def check_storage(values, root, *, serve_static):
                 private_root(path)
             paths[key] = path
     places = list(paths.values())
+    if "AQ_SPA_DIST" in values:
+        dist = Path(values["AQ_SPA_DIST"])
+        require(dist.is_absolute() and dist.resolve() == dist, "invalid_AQ_SPA_DIST")
+        places.append(dist)
     if values["POSTGRES_HOST"] != "127.0.0.1":
         places.append(Path(values["POSTGRES_HOST"]))
     broker = urlsplit(values["CELERY_BROKER_URL"])
@@ -202,6 +206,10 @@ def launch(values, backend, action, development):
 
     root, port, socket_only = endpoints(values, allow_missing_broker=action == "web")
     roles = {"web", "worker", "beat"} if action == "all" else {action} - {"check"}
+    if values.get("AQ_S08_FIXTURE_SCHEDULE") == "1":
+        require("beat" not in roles, "schedule_fixture_refuses_beat")
+        if roles != {"web"}:
+            values = values | {"AQ_S08_FIXTURE_SCHEDULE": "0"}
     if "beat" in roles:
         require(values.get("AQ_BEAT_LOCK_FILE"), "missing_AQ_BEAT_LOCK_FILE")
     environment = (

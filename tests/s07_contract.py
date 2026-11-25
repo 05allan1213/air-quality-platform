@@ -19,6 +19,9 @@ NATIVE = {
     PREFIX + "auth/login/": {"post"},
     PREFIX + "auth/logout/": {"post"},
     "/health/ready/": {"get"},
+    "/": {"get", "head"},
+    "/app/": {"get", "head"},
+    "/app/{route}": {"get", "head"},
 }
 CONVERTER = re.compile(r"<(\w+):(\w+)>")
 

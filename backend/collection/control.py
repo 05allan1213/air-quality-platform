@@ -3,10 +3,11 @@
 from accounts.governance import command, receipt, replay
 from accounts.research_session import SessionCheck, lock_users_and_groups
 from django.db import transaction
-from observations.policy import Denied, actor
+from observations.policy import Denied, actor, clock
 
 from .admission import LEDGER, bounds, lock_job, selected_use
 from .models import CollectionControl, ControlEvent, Job
+from .schedule_segments import handoff_pause_pending
 
 JOB_ACTIONS = {"pause", "resume", "resume_source", "resume_product"}
 REASONS = {"operator_pause", "operator_resume", "operator_recovery", "incident_review"}
@@ -100,27 +101,43 @@ def target_for(job, action):
     return "job", job
 
 
-def state(kind, target):
+def state(kind, target, *, now=None):
     if kind == "job":
-        return "active" if target.enabled else "paused"
+        if not target.enabled or (
+            target.predecessor_id
+            and not target.handoff_checked
+            and handoff_pause_pending(target, now if now is not None else clock())
+        ):
+            return "paused"
+        return "active"
     return "paused" if target.collection_pause else "active"
 
 
-def projected(target, kind):
+def projected(target, kind, now):
+    inherited = kind == "job" and handoff_pause_pending(target, now)
     details = dict(
-        type=kind, id=target.pk, control_version=version(kind, target), state=state(kind, target)
+        type=kind,
+        id=target.pk,
+        control_version=version(kind, target) + int(inherited),
+        state=("active" if target.enabled and not inherited else "paused")
+        if kind == "job"
+        else state(kind, target),
     )
     if kind == "source":
         details["resume_after"] = target.collection_resume_after
-    details["reason"] = target.pause_reason if kind == "job" else target.collection_pause
+    details["reason"] = (
+        ("predecessor_paused" if inherited else target.pause_reason)
+        if kind == "job"
+        else target.collection_pause
+    )
     return details
 
 
-def review_job(job, now):
+def review_job(job, now, *, target=None):
     if job.disposed:
         # Retain an operable identifier and a generic control disposition.
         raise Denied("job_disposed")
-    at = now.replace(minute=0, second=0, microsecond=0)
+    at = target or now.replace(minute=0, second=0, microsecond=0)
     start, end = bounds(job, at)
     rows = list(job.product.usegrant_set.filter(revoked_at=None))
     for operation in ("retain_normalized", "review"):
@@ -148,11 +165,13 @@ def job_result(job, record=None):
 def job_diagnostic(request, job_id):
     job = lock_job(job_id)
     session = lock_principals(request)
+    now = session.finish(())
     manager(request.user.pk)
+    review_job(job, now)
     result = {
         "job": job.pk,
         "targets": {
-            kind: projected(target, kind)
+            kind: projected(target, kind, now)
             for kind, target in (
                 ("job", job),
                 ("source", job.product.source),
@@ -160,7 +179,6 @@ def job_diagnostic(request, job_id):
             )
         },
     }
-    review_job(job, session.finish(()))
     return result
 
 

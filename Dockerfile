@@ -1,4 +1,15 @@
 FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv
+
+FROM docker.io/library/node:24.19.0-bookworm-slim@sha256:a9f5f7c91a432850b2a8a7797adf5eadb6c733ceed61167806cee7ea7fbc29df AS frontend
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm install --global npm@12.0.2
+RUN npm ci
+COPY frontend/index.html frontend/vite.config.ts frontend/tsconfig.json ./
+COPY frontend/src ./src
+COPY frontend/public/licenses ./public/licenses
+RUN npm run build
+
 FROM python:3.13.18-slim-bookworm@sha256:a5a7017efc5969e00ae2b91c8eb0631049a569652aa4ffc4501769049ae45c72
 COPY --from=uv /uv /usr/local/bin/uv
 WORKDIR /app
@@ -8,8 +19,10 @@ COPY pyproject.toml uv.lock .python-version ./
 RUN --mount=type=cache,target=/root/.cache/uv UV_HTTP_TIMEOUT=120 UV_LINK_MODE=copy uv sync --locked
 RUN useradd --create-home --uid 10001 app
 COPY backend backend
+COPY --from=frontend /frontend/dist frontend/dist
 RUN DJANGO_SECRET_KEY=collectstatic-only POSTGRES_DB=unused POSTGRES_USER=unused \
     POSTGRES_PASSWORD=unused python backend/manage.py collectstatic --noinput
+RUN chown -R app:app /app/staticfiles
 COPY main.py ./
 COPY docs/api/openapi.v1.json docs/api/openapi.v1.json
 COPY tests tests
