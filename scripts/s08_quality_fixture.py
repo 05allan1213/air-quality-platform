@@ -1,4 +1,4 @@
-"""Authored historical F quality inputs for the isolated S08 browser host."""
+"""Authored historical F quality inputs for isolated S08 backend checks."""
 
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -258,8 +258,8 @@ def seed_operations(curator, source, window, receipt):
         before,
         handoff.rights_version,
     )
-    # This completed audit is independent of the browser withdrawal. Its due job is
-    # left for the read-only handoff preview, not executed by the browser tests.
+    # This completed audit is independent of the withdrawal case. Its due job is
+    # left for the read-only handoff preview.
     require(
         DispositionJob.objects.filter(product=handoff, reason="revocation").exists(),
         "operations_fixture_disposition",

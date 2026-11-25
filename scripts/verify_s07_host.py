@@ -423,6 +423,10 @@ def run_sandbox(action):
                 from s07_performance_host import measure
 
                 measure(root, runtime)
+            if action == "national-profile":
+                from s08_national_profile import measure
+
+                measure(root, runtime)
     finally:
         checks["lifecycle"] = runtime.lifecycle
         checks["remaining_processes"] = len(runtime.children)
@@ -530,6 +534,7 @@ def main():
             "offline",
             "contract",
             "performance",
+            "national-profile",
             "r",
             "restore",
             "_sandbox",
@@ -568,6 +573,7 @@ def main():
         ["offline"],
         ["contract"],
         ["performance"],
+        ["national-profile"],
     ):
         run_sandbox(*args.options)
         return 0

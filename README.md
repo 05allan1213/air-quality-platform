@@ -1,28 +1,24 @@
 # 城市空气质量监测数据分析平台
 
-这是城市和站点空气质量监测分析平台。PostgreSQL 保存权利、观测和任务事实，Web、Celery Worker 和唯一 Beat 分进程运行。S08 提供同源 Vue 前端，支持城市和站点观察、研究查询与受控管理。
+平台提供城市和站点的空气质量监测、分析及治理服务。PostgreSQL 保存来源权利、观测和任务事实。Django Web、Celery Worker 和唯一 Beat 分进程运行。
 
-## S08 本地前端
+## 当前工程入口
 
-在已配置的独立实例上构建前端、执行 `collectstatic`，然后用 `.venv/bin/python main.py web` 启动 Gunicorn。默认浏览器入口为 `http://127.0.0.1:8000/app/`。开发模式用 Vite 代理同源 API。安装步骤、构建路径和隔离测试命令见[运行手册](docs/operations/S08.md)。
+本仓库保留 S01–S07 和 S08 的后端成果。S08 原正式前端已清退，新正式前端尚未实施。双端联调与 S08 最终验收待完成，S09 尚未启动。[当前验收及历史证据](docs/verification/S08.md)
 
-验收使用合成 F 和真实 Session、PostgreSQL、Redis 与 Worker。地图需要获准地理资产，当期 H 需要适用的历史数据许可。城市在线和整机交付各有独立验收条件。[验收矩阵](docs/verification/S08.md) · [接口差集](docs/verification/S08_CONTRACT_DELTA.md)
-
-## S07 后端入口
-
-Linux / WSL2 上，按运维手册准备独立 PostgreSQL、Redis、锁文件及实例配置，然后在仓库根目录启动。`check` 检查归属和配置，无参数命令负责启动与停止整组应用进程。
+在 Linux / WSL2 中准备项目锁定的 Python、独立 PostgreSQL、专用 Redis 和实例配置。执行迁移和 `collectstatic` 后，后端可独立启动。健康探针为 `/health/ready/`，业务契约位于 `/api/v1/`，受控 Django Admin 位于 `/admin/`。宿主和 Compose 的具体配置、升级及回归命令见 [S08 后端运行与接入手册](docs/operations/S08.md)。
 
 ```sh
-. .venv/bin/activate
-python main.py check
-python main.py
+uv sync --locked
+.venv/bin/python main.py check
+.venv/bin/python main.py web
 ```
 
-- 宿主、正式离线 Compose、单组件、故障排查和停复顺序见 [S07 运维手册](docs/operations/S07.md)。
-- 从用户会话到管理员和研究接口的请求样例、版本迁移与错误见 [v1 候选契约](docs/api/v1.md) 和 [OpenAPI 3.1](docs/api/openapi.v1.json)。
-- 阶段判定、证据、历史 CSV 风险及外部授权见 [S07 验收报告](docs/verification/S07.md)。
+接口用法、Session/CSRF、具名权限及 S08 的八个新增操作见 [v1 接口说明](docs/api/v1.md)、[OpenAPI 3.1](docs/api/openapi.v1.json) 和 [S08 兼容差集](docs/verification/S08_CONTRACT_DELTA.md)。S07 原封版材料可按 `s07-backend-v1` 复核。[S07 封版报告](docs/verification/S07.md)
 
-本包包含上述 S07 操作和验收材料。下文 S01 至 S04 的历史文档路径以完整 Git 仓库根目录为起点。
+## 全国总览示范首页
+
+在 `prototypes/frontend-preview/` 使用已验证的 Node 24.19.0 与 npm 12.0.2 执行 `npm ci` 和 `npm run dev`，打开 `http://127.0.0.1:4174/`。示范使用本地 F 样本，包含已认可的总览构图、地图、等级和排名、筛选、表格与短详情。[示范首页及验证](prototypes/frontend-preview/evidence/national/评审说明.md) · [前端设计规范](frontend/DESIGN.md)
 
 ## 查询与用户业务
 

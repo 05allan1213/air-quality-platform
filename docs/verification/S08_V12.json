@@ -2,6 +2,7 @@
   "format": "S08 incremental V12 witness v1",
   "scope": "S08 实施计划 §6–6.2。本地隔离 PostgreSQL F/I，接续 S07_V12.json。",
   "status": "PARTIAL",
+  "evidence_commit": "b12f33f717ce5f1ccb18407b4e56ff9849aa4024",
   "baseline": {
     "tag": "s07-backend-v1",
     "commit": "a3fde5b2239fbd55e83e54ad0006e034b26f57a1",
@@ -16,7 +17,7 @@
     "added": 8,
     "removed": 0
   },
-  "interpretation": "PASS 只覆盖已列节点及具体观测。未列状态码没有取得独立 HTTP 见证。升级、HTML 与复用原写信封另列。",
+  "interpretation": "PASS 只覆盖原 S08 受测快照的已列节点和观测。旧 SPA 子项属历史前端证据。当前清退后验证见 docs/verification/S08.md。调度范围的后续定向复核见 S08_CONTRACT_DELTA.md。",
   "operations": [
     {
       "id": "CAP",
@@ -816,6 +817,7 @@
         },
         {
           "receipt": "s06-4f1820e5a696",
+          "applicability": "historical_frontend",
           "nodeids": [
             "tests/test_s08_spa.py::test_shell_serves_build_and_revalidates_for_deep_links",
             "tests/test_s08_spa.py::test_shell_rejects_missing_collected_references[case-1]",

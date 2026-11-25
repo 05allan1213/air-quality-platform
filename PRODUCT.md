@@ -24,11 +24,11 @@ The three workflows are user observation, research analysis, and administrator c
 
 ## Capabilities and Constraints
 
-The scope is modules M01-M10 and acceptance cases T01-T12. The formal frontend consumes server-defined authorization, products, query semantics, versions, coverage, and statistics. PostgreSQL remains authoritative; Redis transports tasks only. S07 is the backend baseline. S08 does not authorize real-source collection, broaden data rights, deploy, or pass S09/T11 acceptance.
+The scope is modules M01-M10 and acceptance cases T01-T12. A formal frontend consumes server-defined authorization, products, query semantics, versions, coverage, and statistics. PostgreSQL is authoritative. Redis transports tasks. The current backend baseline includes the S08 enhancements and the S07 frozen operations. T11 remains NO-GO.
 
 ## Evidence on Hand
 
-V3.0, the overall implementation plan, the approved S08 implementation plan, `frontend/DESIGN.md`, the frozen v1 examples/OpenAPI, and S07 verification/handoff materials define product behavior. The prototype under `prototypes/frontend-preview/` and its F fixtures are references and counterexamples, not formal implementation or integration evidence. At S08 start, `frontend/` contains its engineering and design specifications but no runnable app.
+V3.0, the overall implementation plan, `frontend/DESIGN.md`, the current v1 examples/OpenAPI, and the S07/S08 backend handoff describe the applicable behavior. The original S08 application and its integration evidence are archived at `b12f33f717ce5f1ccb18407b4e56ff9849aa4024`. `frontend/` contains the engineering and design specifications. `prototypes/frontend-preview/` runs the approved national overview with F fixtures. A new formal frontend has yet to be implemented. Final S08 integration and acceptance remain pending, and S09 has yet to start.
 
 ## Product Principles
 

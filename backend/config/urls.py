@@ -59,5 +59,4 @@ urlpatterns = [
     path("api/v1/auth/", include("accounts.urls")),
     path("api/v1/admin/fixture-runs/", sample_views.fixture_runs),
     path("api/v1/fixtures/observations/", sample_views.observations),
-    path("", include("config.spa")),
 ]

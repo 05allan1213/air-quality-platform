@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ElDialog } from 'element-plus'
 import { Aim, ArrowRight, InfoFilled, Location, MapLocation } from '@element-plus/icons-vue'
 import { expected, grades, hourly, metricLabels, missing, snapshot, type CitySample } from './snapshot'
@@ -8,6 +8,8 @@ export type HomeDialog = CitySample | 'source' | 'missing' | 'trend'
 const props = defineProps<{ content: HomeDialog | null; hours: number }>()
 const emit = defineEmits<{ close: [] }>()
 const city = computed(() => typeof props.content === 'object' ? props.content : null)
+const explainCityScope = ref(false)
+watch(city, () => { explainCityScope.value = false })
 const titles = { source: '数据与地图说明', missing: '本时刻缺报城市', trend: '样本到报明细' }
 const title = computed(() => typeof props.content === 'string' ? titles[props.content] : `${city.value?.name ?? ''} · 同刻观测详情`)
 </script>
@@ -26,7 +28,10 @@ const title = computed(() => typeof props.content === 'string' ? titles[props.co
         <div v-for="key in (['PM25','PM10','O3'] as const)" :key="key"><dt>{{ metricLabels[key] }} 等级</dt><dd>{{ city.levels[key] === null ? '缺测' : `${city.levels[key]} 级` }}</dd></div>
         <div><dt>标准系列</dt><dd>HJ 633—2012</dd></div>
       </dl>
-      <RouterLink v-if="city.name === '云汀市'" to="/city" class="sky-text-link city-deep">打开同城 C 产品详情<ArrowRight aria-hidden="true"/></RouterLink>
+      <template v-if="city.name === '云汀市'">
+        <button class="sky-text-link city-deep" aria-controls="city-preview-scope" :aria-expanded="explainCityScope" @click="explainCityScope = !explainCityScope">打开同城 C 产品详情<ArrowRight aria-hidden="true"/></button>
+        <p v-show="explainCityScope" id="city-preview-scope" class="dialog-basis">同城 C 产品详情超出全国总览的演示范围。</p>
+      </template>
     </template>
     <div v-else-if="content === 'source'" class="source-notes">
       <p><span><b>F 合成数据 · L 产品语义</b>观测读数、到报台账与应到名录均为本地演示样本。排名比较同一时刻、同一标准的 AQI。</span><InfoFilled aria-hidden="true"/></p>

@@ -1,2 +1,0 @@
-# Keep bundled third-party license notices byte-for-byte on every checkout.
-frontend/public/licenses/**/*.txt -text -whitespace

@@ -1,4 +1,4 @@
-"""Project-authored F inputs for the guarded S08 browser host only."""
+"""Project-authored F inputs for isolated S08 backend checks."""
 
 import secrets
 from datetime import UTC, date, datetime, timedelta
@@ -393,7 +393,7 @@ def seed_favorite_rights(curator, run):
     from observations.policy import REQUIRED
     from s05_support import DISPLAY, RETAIN, city, grant, ingest, product
 
-    # A separate product lets this browser case withdraw display without changing
+    # A separate product lets a check withdraw display without changing
     # the products read by monitoring, query, or the operations handoff case.
     source = Source.objects.create(
         namespace=f"s08.f.favorite.{run.rsplit('-', 1)[-1]}", publisher=EVIDENCE
@@ -546,7 +546,7 @@ def seed_f(run):
     curator.save(update_fields=["is_active"])
     return {
         "origin": "F",
-        "fixture_version": "s08-browser-fixture-v1",
+        "fixture_version": "s08-backend-fixture-v1",
         "scope": "synthetic",
         "source": source.namespace,
         "snapshot_at": SNAPSHOT.isoformat(),

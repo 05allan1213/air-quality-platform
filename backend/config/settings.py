@@ -13,10 +13,6 @@ def required(name):
 SECRET_KEY = required("DJANGO_SECRET_KEY")
 DEBUG = False
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SPA_DIST = Path(os.environ.get("AQ_SPA_DIST", PROJECT_ROOT / "frontend" / "dist"))
-if not SPA_DIST.is_absolute():
-    raise ImproperlyConfigured("AQ_SPA_DIST must be an absolute build directory")
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 INSTALLED_APPS = [
@@ -59,14 +55,8 @@ TEMPLATES = [
 ]
 STATIC_URL = "/static/"
 STATIC_ROOT = Path(os.environ.get("AQ_STATIC_ROOT", "/app/staticfiles"))
-STATICFILES_DIRS = [
-    ("app/assets", SPA_DIST / "assets"),
-    ("app/licenses", SPA_DIST / "licenses"),
-]
-STATICFILES_DIRS = [(prefix, path) for prefix, path in STATICFILES_DIRS if path.is_dir()]
 WHITENOISE_AUTOREFRESH = False
 WHITENOISE_USE_FINDERS = False
-WHITENOISE_IMMUTABLE_FILE_TEST = r"/static/app/assets/[^/]+-[A-Za-z0-9_-]{8,}\.[^/]+$"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -125,7 +115,7 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     "retry_on_timeout": False,
 }
 
-# Set only by the validated, web-only S08 host launcher (never an execution gate).
+# Restricted to the validated web-only F instance. Actual execution has its own gate.
 S08_FIXTURE_SCHEDULE = (
     os.environ.get("AQ_HOST_OFFLINE") == "1" and os.environ.get("AQ_S08_FIXTURE_SCHEDULE") == "1"
 )

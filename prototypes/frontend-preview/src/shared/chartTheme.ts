@@ -1,10 +1,9 @@
 import { use, registerTheme, init } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, BarChart, ScatterChart, BoxplotChart } from 'echarts/charts'
-import { GridComponent, LegendComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, MarkPointComponent, AriaComponent } from 'echarts/components'
+import { LineChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent } from 'echarts/components'
 
-use([CanvasRenderer, LineChart, BarChart, ScatterChart, BoxplotChart, GridComponent,
-  LegendComponent, TooltipComponent, DataZoomComponent, MarkLineComponent, MarkPointComponent, AriaComponent])
+use([CanvasRenderer, LineChart, GridComponent, TooltipComponent])
 const axis = {
   axisLabel: { color: '#56677a', fontSize: 11, margin: 11 }, axisTick: { show: false },
   axisLine: { lineStyle: { color: '#ccd6df' } },

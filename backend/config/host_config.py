@@ -25,7 +25,6 @@ CONFIG_KEYS = (
     REQUIRED
     | OVERRIDES
     | {
-        "AQ_SPA_DIST",
         "AQ_STATIC_ROOT",
         "AQ_WORKER_NODE",
         "CNEMC_MODE",

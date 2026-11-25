@@ -1,6 +1,8 @@
 # S08 Implementation Plan｜正式前端与双端联调
 
-**最终实施基线 · 2026-11-25**。用户转达 GPT 最终定向 Plan Review 为 **APPROVED / PASS**；R01–R05 全部通过，§6.2 本地城市检索别名方案及当前计划的六个内部实施阶段、已确认接口增强范围均获批准。历史首次 **CONDITIONAL PASS** 与定向复核过程保留在 §11.1。六个实施阶段及正式前端验收在批准时为 **NOT RUN**，本文件现作为 S08 执行基线。
+**原 S08 实施历史 · 2026-11-25。** 本文件记录 `b12f33f717ce5f1ccb18407b4e56ff9849aa4024` 的原计划。原正式前端、页面路径、联调入口、原型其他页面及其复用假设均属历史。原源码和验证记录可用 `git show refs/archive/s08-formal-frontend:<路径>` 查阅。§6–6.2 已落地的后端增量以现行 v1 和差集为准。新正式前端尚未实施，双端联调与 S08 最终验收待完成，S09 尚未启动。[当前后端运行手册](../operations/S08.md) · [当前验收](../verification/S08.md) · [S08 契约差集](../verification/S08_CONTRACT_DELTA.md)
+
+原计划收到用户转达的 GPT 最终定向 Plan Review **APPROVED / PASS**。R01–R05、§6.2 城市检索别名及六个原内部实施阶段获准。历史首次 **CONDITIONAL PASS** 与定向复核过程见 §11.1。
 
 ## 1. 交付范围与判定依据
 
@@ -44,7 +46,7 @@ S08 在一个同源 Vue 应用内打通观察复访、研究与明细核对、�
 
 ## 3. 正式前端起点、原型复用与资源
 
-`frontend/` 只有 `AGENTS.md` 和 `DESIGN.md`。可执行工程在 `prototypes/frontend-preview/`。`src/router.ts` 注册 `/`、`/city`、`/analysis`、`/quality` 并把未知路径转到城市。[App.vue](../../prototypes/frontend-preview/src/App.vue) 将「数据查询、我的空间、采集任务、系统运行」接到范围说明弹层。[preview.ts](../../prototypes/frontend-preview/src/shared/preview.ts) 默认模拟 `operator`，角色和两套收藏保存在内存。Axios 已安装，当前四页只读本地 F，正式请求客户端待建。后三页可作实现参考，视觉签收仅覆盖全国首页。正式数据发现、独立站点页、用户/管理导航和私有业务都要以真实 API 验证。
+原 S08 启动时，`frontend/` 只有 `AGENTS.md` 和 `DESIGN.md`。历史原型位于归档提交内的 `prototypes/frontend-preview/`。当时 `src/router.ts` 注册 `/`、`/city`、`/analysis`、`/quality` 并把未知路径转到城市。`src/App.vue` 将「数据查询、我的空间、采集任务、系统运行」接到范围说明弹层。`src/shared/preview.ts` 默认模拟 `operator`，角色和两套收藏保存在内存。四页均读本地 F，视觉签收覆盖全国首页。正式数据发现、独立站点页、用户/管理导航和私有业务须以真实 API 验证。
 
 原型业务目录位于 `src/`，其中 `national/` 内含首页组件及 `assets/`。完整路径见[原型工程](../../prototypes/frontend-preview/)。
 

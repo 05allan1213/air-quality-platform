@@ -42,10 +42,12 @@ test('首页搜索、组合筛选、排序、分页与详情使用同一份合�
   await expect(table.locator('tbody tr')).toHaveCount(5)
   await page.getByLabel('搜索城市').fill('云汀')
   await page.getByRole('button', { name: '查看云汀市详情' }).click()
-  await page.getByRole('link', { name: '打开同城 C 产品详情' }).click()
-  await ready(page, '云汀市')
-  await page.getByRole('link', { name: '监测总览', exact: true }).click()
-  await ready(page, '全国空气质量总览')
+  const filteredUrl = page.url()
+  const deep = dialog.getByRole('button', { name: '打开同城 C 产品详情' })
+  await deep.click()
+  await expect(deep).toHaveAttribute('aria-expanded', 'true')
+  await expect(dialog).toContainText('同城 C 产品详情超出全国总览的演示范围。')
+  await expect(page).toHaveURL(filteredUrl)
 })
 
 test('地图可定位、切换等级、缩放并通过键盘打开同城记录', async ({ page }) => {
@@ -124,22 +126,46 @@ for (const [width, height] of [[1448,1086], [1440,900], [1920,1080], [2000,1080]
   })
 }
 
-test('窄屏工作区入口沿用已有账号权限', async ({page}) => {
+test('窄屏工作区入口提示演示范围，关闭后可返回导航', async ({page}) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
   await ready(page, '全国空气质量总览')
-  await page.getByRole('button', {name: '演示账号与权限设置'}).click()
-  await page.getByRole('radio', {name: /观察账号/}).check()
-  await page.getByRole('button', {name: '完成设置'}).click()
-  await page.getByRole('button', {name: '打开导航'}).click()
+  const navigation = page.getByRole('button', {name: '打开导航'})
+  await navigation.click()
   await page.getByRole('button', {name: '切换工作区'}).click()
-  await expect(page.getByRole('dialog', {name: '演示设置'})).toBeVisible()
+  const scope = page.getByRole('dialog', {name: '管理工作区 · 原型范围外'})
+  await expect(scope).toContainText('当前原型开放全国总览。')
+  await expect(page.getByRole('dialog', {name: '工作区导航'})).toBeHidden()
   await expect(page).toHaveURL(/\/$/)
-  await page.getByRole('radio', {name: /具名治理账号/}).check()
-  await page.getByRole('button', {name: '完成设置'}).click()
-  await page.getByRole('button', {name: '打开导航'}).click()
-  await page.getByRole('button', {name: '切换工作区'}).click()
-  await ready(page, '无序异值争议')
+  await page.keyboard.press('Escape')
+  await expect(scope).toBeHidden()
+  await expect(navigation).toBeFocused()
+  await navigation.press('Enter')
+  await expect(page.getByRole('dialog', {name: '工作区导航'})).toBeVisible()
+})
+
+test('旧页面直达返回总览，桌面入口留在总览', async ({ page }) => {
+  for (const path of ['/city', '/analysis', '/quality']) {
+    await page.goto(path)
+    await ready(page, '全国空气质量总览')
+    await expect(page).toHaveURL(/\/$/)
+  }
+  for (const name of ['城市详情', '分析工作台']) {
+    const button = page.getByRole('button', { name, exact: true })
+    await button.click()
+    const scope = page.getByRole('dialog', { name: `${name} · 原型范围外` })
+    await expect(scope).toBeVisible()
+    await expect(page).toHaveURL(/\/$/)
+    await page.keyboard.press('Escape')
+    await expect(scope).toBeHidden()
+    await expect(button).toBeFocused()
+  }
+  await page.getByRole('button', { name: '治理账号，演示设置' }).click()
+  const settings = page.getByRole('dialog', { name: '演示设置' })
+  await expect(settings).toContainText('全部样本来自本地 F 合成空间。')
+  await expect(settings.getByRole('radio')).toHaveCount(0)
+  await settings.getByRole('button', { name: '完成设置' }).click()
+  await expect(settings).toBeHidden()
 })
 
 test('实际圆心、悬浮、选中与详情同城，后退恢复 URL 中的选点', async ({ page }) => {
@@ -171,12 +197,17 @@ test('实际圆心、悬浮、选中与详情同城，后退恢复 URL 中的选
     await expect(pin('上海')).toHaveAttribute('aria-pressed', 'true')
     await expect(callout).toContainText('上海')
   }
-  await page.getByRole('link', { name: '城市详情', exact: true }).click()
-  await ready(page, '云汀市')
+  const selectedUrl = page.url()
+  await page.getByRole('button', { name: '城市详情', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '城市详情 · 原型范围外' })).toBeVisible()
+  await expect(page).toHaveURL(selectedUrl)
+  await page.keyboard.press('Escape')
+  await page.goto('/')
+  await expect(pin('北京')).toHaveAttribute('aria-pressed', 'true')
   await page.goBack()
+  await expect(page).toHaveURL(selectedUrl)
   await expect(pin('上海')).toHaveAttribute('aria-pressed', 'true')
-  await page.getByRole('link', { name: '城市详情', exact: true }).click()
-  await page.getByRole('link', { name: '监测总览', exact: true }).click()
+  await page.getByRole('link', { name: '澄空观测，返回全国总览' }).click()
   await expect(pin('北京')).toHaveAttribute('aria-pressed', 'true')
 })
 

@@ -1,22 +1,32 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { ElDrawer, ElTooltip, type ElTooltipProps } from 'element-plus'
 import { CollectionTag, DArrowLeft, DArrowRight, DataAnalysis, Grid, InfoFilled, Location, Search, Switch } from '@element-plus/icons-vue'
 import skyMark from './assets/sky-mark.svg'
 
 const props = defineProps<{ mobileOpen: boolean }>()
 const expanded = defineModel<boolean>('expanded', { required: true })
-const emit = defineEmits<{ close: []; workspace: []; scope: [name: string]; info: [] }>()
+const emit = defineEmits<{ close: []; scope: [name: string]; info: [] }>()
 const drawer = computed({ get: () => props.mobileOpen, set: (value) => { if (!value) emit('close') } })
+const pendingScope = ref('')
 const groups = [
-  { title: '观测工作区', links: [{ label: '全国总览', icon: Grid, path: '/' }, { label: '城市详情', icon: Location, path: '/city' }, { label: '分析工作台', icon: DataAnalysis, path: '/analysis' }] },
+  { title: '观测工作区', links: [{ label: '全国总览', icon: Grid, path: '/' }, { label: '城市详情', icon: Location, path: '' }, { label: '分析工作台', icon: DataAnalysis, path: '' }] },
   { title: '数据与个人', links: [{ label: '数据查询', icon: Search, path: '' }, { label: '我的空间', icon: CollectionTag, path: '' }] },
 ]
 const toggleLabel = computed(() => expanded.value ? '收起侧栏' : '展开侧栏')
 const tools = [
   { label: '数据说明', icon: InfoFilled, run: () => emit('info') },
-  { label: '切换工作区', icon: Switch, run: () => emit('workspace') },
+  { label: '切换工作区', icon: Switch, run: () => emit('scope', '管理工作区') },
 ]
+function closeForScope(label: string) {
+  pendingScope.value = label
+  emit('close')
+}
+function showPendingScope() {
+  if (!pendingScope.value) return
+  emit('scope', pendingScope.value)
+  pendingScope.value = ''
+}
 // Teleported hints remain visible when the middle section has to scroll.
 const hint = { placement: 'right', trigger: ['hover', 'focus'], triggerKeys: [], showAfter: 180, hideAfter: 0, showArrow: false, popperClass: 'sky-rail-tip' } satisfies Partial<ElTooltipProps>
 </script>
@@ -52,16 +62,16 @@ const hint = { placement: 'right', trigger: ['hover', 'focus'], triggerKeys: [],
       </button>
     </div>
   </aside>
-  <ElDrawer v-model="drawer" title="工作区导航" direction="ltr" size="min(305px, 85vw)" class="sky-mobile-drawer" destroy-on-close>
+  <ElDrawer v-model="drawer" title="工作区导航" direction="ltr" size="min(305px, 85vw)" class="sky-mobile-drawer" destroy-on-close @closed="showPendingScope">
     <nav class="sky-nav" aria-label="窄屏主导航">
       <div v-for="group in groups" :key="group.title">
         <p>{{ group.title }}</p>
         <template v-for="item in group.links" :key="item.label">
           <RouterLink v-if="item.path" :to="item.path" class="rail-item" :class="{ 'sky-active': item.path === '/' }" @click="emit('close')"><component :is="item.icon" aria-hidden="true" />{{ item.label }}</RouterLink>
-          <button v-else class="rail-item" @click="emit('close'); emit('scope', item.label)"><component :is="item.icon" aria-hidden="true" />{{ item.label }}</button>
+          <button v-else class="rail-item" @click="closeForScope(item.label)"><component :is="item.icon" aria-hidden="true" />{{ item.label }}</button>
         </template>
       </div>
     </nav>
-    <button class="rail-item drawer-workspace" @click="emit('close'); emit('workspace')"><Switch aria-hidden="true" />切换工作区</button>
+    <button class="rail-item drawer-workspace" @click="closeForScope('管理工作区')"><Switch aria-hidden="true" />切换工作区</button>
   </ElDrawer>
 </template>

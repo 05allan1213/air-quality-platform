@@ -138,10 +138,6 @@ def check_storage(values, root, *, serve_static):
                 private_root(path)
             paths[key] = path
     places = list(paths.values())
-    if "AQ_SPA_DIST" in values:
-        dist = Path(values["AQ_SPA_DIST"])
-        require(dist.is_absolute() and dist.resolve() == dist, "invalid_AQ_SPA_DIST")
-        places.append(dist)
     if values["POSTGRES_HOST"] != "127.0.0.1":
         places.append(Path(values["POSTGRES_HOST"]))
     broker = urlsplit(values["CELERY_BROKER_URL"])

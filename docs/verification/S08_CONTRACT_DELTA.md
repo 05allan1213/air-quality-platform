@@ -1,6 +1,6 @@
 # S08 API 兼容差集
 
-本记录对应已批准实施计划 §6、§6.1、§6.2。以下 API 路径省略 `/api/v1/` 前缀，并保留末尾斜杠。接口细节以本次对照的 OpenAPI 和处理函数为准。[S08 实施计划](../plans/S08_IMPLEMENTATION_PLAN.md#6-冻结契约差异与已确认的取舍与增强规格) · [接口文档](../api/v1.md) · [OpenAPI](../api/openapi.v1.json)
+本记录对应原实施计划 §6、§6.1、§6.2 已落地的后端能力。原正式前端清退后，OpenAPI 与 `b12f33f717ce5f1ccb18407b4e56ff9849aa4024` 字节一致。以下 API 路径省略 `/api/v1/` 前缀，并保留末尾斜杠。接口细节以本次对照的 OpenAPI 和处理函数为准。[S08 实施计划](../plans/S08_IMPLEMENTATION_PLAN.md#6-冻结契约差异与已确认的取舍与增强规格) · [接口文档](../api/v1.md) · [OpenAPI](../api/openapi.v1.json)
 
 | 对照项 | S07 冻结基线 | S08 对照快照 |
 | --- | --- | --- |
@@ -26,7 +26,7 @@
 
 普通目录按观测时刻优先。在最新可披露时刻有多条候选时，L 优先选获准 AQI，再以观测键排序。AQI 的 `link` 打开 `overview/national/` 并保留 `at`、实际 `window_definition` 和已核 `standard_series`。未知系列省略全国接口的 `standard_series` 筛选。选中的记录是污染物等级时，`link` 等于 `history_link`，保留原指标、系列、小时窗和半开时段。这个分支也适用于等级时刻比 AQI 更新的情况。真实 Session 与 PostgreSQL 的同刻优先级、仅等级、已知和未知系列锚点往返见 `s06-b37bebf8410a`。[目录实现](../../backend/observations/discovery.py) · [定向测试](../../tests/test_s08_national_contract.py)
 
-S07 签发的 `catalog/objects/` 游标若以 L 记录为页尾，升级后重投影可能改变该行指纹。首次使用受影响的旧游标可收到 `409/page_changed`。客户端保留查询条件并移除 `cursor`，从第一页取得新游标。该跨版本目录游标未运行。下述升级收据验证的是旧研究明细游标。
+S07 签发的 `catalog/objects/` 游标若以 L 记录为页尾，升级后重投影可能改变该行指纹。首次使用受影响的旧游标可收到 `409/page_changed`。客户端保留查询条件并移除 `cursor`，从第一页取得新游标。下述升级收据分别验证旧目录游标与旧研究明细游标。
 
 ## §6.1 · 周期计划及主机交接
 
@@ -51,13 +51,13 @@ S07 签发的 `catalog/objects/` 游标若以 L 记录为页尾，升级后重�
 
 ### HTML 路由边界
 
-正式 SPA 的 GET/HEAD `/` 重定向 `/app/`，`/app/` 和 `/app/<route>` 返回带 `ETag`、`no-cache` 的同一壳。壳直接引用的入口脚本、样式表及 `modulepreload` 须在 `collectstatic` 目录可读。构建或任一引用不可用时返回文本 `503/no-store`，包括携带匹配 ETag 的请求。Vite 哈希资产由 `/static/app/assets/` 发布。HTML 路由和字典入口单独纳入路由分类检查。[路由表](../../backend/config/urls.py) · [SPA 壳](../../backend/config/spa.py) · [契约路由测试](../../tests/test_s07_contract.py) · [静态及壳测试](../../tests/test_s08_spa.py)
+清退移除 `/`、`/app/` 与 `/app/<route>` 的 HTML 壳路由及旧 `/static/app/` 资源集成。Django Admin 及字典入口保留。根路径和旧壳路径回到 Django 404。后端的显式 API、Admin 和健康探针分别校验。[路由表](../../backend/config/urls.py) · [契约路由测试](../../tests/test_s07_contract.py) · [实际启动与静态验证](S08.md)
 
 ## 增量 V12 和本地收据
 
 [增量 V12](S08_V12.json) 将 8 个新增操作、3 个 OpenAPI 增强操作和 1 项 L 目录行为勘误映射到测试节点及隔离收据。HTML 字典、原写信封复用、路由和升级各有收据。总体为 **PARTIAL**。`PASS` 适用于已列行为。当期获权 H 的同一数据集双站验证待适用许可与样本。F 已覆盖 H 形态请求不支持指标时的合法空态。S07 已封版的 V12 继续记录原操作覆盖。
 
-后端下列 run 的汇总取自 `tmp/s06-evidence/<run>/pytest.json`，隔离与清理状态取自同一 run 的 `V01/result.json`。表中各定向运行均为 `guard=PASS`、`cleanup=true`、`NOT RUN=0`。收据对应各自代码快照，测试计数有重叠。
+以下历史后端 run 的汇总取自 `tmp/s06-evidence/<run>/pytest.json`，隔离与清理状态取自同一 run 的 `V01/result.json`。表中各定向运行均为 `guard=PASS`、`cleanup=true`、`NOT RUN=0`。收据对应各自代码快照，测试计数有重叠。
 
 | 覆盖范围 | Run | 结果 |
 | --- | --- | --- |
@@ -73,22 +73,15 @@ S07 签发的 `catalog/objects/` 游标若以 L 记录为页尾，升级后重�
 | 对象审计、本人回执、管理目录与路由联合回归 | `s06-834af2005bc5` | 28 PASS，0 FAIL |
 | 调度 GET 非法查询、对象审计共用限流、接管范围部分撤权、健康末端复核 | `s06-e2acd338648a` | 41 PASS，0 FAIL |
 | 账号治理明确授予及撤销两个新增权限。原主体 Session 刷新能力，权限不足的代理请求返回 403，审计动作和版本对应 | `s06-85514b391833` | 90 PASS，0 FAIL |
-| SPA 壳直接引用检查、缺件与旧哈希、HEAD/ETag、静态命名空间及契约 | `s06-4f1820e5a696` | 10 PASS，0 FAIL |
 
 **S07 → S08 前向升级 PASS。** `tmp/s06-evidence/s06-075b16c61f77/{upgrade.json,V01/result.json}` 记录从 `s07-backend-v1` 停旧写者后同库迁移两遍，保留 56 张旧表、2 个 legacy Job、原窗口和两次尝试。四种旧 Session 仍按原能力读本人资料和获权对象，计划入口均拒绝。旧研究明细游标、保存方案重跑和有效导出票据分别返回 200，票据为 1,060 字节且 SHA-256 相符。[升级脚本](../../scripts/s08_contract_upgrade.py)
 
 - **全国总览 `/overview/national/`。** S07 签发的默认城市序和 AQI 降序游标均在 S08 沿用旧 Session 续页，返回 200。比较时排除动态的 `evaluated_at` 和 `age_seconds`。将同一游标传给 `home=1` 返回 `400/invalid_cursor`。
 - **普通目录 `/catalog/objects/`。** 旧游标尾行的 L 链接经勘误后指纹发生变化，升级后的同一续页请求返回 `409/page_changed`。清除游标重读首页后取得新版游标，续页返回 200。两页对象、排序和其他字段一致。
 
-生产模式浏览器收据在 `tmp/s08-evidence/<run>/visual/result.json`，来源为 F 且外部采集关闭。
+原正式前端的壳、浏览器联调与视觉证据见 `refs/archive/s08-formal-frontend:docs/verification/S08.md`。当前后端回归另有清退后收据。[验证与证据索引](S08.md)
 
-| Run | 结果 |
-| --- | --- |
-| `s08-b-422a6b2a9b0e` | `auth.spec.ts`、`scope.spec.ts` 共 5 项 PASS，外层 PASS，`cleanup=true`。 |
-| `s08-b-1f74e6cdbb1c` | `quality.spec.ts` 共 4 项 PASS，外层 PASS，`cleanup=true`。 |
-| `s08-b-00773ec0187a` | 联合浏览器 8 PASS / 4 FAIL。采集配置、账本和监测用例通过，两个总览断言、一个运维断言和一个分析超时未通过。外层 FAIL、`cleanup=false`，内层 `cleanup=true`。 |
-
-调度复核 SCH-01、SCH-02、SCH-03 均已关闭。HTTP 激活和主机 `--phase` 纳管均先核完整开放接管段 `[B,+∞)` 的审阅与留存许可，再查冲突。仅覆盖有限数据日期时拒绝且零写。在有效期内覆盖整段的许可可以纳管。真实 PostgreSQL 回归 `s06-f311710660fe` 通过 131/131 项，另核只读与拒绝写、事务末端撤权回滚及审计的部分撤权。地图和当期 H 仍需保管方提供适用材料。T11 维持 NO-GO。[联合验收](S08.md) · [阶段放行边界](../plans/S08_IMPLEMENTATION_PLAN.md)
+调度复核 SCH-01、SCH-02、SCH-03 均已关闭。HTTP 激活和主机 `--phase` 纳管均先核完整开放接管段 `[B,+∞)` 的审阅与留存许可，再查冲突。仅覆盖有限数据日期时拒绝且零写。在有效期内覆盖整段的许可可以纳管。真实 PostgreSQL 回归 `s06-f311710660fe` 通过 131/131 项，另核只读与拒绝写、事务末端撤权回滚及审计的部分撤权。地图和当期 H 仍需保管方提供适用材料。T11 维持 NO-GO。[当前验收](S08.md) · [总体阶段边界](../design/总体实施方案.md)
 
 ### 复核方法
 

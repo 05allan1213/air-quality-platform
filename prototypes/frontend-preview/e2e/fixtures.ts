@@ -1,6 +1,4 @@
 import { test as base, expect, type Page } from '@playwright/test'
-import { mkdir } from 'node:fs/promises'
-import path from 'node:path'
 
 export const test = base.extend<{ runtimeGuard: void }>({
   runtimeGuard: [async ({ page, baseURL }, use) => {
@@ -30,15 +28,4 @@ export async function ready(page: Page, name: string) {
 export async function noOverflow(page: Page) {
   const sizes = await page.evaluate(() => ({ viewport: window.innerWidth, page: document.documentElement.scrollWidth }))
   expect(sizes.page).toBeLessThanOrEqual(sizes.viewport + 1)
-}
-export async function shot(page: Page, file: string, fullPage = false) {
-  const dir = path.resolve('evidence')
-  await mkdir(dir, { recursive:true })
-  await page.evaluate(async () => { await document.fonts.ready; await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))) })
-  await page.screenshot({path: path.join(dir, `${file}.png`), fullPage, animations:'disabled', caret:'hide'})
-}
-export async function cityState(page: Page, state: string) {
-  await page.getByRole('button',{ name:'演示设置', exact:true }).click()
-  await page.getByLabel('城市样本状态').selectOption(state)
-  await page.getByRole('button',{ name:'完成设置' }).click()
 }

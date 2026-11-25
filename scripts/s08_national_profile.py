@@ -1,6 +1,7 @@
-"""Measure the F national page inside s08_browser_host's guarded namespace."""
+"""Profile the F national API inside the guarded S07-B backend instance."""
 
 import json
+import os
 import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -12,9 +13,14 @@ from time import perf_counter
 import httpx
 from django.db import connection, transaction
 from django.test import Client
+from s01_runtime import wait_for
 from s06_guard import require
+from s07_host_guard import check_broker, check_database, check_environment, check_process_network
+from s07_performance_seed import setup_django
+from s08_backend_fixtures import seed_f
 
 PATH = "/api/v1/overview/national/"
+BASE = "http://127.0.0.1:8000"
 
 
 def login(client, account, *, http=False):
@@ -93,10 +99,15 @@ def diagnostic(client, params, ids):
     return output
 
 
-def profile(base, seed, evidence):
-    from s08_browser_host import write_seed
+def write_receipt(path, result):
+    with path.open("x", encoding="utf-8") as handle:
+        os.fchmod(handle.fileno(), 0o600)
+        json.dump(result, handle, ensure_ascii=False)
+        handle.write("\n")
 
-    require(base == "http://127.0.0.1:8000" and seed["origin"] == "F", "national_profile_scope")
+
+def profile(seed, evidence):
+    require(seed["origin"] == "F" and len(seed["cities"]) == 51, "national_profile_scope")
     params = {"product": seed["products"]["L"], "scope": "synthetic", "at": seed["snapshot_at"]}
     home = {**params, "home": 1, "page_size": 25, "map_limit": 400, "standard_series": "HJ633-2012"}
     ids = sorted(city["id"] for city in seed["cities"])
@@ -108,14 +119,14 @@ def profile(base, seed, evidence):
         ("filtered", {**home, "q": seed["cities"][0]["name"]}, ids[:1]),
     ):
         result = diagnostic(web, conditions, rows)
-        write_seed(evidence / f"national-{case}.json", result)
+        write_receipt(evidence / f"national-{case}.json", result)
 
     # Five authenticated sessions share one Gunicorn 1w/8t process. Each wave
     # measures the complete HTTP response before parsing and verifying its rows.
     with ExitStack() as stack, ThreadPoolExecutor(max_workers=5) as workers:
         clients = []
         for role in ("reader", "peer", "operator", "reviewer", "diagnostics"):
-            client = stack.enter_context(httpx.Client(base_url=base, trust_env=False, timeout=90))
+            client = stack.enter_context(httpx.Client(base_url=BASE, trust_env=False, timeout=90))
             login(client, seed["accounts"][role], http=True)
             clients.append(client)
         barrier = Barrier(5, timeout=20)
@@ -128,4 +139,38 @@ def profile(base, seed, evidence):
             return {"ms": round(elapsed, 2), "bytes": verified(response, 25, ids)}
 
         waves = [list(workers.map(request, clients)) for _ in range(2)]
-        write_seed(evidence / "national-http.json", {"origin": "F", "sessions": 5, "waves": waves})
+        write_receipt(
+            evidence / "national-http.json", {"origin": "F", "sessions": 5, "waves": waves}
+        )
+
+
+def measure(root, runtime):
+    env = os.environ
+    require(check_environment(env) == root, "national_profile_root")
+    check_process_network(env["S06_HOST_NET_NS"])
+    check_database(env, empty=True)
+    check_broker(env, empty=True)
+    setup_django()
+    seed = seed_f(env["AQ_INSTANCE_ID"])
+    runtime.start(
+        "web",
+        sys.executable,
+        "-m",
+        "gunicorn",
+        "config.wsgi:application",
+        "--config",
+        "python:config.gunicorn_local",
+        "--bind",
+        "127.0.0.1:8000",
+    )
+
+    def ready():
+        try:
+            return (
+                httpx.get(BASE + "/health/ready/", timeout=0.5, trust_env=False).status_code == 200
+            )
+        except httpx.TransportError:
+            return False
+
+    wait_for("S08 national profile Web", ready)
+    profile(seed, root / "V01")

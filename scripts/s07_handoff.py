@@ -45,6 +45,9 @@ SOURCE_FILES = {
     "docker/cnemc-egress.cfg",
     "docs/api/openapi.v1.json",
     "backend/accounts/templates/admin/account_controls.html",
+    "backend/accounts/templates/admin/city_search_alias.html",
+    "backend/accounts/templates/admin/city_search_alias_directory.html",
+    "backend/accounts/templates/admin/restricted_index.html",
     "backend/samples/data/co-hour-v1.json",
 }
 PUBLIC_DOCUMENTS = {

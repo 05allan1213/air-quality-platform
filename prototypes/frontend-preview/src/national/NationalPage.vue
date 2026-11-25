@@ -11,11 +11,9 @@ import NationalTable from './NationalTable.vue'
 import NationalStats from './NationalStats.vue'
 import { cities, coverage, distribution, expected, goodCount, lowFirst, metricLabels, missing, provinces, ranked, snapshot, type Metric } from './snapshot'
 import { distributionChart } from './charts'
-import { usePreviewStore } from '../shared/preview'
 import './sky.css'
 
-const emit = defineEmits<{ settings: []; workspace: []; scope: [name: string] }>()
-const store = usePreviewStore()
+const emit = defineEmits<{ settings: []; scope: [name: string] }>()
 const route = useRoute()
 const router = useRouter()
 const table = ref<InstanceType<typeof NationalTable>>()
@@ -44,10 +42,10 @@ const validGrade = computed(() => /^[1-6]$/.test(query('grade')) ? query('grade'
 </script>
 <template>
   <div class="sky-shell" :class="{ 'rail-expanded': expanded }">
-    <NationalSide v-model:expanded="expanded" :mobile-open="menu" @close="menu = false" @workspace="emit('workspace')" @scope="emit('scope', $event)" @info="dialog = 'source'"/>
+    <NationalSide v-model:expanded="expanded" :mobile-open="menu" @close="menu = false" @scope="emit('scope', $event)" @info="dialog = 'source'"/>
     <main id="content" class="sky-main" tabindex="-1">
       <header class="sky-top"><div class="top-title"><button class="sky-icon sky-hamburger" aria-label="打开导航" :aria-expanded="menu" @click="menu = true"><Fold aria-hidden="true"/></button><div><h1>全国空气质量总览</h1><p>同一观测时刻的城市空气质量、等级分布与样本覆盖。</p></div></div>
-        <div class="top-actions"><span class="sky-pill date-pill"><Calendar aria-hidden="true"/><time :datetime="snapshot.observedAt">{{ snapshot.date }} {{ snapshot.hour }}</time><i/>UTC+8</span><span class="sky-pill product-pill"><Coin aria-hidden="true"/>L · 全国城市列表</span><button class="sky-pill data-pill" @click="dialog = 'source'"><b>F</b>合成演示</button><button class="sky-pill user-pill" :aria-label="`${store.canGovern ? '治理账号' : '观察账号'}，演示账号与权限设置`" @click="emit('settings')"><span class="user-orb"><UserFilled aria-hidden="true"/></span><span>{{ store.canGovern ? '治理账号' : '观察账号' }}</span><ArrowDown aria-hidden="true"/></button></div>
+        <div class="top-actions"><span class="sky-pill date-pill"><Calendar aria-hidden="true"/><time :datetime="snapshot.observedAt">{{ snapshot.date }} {{ snapshot.hour }}</time><i/>UTC+8</span><span class="sky-pill product-pill"><Coin aria-hidden="true"/>L · 全国城市列表</span><button class="sky-pill data-pill" @click="dialog = 'source'"><b>F</b>合成演示</button><button class="sky-pill user-pill" aria-label="治理账号，演示设置" @click="emit('settings')"><span class="user-orb"><UserFilled aria-hidden="true"/></span><span>治理账号</span><ArrowDown aria-hidden="true"/></button></div>
       </header>
       <div class="sky-metrics" aria-label="合成观测摘要"><SkyMetric v-for="item in metrics" :key="item.label" v-bind="item"/></div>
       <div class="sky-primary">

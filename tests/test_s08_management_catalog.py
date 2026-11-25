@@ -13,7 +13,7 @@ from django.contrib.sessions.models import Session
 from observations.models import QualityIssue, Source
 from observations.policy import Scope, clock, revoke_grant
 from s02_support import BOUNDARY, create_product, observe_db
-from s08_browser_fixture import seed_f
+from s08_backend_fixtures import seed_f
 from test_s06_accounts import denied, json_status, login, permission, sign_in
 
 from tests.collection.test_collection_postgres import LIMITS, grant, make_job, request

@@ -1,4 +1,4 @@
-# Build context: application source, local licenses and locked inputs only.
+# Build context: backend source and locked inputs only.
 **
 !Dockerfile
 !pyproject.toml
@@ -14,18 +14,6 @@
 !scripts/s07_isolation.yaml
 !scripts/s07_offline_dns.yaml
 !docs/api/openapi.v1.json
-!frontend/package.json
-!frontend/package-lock.json
-!frontend/index.html
-!frontend/vite.config.ts
-!frontend/tsconfig.json
-!frontend/src/**/*.vue
-!frontend/src/**/*.ts
-!frontend/src/**/*.css
-!frontend/public/licenses/index.md
-!frontend/public/licenses/fonts/*-OFL.txt
-!frontend/public/licenses/packages/*-MIT.txt
-!frontend/public/licenses/packages/*-Apache-2.0.txt
 **/.env*
 **/__pycache__/
 **/node_modules/
