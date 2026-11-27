@@ -1,0 +1,54 @@
+{
+  "run": "s07-b-8a40f18fbf08",
+  "origin": "F",
+  "status": "PASS",
+  "scenarios": {
+    "R1": {
+      "N": 50,
+      "P50_ms": 259.981663,
+      "P95_ms": 283.097946,
+      "P99_ms": 296.553516,
+      "max_ms": 296.553516,
+      "correct": 50,
+      "errors": {},
+      "error_rate": 0.0,
+      "within_hot_budget": true
+    },
+    "R2": {
+      "N": 50,
+      "P50_ms": 331.148505,
+      "P95_ms": 368.65499,
+      "P99_ms": 371.194773,
+      "max_ms": 371.194773,
+      "correct": 50,
+      "errors": {},
+      "error_rate": 0.0,
+      "within_hot_budget": true
+    },
+    "R3": {
+      "N": 50,
+      "P50_ms": 746.542701,
+      "P95_ms": 825.852288,
+      "P99_ms": 827.397758,
+      "max_ms": 827.397758,
+      "correct": 50,
+      "errors": {},
+      "error_rate": 0.0,
+      "within_hot_budget": true
+    },
+    "R4": {
+      "N": 50,
+      "P50_ms": 1691.55279,
+      "P95_ms": 1787.297672,
+      "P99_ms": 1819.541726,
+      "max_ms": 1819.541726,
+      "correct": 50,
+      "errors": {},
+      "error_rate": 0.0,
+      "within_hot_budget": true
+    }
+  },
+  "raw_result_sha256": "e80805e0f1c2871e7e94f2d86685e097c8be317b13c734f3d90a2dadb733a3ea",
+  "manifest_sha256": "8a1c062e9652709d0670ada3ca83da7fe373b120c8725c1d1cad82c45647d5b7",
+  "code_commit": "5b7ed5f3b6e643ec5b99e90061280cf757fae387"
+}

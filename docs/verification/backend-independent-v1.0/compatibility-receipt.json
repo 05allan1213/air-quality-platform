@@ -1,0 +1,34 @@
+{
+  "baseline_openapi_sha256": "48e935fe288b4be8de78e0bc055a36e4bfe24910c31083443a72c68924c7adcb",
+  "baseline": {
+    "version": "s05.csv.v1",
+    "columns": 23,
+    "rows": 3,
+    "bytes": 1407,
+    "sha256": "97c77f868c783aab16264b86247f6b1647d67deac5ffe501ab5a178e525652c3",
+    "cursor_continuation_http": 200,
+    "sign_http": 201,
+    "download_http": 200
+  },
+  "current": {
+    "version": "s05.csv.v2",
+    "same_owner_session_http": 200,
+    "old_ticket_http": 409,
+    "old_ticket_code": "method_changed",
+    "old_ticket_attachment": false,
+    "old_cursor_http": 400,
+    "old_cursor_code": "invalid_cursor",
+    "fresh_cursor_http": 200,
+    "missing_new_rights_http": 403,
+    "sign_http": 201,
+    "download_http": 200,
+    "columns": 24,
+    "rows": 3,
+    "scope": "synthetic",
+    "bytes": 1448,
+    "sha256": "6e79d0eea4f01efc51c4e1bc7e97a5191e9e05ab6bc11d917cada6b618ec5999"
+  },
+  "raw_receipt_sha256": "c839edd48520961b64ef04bc17379851205989c9c1231a5ba2920934bd6cee37",
+  "recorded_at": "2026-11-27",
+  "code_commit": "d3248bcf91e241e4ff23d1bdf591fefda9bc4b05"
+}

@@ -1,0 +1,141 @@
+{
+  "run": "s06-45cb91c47595",
+  "source_sha256": "61fc8ec6c55f1cb82067b205af27660f9a329d20c27080173aedfd4df18aef2b",
+  "checks": {
+    "csv-byte-bound.json": {
+      "prepare": {
+        "correlation": 229,
+        "http_ms": 189.09845600137487,
+        "sql_count": 21,
+        "sql_ms": 23.323631005041534,
+        "max_statement_ms": 6.747550000000047,
+        "sqlstates": [],
+        "response_started": true,
+        "response_bytes": 26,
+        "status": 400
+      },
+      "download": {
+        "correlation": 230,
+        "http_ms": 196.2411910008086,
+        "sql_count": 23,
+        "sql_ms": 26.01606399548473,
+        "max_statement_ms": 6.251671999052633,
+        "sqlstates": [],
+        "response_started": true,
+        "response_bytes": 26,
+        "status": 400
+      },
+      "authorized_rows": 100,
+      "code": "query_too_large"
+    },
+    "export-row-and-cell-bounds.json": {
+      "candidate_cells": 10080,
+      "responses": {
+        "prepare_9999": {
+          "correlation": 215,
+          "http_ms": 393.921548000435,
+          "sql_count": 30,
+          "sql_ms": 161.8456340074772,
+          "max_statement_ms": 73.47284100069373,
+          "sqlstates": [],
+          "response_started": true,
+          "response_bytes": 147,
+          "status": 201
+        },
+        "download_9999": {
+          "correlation": 216,
+          "http_ms": 409.8421380003856,
+          "sql_count": 25,
+          "sql_ms": 166.50537899658957,
+          "max_statement_ms": 78.01309299975401,
+          "sqlstates": [],
+          "response_started": true,
+          "response_bytes": 4071274,
+          "status": 200,
+          "csv_bytes": 4071274,
+          "row_count": 9999,
+          "format_version": "s05.csv.v2",
+          "f_digest": "69acc5112cfd75f187cd1249ade81ebe1bec74038c1a4cebdce9c8017cc465bc"
+        },
+        "stale_at_10000": {
+          "correlation": 217,
+          "http_ms": 102.84092199981387,
+          "sql_count": 22,
+          "sql_ms": 86.17720099937287,
+          "max_statement_ms": 73.60483600132284,
+          "sqlstates": [],
+          "response_started": true,
+          "response_bytes": 24,
+          "status": 409,
+          "code": "input_changed"
+        },
+        "prepare_10000": {
+          "correlation": 219,
+          "http_ms": 444.63414799975,
+          "sql_count": 30,
+          "sql_ms": 168.03093000089575,
+          "max_statement_ms": 78.8508460009325,
+          "sqlstates": [],
+          "response_started": true,
+          "response_bytes": 147,
+          "status": 201
+        },
+        "download_10000": {
+          "correlation": 221,
+          "http_ms": 397.3903389996849,
+          "sql_count": 25,
+          "sql_ms": 158.0930559994158,
+          "max_statement_ms": 75.49730699975044,
+          "sqlstates": [],
+          "response_started": true,
+          "response_bytes": 4071683,
+          "status": 200,
+          "csv_bytes": 4071683,
+          "row_count": 10000,
+          "format_version": "s05.csv.v2",
+          "f_digest": "3025f31fd58de3b802c374fadcd0fb2c7a4d4af8eeddc5dc580d88b501453077"
+        },
+        "stale_at_10001": {
+          "correlation": 222,
+          "http_ms": 105.05834600007802,
+          "sql_count": 22,
+          "sql_ms": 88.53775999705249,
+          "max_statement_ms": 75.97112999974343,
+          "sqlstates": [],
+          "response_started": true,
+          "response_bytes": 24,
+          "status": 409,
+          "code": "input_changed"
+        },
+        "prepare_10001": {
+          "correlation": 224,
+          "http_ms": 226.53240200088476,
+          "sql_count": 21,
+          "sql_ms": 155.58982600850868,
+          "max_statement_ms": 74.7144010001648,
+          "sqlstates": [],
+          "response_started": true,
+          "response_bytes": 26,
+          "status": 400,
+          "code": "query_too_large"
+        },
+        "candidate_15120": {
+          "correlation": 225,
+          "http_ms": 9.916521001287038,
+          "sql_count": 3,
+          "sql_ms": 3.233815999919898,
+          "max_statement_ms": 1.8381810004939325,
+          "sqlstates": [],
+          "response_started": true,
+          "response_bytes": 26,
+          "status": 400,
+          "code": "query_too_large"
+        }
+      }
+    }
+  },
+  "raw_sha256": {
+    "csv-byte-bound.json": "aad75f3189ee191428763bf9360b20af6829cfe316953ea49e4c9f0f1f2f48ca",
+    "export-row-and-cell-bounds.json": "ae955fff91f58914511b5940990f0fdac0ecdfc6d4ab9c9b3f2e6784b19ec04e"
+  }
+}

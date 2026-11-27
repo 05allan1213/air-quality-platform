@@ -1,0 +1,355 @@
+{
+  "recorded_at": "2026-11-27",
+  "final_code_commit": "d3248bcf91e241e4ff23d1bdf591fefda9bc4b05",
+  "source_hash": "61fc8ec6c55f1cb82067b205af27660f9a329d20c27080173aedfd4df18aef2b",
+  "comprehensive": {
+    "status": "PASS",
+    "passed": 690,
+    "failed": 0,
+    "skipped": 38,
+    "total": 728,
+    "warnings": 14,
+    "raw_log_sha256": "c73d7867719d145fab37bb3d20449766849bbef9446c99534b601549dd28b53e",
+    "raw_xml_sha256": "ca86c645a5deb11ff1543a04938171ca004e758fbbb739886633ad7e8560ae4a",
+    "command": "NOT RECORDED"
+  },
+  "receipts": [
+    {
+      "kind": "specialized cost",
+      "run": "s06-45cb91c47595",
+      "status": "PASS",
+      "origin": "F/I",
+      "source_sha256": "61fc8ec6c55f1cb82067b205af27660f9a329d20c27080173aedfd4df18aef2b",
+      "source_mode": "readonly_snapshot",
+      "sandbox": {
+        "private_namespace": true,
+        "interfaces": [
+          "lo"
+        ],
+        "external_route": false,
+        "host_runtime_visible": false,
+        "loopback_tcp": true,
+        "namespace": "net:[4026532555]"
+      },
+      "raw_sha256": "c5bfe1b6a1e26431833c31f617d444fecb5c6c18f1bc6633aca1b672e1af434a"
+    },
+    {
+      "kind": "specialized recovery",
+      "run": "s06-4d5675ef8df2",
+      "status": "PASS",
+      "origin": "F/I",
+      "source_sha256": "d0016acf8d5fac71c7112aca155550c17872928ad2f2a6bb171ebf5b67d75578",
+      "source_mode": "readonly_snapshot",
+      "sandbox": {
+        "private_namespace": true,
+        "interfaces": [
+          "lo"
+        ],
+        "external_route": false,
+        "host_runtime_visible": false,
+        "loopback_tcp": true,
+        "namespace": "net:[4026532555]"
+      },
+      "raw_sha256": "cf9374905541f3a4652d971aff87914133a6c8cd494b8209fc318ddece60c766"
+    },
+    {
+      "kind": "process recovery",
+      "run": "s06-f46f2c937fe2",
+      "status": "PASS",
+      "origin": "F/I",
+      "source_sha256": "61fc8ec6c55f1cb82067b205af27660f9a329d20c27080173aedfd4df18aef2b",
+      "source_mode": "readonly_snapshot",
+      "sandbox": {
+        "private_namespace": true,
+        "interfaces": [
+          "lo"
+        ],
+        "external_route": false,
+        "host_runtime_visible": false,
+        "loopback_tcp": true,
+        "namespace": "net:[4026532424]"
+      },
+      "raw_sha256": "894c5a38466b1cc65e489ab1c5732c46914b6f97a90a5ae48ad4ffe039604406"
+    },
+    {
+      "kind": "collection recovery",
+      "run": "s06-46b0e8ccd5e8",
+      "status": "PASS",
+      "origin": "F/I",
+      "source_sha256": "3741fa490ef591770160024b09137250e7cda9882b8b90fe397bc182aea42743",
+      "source_mode": "readonly_snapshot",
+      "sandbox": {
+        "private_namespace": true,
+        "interfaces": [
+          "lo"
+        ],
+        "external_route": false,
+        "host_runtime_visible": false,
+        "loopback_tcp": true,
+        "namespace": "net:[4026532424]"
+      },
+      "raw_sha256": "825341090593a005cfeee41f0b2e6b5b4ff615082d3c146bbd2c55e7de04bd9a"
+    },
+    {
+      "kind": "upgrade",
+      "run": "s06-ef4adc2b37bb",
+      "status": "PASS",
+      "origin": "F/I",
+      "source_sha256": "61fc8ec6c55f1cb82067b205af27660f9a329d20c27080173aedfd4df18aef2b",
+      "source_mode": null,
+      "sandbox": {
+        "private_namespace": true,
+        "interfaces": [
+          "lo"
+        ],
+        "external_route": false,
+        "host_runtime_visible": false,
+        "loopback_tcp": true,
+        "namespace": "net:[4026532494]"
+      },
+      "raw_sha256": "5b0aba3392df31cd09720c754ec066660b07c0f89d66a09c5f7cdec701cfb92e"
+    },
+    {
+      "kind": "upgrade",
+      "run": "s06-09784fb9d72a",
+      "status": "PASS",
+      "origin": "F/I",
+      "source_sha256": "61fc8ec6c55f1cb82067b205af27660f9a329d20c27080173aedfd4df18aef2b",
+      "source_mode": "readonly_snapshot",
+      "sandbox": {
+        "private_namespace": true,
+        "interfaces": [
+          "lo"
+        ],
+        "external_route": false,
+        "host_runtime_visible": false,
+        "loopback_tcp": true,
+        "namespace": "net:[4026532495]"
+      },
+      "raw_sha256": "887df13f726a8123405eb6e349b74d72e78d7c5e137b06dc004d847175a28524"
+    },
+    {
+      "kind": "beat boundary",
+      "run": "s07-b-843beb15fb1d",
+      "status": "PASS",
+      "origin": "F/I",
+      "source_sha256": "d0016acf8d5fac71c7112aca155550c17872928ad2f2a6bb171ebf5b67d75578",
+      "source_mode": null,
+      "sandbox": {
+        "status": "PASS",
+        "network": {
+          "private_namespace": true,
+          "interfaces": [
+            "lo"
+          ],
+          "external_route": false,
+          "host_runtime_visible": false,
+          "loopback_tcp": true,
+          "namespace": "net:[4026532424]"
+        },
+        "database": {
+          "database": "s07_db_843beb15fb1d",
+          "role": "s07_app_843beb15fb1d",
+          "socket_only": true,
+          "postgres_version": "16.16",
+          "createdb": false,
+          "business_tables": 0,
+          "read_only": true
+        },
+        "broker": {
+          "socket_only": true,
+          "redis_version": "7.0.15",
+          "keys": 1
+        },
+        "boundary": "2026-11-27T07:00:00+00:00",
+        "jobs": {
+          "old": 3,
+          "new": 4
+        },
+        "fixture_only": true,
+        "clock_injection": "business clock offset; Beat scheduler uses wall time",
+        "stage": "complete",
+        "calls": [
+          [
+            "2026-11-27T06:00:00+00:00",
+            503
+          ],
+          [
+            "2026-11-27T07:00:00+00:00",
+            200
+          ],
+          [
+            "2026-11-27T06:00:00+00:00",
+            200
+          ],
+          [
+            "2026-11-27T05:00:00+00:00",
+            200
+          ]
+        ],
+        "window_ownership": [
+          [
+            "2026-11-27T05:00:00+00:00",
+            3
+          ],
+          [
+            "2026-11-27T06:00:00+00:00",
+            3
+          ],
+          [
+            "2026-11-27T07:00:00+00:00",
+            4
+          ]
+        ],
+        "beat_restart": {
+          "publishers_observed": 2,
+          "exclusive_lock_released": true
+        },
+        "run_lineage": [
+          {
+            "job": 3,
+            "reason": "scheduled",
+            "state": "failed",
+            "window": 1
+          },
+          {
+            "job": 4,
+            "reason": "scheduled",
+            "state": "finished",
+            "window": 2
+          },
+          {
+            "job": 3,
+            "reason": "retry",
+            "state": "finished",
+            "window": 1
+          },
+          {
+            "job": 3,
+            "reason": "backfill",
+            "state": "finished",
+            "window": 3
+          }
+        ],
+        "accepted_items": 21,
+        "rejected_cross_boundary_submissions": 2,
+        "lifecycle": [
+          {
+            "component": "redis",
+            "started": true
+          },
+          {
+            "component": "beat",
+            "started": true
+          },
+          {
+            "component": "worker",
+            "started": true
+          },
+          {
+            "component": "beat",
+            "exit": 0
+          },
+          {
+            "component": "worker",
+            "exit": 0
+          },
+          {
+            "component": "beat",
+            "started": true
+          },
+          {
+            "component": "worker",
+            "started": true
+          },
+          {
+            "component": "beat",
+            "exit": 0
+          },
+          {
+            "component": "worker",
+            "exit": 0
+          },
+          {
+            "component": "redis",
+            "exit": 0
+          }
+        ],
+        "remaining_processes": 0
+      },
+      "raw_sha256": "590f3ae8921a948119b13d127fd191df761b061a7ec37ba92e52f04a891b01b9"
+    },
+    {
+      "kind": "million-hour performance",
+      "run": "s07-b-8a40f18fbf08",
+      "status": "PASS",
+      "origin": "F/I",
+      "source_sha256": "61fc8ec6c55f1cb82067b205af27660f9a329d20c27080173aedfd4df18aef2b",
+      "source_mode": null,
+      "sandbox": {
+        "network": {
+          "private_namespace": true,
+          "interfaces": [
+            "lo"
+          ],
+          "external_route": false,
+          "host_runtime_visible": false,
+          "loopback_tcp": true,
+          "namespace": "net:[4026532424]"
+        },
+        "rejections": [
+          "broker_identity"
+        ],
+        "database_before": {
+          "database": "s07_db_8a40f18fbf08",
+          "role": "s07_app_8a40f18fbf08",
+          "socket_only": true,
+          "postgres_version": "16.16",
+          "createdb": false,
+          "business_tables": 0,
+          "read_only": true
+        },
+        "broker_before": {
+          "socket_only": true,
+          "redis_version": "7.0.15",
+          "keys": 1
+        },
+        "broker_after_rejections": {
+          "socket_only": true,
+          "redis_version": "7.0.15",
+          "keys": 1
+        },
+        "database_after_rejections": {
+          "database": "s07_db_8a40f18fbf08",
+          "role": "s07_app_8a40f18fbf08",
+          "socket_only": true,
+          "postgres_version": "16.16",
+          "createdb": false,
+          "business_tables": 0,
+          "read_only": true
+        },
+        "status": "PASS",
+        "lifecycle": [
+          {
+            "component": "redis",
+            "started": true
+          },
+          {
+            "component": "web",
+            "started": true
+          },
+          {
+            "component": "web",
+            "exit": 0
+          },
+          {
+            "component": "redis",
+            "exit": 0
+          }
+        ],
+        "remaining_processes": 0
+      },
+      "raw_sha256": "3057a85dd14cd42546641dbe72386f3a037b74aaa059d88f222847a40648a49a"
+    }
+  ]
+}
