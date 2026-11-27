@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "城市空气质量监测数据分析平台 API",
-    "version": "v1-s08-candidate",
-    "description": "S07 冻结同源 API 的 S08 向后兼容增量候选。S07 标签和历史 V12 收据保持不变。GET 的正式域通常省略 scope，部分管理端显式接收 formal。F 用 synthetic。受保护操作使用 Django Session，变更操作还需当前 CSRF Cookie 与 X-CSRFToken。两类 Cookie 的 Secure 取 COOKIE_SECURE。sessionid 为 HttpOnly、SameSite=Lax，Session 有效期 8 小时。登录后重新获取 token。请求 JSON 上限 16 KiB。URL 保留末尾斜杠。"
+    "version": "v1-s08-phase02.1",
+    "description": "S08 同源接口的 Phase 02 现行规格勘误。S07 标签和历史 V12 收据保持不变。GET 的正式域通常省略 scope，部分管理端显式接收 formal。F 用 synthetic。受保护操作使用 Django Session，变更操作还需当前 CSRF Cookie 与 X-CSRFToken。两类 Cookie 的 Secure 取 COOKIE_SECURE。sessionid 为 HttpOnly、SameSite=Lax，Session 有效期 8 小时。登录后重新获取 token。请求 JSON 上限 16 KiB。URL 保留末尾斜杠。"
   },
   "paths": {
     "/api/v1/auth/csrf/": {
@@ -1739,7 +1739,7 @@
       "get": {
         "operationId": "listFavorites",
         "summary": "列出本人收藏",
-        "description": "限定本人及同一正式或 F 域。其他主体的标识按当前路径的私有资源拒绝语义处理。 不可用的目标仅显示受限占位。 分页及顺序。默认 50，最多 100，筛选并鉴权后按稳定顺序分页。 收藏 ID 升序。",
+        "description": "限定本人及同一正式或 F 域。其他主体的标识按当前路径的私有资源拒绝语义处理。 不可用的目标仅显示受限占位。 分页及顺序。默认 50，最多 100，筛选并鉴权后按稳定顺序分页。 按创建时间降序，同刻按收藏 ID 降序。",
         "security": [
           {
             "Session": []
@@ -9250,7 +9250,8 @@
               "additionalProperties": false
             },
             "minItems": 1,
-            "maxItems": 5
+            "maxItems": 2,
+            "description": "同域，一至两组，规范化后两组不能相同。总计最多 12000 格、5 个对象位置、7 个不同指标。第三组返回 400/query_too_large。"
           },
           "fields": {
             "type": "array",
@@ -9308,7 +9309,6 @@
           "method": {
             "type": "string",
             "enum": [
-              "detail",
               "compare",
               "statistics",
               "pearson"
@@ -9353,7 +9353,6 @@
           "method": {
             "type": "string",
             "enum": [
-              "detail",
               "compare",
               "statistics",
               "pearson"
@@ -9402,7 +9401,6 @@
           "method": {
             "type": "string",
             "enum": [
-              "detail",
               "compare",
               "statistics",
               "pearson"
@@ -9834,46 +9832,32 @@
       "Favorite": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9223372036854775807
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "city",
-              "station"
-            ]
-          },
-          "state": {
-            "type": "string"
-          },
-          "links": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "pattern": "^/api/v1/"
-            }
-          },
-          "product": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9223372036854775807
-          },
-          "synthetic": {
-            "type": "boolean"
-          },
-          "summary": {
-            "type": "object"
-          }
+          "id": {"type": "integer", "minimum": 1},
+          "kind": {"enum": ["city", "station"]},
+          "state": {"enum": ["ok", "no_data", "select_epoch", "unavailable"]},
+          "product": {"type": "integer", "minimum": 1},
+          "target_id": {"type": "integer", "minimum": 1},
+          "source": {"type": "string"},
+          "name": {"type": ["string", "null"]},
+          "link": {"type": ["string", "null"], "pattern": "^/api/v1/"},
+          "results": {"type": "array", "items": {"$ref": "#/components/schemas/PublicRow"}},
+          "snapshot_at": {"type": ["string", "null"], "format": "date-time"},
+          "site_epoch": {"type": ["integer", "null"], "minimum": 1},
+          "epochs": {"type": "array", "items": {"type": "object"}}
         },
-        "required": [
-          "id",
-          "kind",
-          "state"
-        ],
-        "additionalProperties": true
+        "required": ["id", "kind", "state"],
+        "additionalProperties": false,
+        "oneOf": [
+          {"properties": {"state": {"const": "unavailable"}}, "maxProperties": 3},
+          {
+            "properties": {"kind": {"const": "city"}, "state": {"enum": ["ok", "no_data"]}, "site_epoch": false, "epochs": false},
+            "required": ["product", "target_id", "source", "name", "link", "results", "snapshot_at"]
+          },
+          {
+            "properties": {"kind": {"const": "station"}, "state": {"enum": ["ok", "no_data", "select_epoch"]}, "snapshot_at": false},
+            "required": ["product", "target_id", "source", "name", "link", "results", "site_epoch", "epochs"]
+          }
+        ]
       },
       "CreateFavorite": {
         "type": "object",
