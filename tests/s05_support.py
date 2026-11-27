@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from itertools import batched
 from zoneinfo import ZoneInfo
 
+from accounts.research_exports import OPTIONAL, export_fields
 from observations.models import (
     City,
     CityIdentifier,
@@ -26,7 +27,12 @@ NAMESPACE = "test.s05"
 EVIDENCE = "S05 authored F calendar and reporting identity v1"
 ATTRIBUTION = "S05 项目自制 F，供本地隔离验证"
 ANALYZE = REQUIRED | {"catalog", "research_coverage", "research_summary"}
-RETAIN = REQUIRED | {"catalog", "research_coverage", "export_manifest", "statistics_baseline"}
+RETAIN = (
+    REQUIRED
+    | {"catalog", "research_coverage", "statistics_baseline"}
+    | export_fields("detail", OPTIONAL["detail"])
+    | export_fields("aggregate", OPTIONAL["aggregate"])
+)
 DISPLAY = ANALYZE
 
 

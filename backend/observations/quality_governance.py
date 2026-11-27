@@ -1,8 +1,10 @@
 """Adjudication of the complete locked observation ledger using registered evidence."""
 
 import re
+from urllib.parse import urlencode
 
 from accounts.governance import command, receipt, replay
+from accounts.models import GovernanceAction
 from accounts.research_session import SessionCheck, request_transaction
 from django.contrib.auth.models import Group
 from django.core import signing
@@ -49,18 +51,20 @@ from .revisions import (
     mapping_time,
     tables,
 )
-from .s04_http import fingerprint
+from .s04_http import fingerprint, params
 
 PAGE = 50
 EVIDENCE = "observations.quality.evidence.v1"
-REASONS = {
-    "claim_review",
-    "retain_isolation",
-    "review_complete",
-    "verified_correction",
-    "registered_mapping",
+ACTION_REASONS = {
+    "claim": "claim_review",
+    "hold": "retain_isolation",
+    "close": "review_complete",
+    "correct_source": "verified_correction",
+    "correct_mapping": "registered_mapping",
 }
-ACTIONS = {"claim", "hold", "close", "correct_source", "correct_mapping"}
+ACTIONS = set(ACTION_REASONS)
+REASONS = set(ACTION_REASONS.values())
+CORRECTIONS = {"correct_source", "correct_mapping"}
 
 
 def user_permission(user_id, permission):
@@ -289,7 +293,7 @@ def decode_ref(token, event, user, kind):
         or len(token) > 2048
         or not re.fullmatch(r"[A-Za-z0-9:_.-]+", token)
     ):
-        raise Denied("invalid_request")
+        raise Denied("mapping_evidence_mismatch")
     try:
         cert = signing.loads(token, salt=EVIDENCE, max_age=1800)
     except signing.BadSignature:
@@ -299,11 +303,23 @@ def decode_ref(token, event, user, kind):
     return cert
 
 
+def proof_parameter(token, cert, previous):
+    if token is None:
+        return ""
+    # Older rows fingerprinted the verified claims. New rows distinguish the
+    # exact token from another preview of those same claims signed later.
+    if previous and previous.parameter and not previous.parameter.startswith("v2:"):
+        return fingerprint(cert)
+    return "v2:" + fingerprint(token)
+
+
 def mapping_selection(product, key, current, grants, now, target_code):
     candidate = mapping_candidate(product, key, current, now, code=target_code)
     ctx = WriteContext(product, current.actor_id, None, grants, set())
     rows, identity, _ = locate(ctx, candidate, for_write=False)
     target = rows.objects.filter(**identity).first()
+    if target != key and active_candidates(key).exclude(kind="mapping_conflict").exists():
+        raise Denied("mapping_evidence_mismatch")
     entity = identity[tables(product.level)[2]]
     geography = entity.geography if isinstance(key, CityObservation) else entity.city.geography
     scope = Scope(
@@ -313,7 +329,7 @@ def mapping_selection(product, key, current, grants, now, target_code):
         key.source_local_date,
         key_scope(key).end,
     )
-    review_retained(product, scope, RAW, now, grants)
+    mapping_rights(product, scope, grants, now)
     target_edition = snapshot(product, target)[2] if target else None
     selector = [
         current.pk,
@@ -328,17 +344,20 @@ def mapping_selection(product, key, current, grants, now, target_code):
 
 def project_refs(event, product, key, user, grants, now, target_code):
     current, candidates, edition = snapshot(product, key)
-    correction = correction_evidence(product, key, current, candidates)
     refs = {}
-    if correction and event.code in SOURCE_CONFLICTS and event.status != "resolved":
-        refs["correct_source"] = sign_ref(event, user, "correct_source", edition, correction.pk)
-    try:
-        checks(event, product, key, grants, now, raw=True)
-        _, selector, _, _, _ = mapping_selection(product, key, current, grants, now, target_code)
-    except Denied:
-        pass
-    else:
-        if event.status != "resolved":
+    if event.status != "resolved" and user.has_perm("accounts.adjudicate_quality"):
+        correction = correction_evidence(product, key, current, candidates)
+        if correction and event.code in SOURCE_CONFLICTS:
+            refs["correct_source"] = sign_ref(event, user, "correct_source", edition, correction.pk)
+        try:
+            checks(event, product, key, grants, now, raw=True)
+            _, selector, _, _, _ = mapping_selection(
+                product, key, current, grants, now, target_code
+            )
+        except Denied as exc:
+            if exc.code == "database_unavailable":
+                raise
+        else:
             refs["correct_mapping"] = sign_ref(event, user, "correct_mapping", edition, selector)
     return {
         "current_revision": current.pk if current else None,
@@ -348,6 +367,49 @@ def project_refs(event, product, key, user, grants, now, target_code):
         "candidate_revisions": [c.pk for c in candidates],
         "evidence": refs,
     }
+
+
+def basic_actions(event, user):
+    if event.status == "open":
+        return ("claim", "hold", "close")
+    if event.status == "in_review" and event.handler_id == user.pk:
+        return ("hold", "close")
+    return ()
+
+
+def evidence_links(event, product, key):
+    # checks() validated this event's product, key, batch and review/retention basis.
+    # A keyed event proves batch readability only if this batch contains that key.
+    domain = {"product": product.pk, "scope": "synthetic" if product.synthetic else "formal"}
+    route = "/api/v1/admin/observation-evidence/?"
+    links = {}
+    if key:
+        selector = f"{product.level}_key"
+        links["key"] = route + urlencode(domain | {selector: key.pk})
+    if event.batch_id and (
+        key is None
+        or event.batch.receipts.filter(**{f"{product.level}_revision__key": key}).exists()
+    ):
+        links["batch"] = route + urlencode(domain | {"batch": event.batch_id})
+    return links
+
+
+def visible_scope(event, product, key, grants, now):
+    try:
+        return checks(event, product, key, grants, now)
+    except Denied as exc:
+        if exc.code == "use_denied":
+            raise Denied("not_found") from None
+        raise
+
+
+def mapping_rights(product, scope, grants, now):
+    try:
+        review_retained(product, scope, RAW, now, grants)
+    except Denied as exc:
+        if exc.code == "use_denied":
+            raise Denied("mapping_evidence_mismatch") from None
+        raise
 
 
 def list_issues(request, values):
@@ -415,6 +477,43 @@ def close_source(product, key, candidates, correction, record):
     )
 
 
+def receipt_impact(record, product, event, key, scope, after, proof, grants, now):
+    """Project only retained action-linked evidence; current candidates prove no past outcome."""
+    if after is None:
+        if event.last_action_id != record.pk or (not key and not event.scope):
+            return {"state": "unavailable"}
+        return {
+            "state": "available",
+            "affected": [project_scope(product, key, scope)],
+            "outcome": record.action,
+        }
+    affected = [project_scope(product, key, scope)]
+    impact = {"state": "available", "affected": affected}
+    if record.action == "correct_source":
+        return impact | {"outcome": "correct_source"}
+    # Only the recorded resulting revision links a correction to another key. A
+    # signed candidate alone is intent and does not establish an affected target.
+    selector = proof[5]
+    target = after.key
+    target_scope = key_scope(target)
+    entity = target.city_id if isinstance(target, CityObservation) else target.site_epoch_id
+    if entity != selector[2] or target_scope.serialize() != selector[5]:
+        return impact
+    try:
+        review_retained(product, target_scope, RAW, now, grants)
+    except Denied as exc:
+        if exc.code == "use_denied":
+            return impact
+        raise
+    if target.pk != key.pk:
+        affected.append(project_scope(product, target, target_scope))
+    if after.pk == selector[0]:
+        impact["outcome"] = "mapping_review_required"
+    elif after.kind in {"mapping_conflict", "local_mapping_fix"}:
+        impact["outcome"] = after.kind
+    return impact
+
+
 def result(record):
     return {
         "action_id": str(record.pk),
@@ -423,28 +522,40 @@ def result(record):
     }
 
 
-def act(request, event_id, data=None, *, target_code=None):
+def act(request, event_id, *, write):
     with request_transaction():
-        actor(request.user.pk, "review_observation")
+        entry = actor(request.user.pk, "review_observation")
+        if write and not entry.has_perm("accounts.adjudicate_quality"):
+            raise Denied("permission_denied")
+        values = params(request.query_params, set() if write else {"mapping_target"})
+        target_code = values.get("mapping_target")
+        if not 0 < event_id < 2**63 or (
+            target_code is not None
+            and (not target_code.isprintable() or not 0 < len(target_code) <= 100)
+        ):
+            raise Denied("invalid_request")
+        # Resolve transport errors independently of whether the target exists.
+        data = request.data if write else None
         initial = QualityIssue.objects.filter(pk=event_id).first()
         if initial is None:
             raise Denied("not_found")
+        # A valid signed mapping can name another station. Parse it for ordered locking
+        # only. Do not disclose errors until the caller's object access has been checked.
         cert = None
-        is_mapping = False
-        if data is not None:
-            data = command(
-                data, ACTIONS, REASONS, extra={name: {"evidence_ref"} for name in ACTIONS}
-            )
-            action = data["action"]
-            is_mapping = action == "correct_mapping"
-            if action in {"correct_source", "correct_mapping"}:
-                cert = decode_ref(data["evidence_ref"], initial, request.user, action)
-                if is_mapping:
-                    target_code = cert[5][1]
-            elif data["evidence_ref"] is not None:
-                raise Denied("invalid_request")
-        product = product_lock(initial.product_id)
-        key = lock_key(product, initial, target_code)
+        evidence_error = None
+        if isinstance(data, dict) and data.get("action") == "correct_mapping":
+            try:
+                cert = decode_ref(data.get("evidence_ref"), initial, entry, "correct_mapping")
+                target_code = cert[5][1]
+            except Denied as exc:
+                evidence_error = exc
+        try:
+            product = product_lock(initial.product_id)
+            key = lock_key(product, initial, target_code)
+        except Denied as exc:
+            if exc.code == "use_denied":
+                raise Denied("not_found") from None
+            raise
         if key is not None:
             list(keyed_issues(key).select_for_update().order_by("pk"))
         event = (
@@ -453,37 +564,59 @@ def act(request, event_id, data=None, *, target_code=None):
         if event is None:
             raise Denied("not_found")
         auth = SessionCheck(request)
-        user = user_permission(
-            auth.user_id, "accounts.adjudicate_quality" if data is not None else None
-        )
+        user = user_permission(auth.user_id, "accounts.adjudicate_quality" if write else None)
         grants = list(product.usegrant_set.filter(revoked_at__isnull=True))
-        scope = checks(event, product, key, grants, auth.now)
-        if data is None:
+        scope = visible_scope(event, product, key, grants, auth.now)
+        if not write:
             response = event_result(event, product, key, scope)
+            links = evidence_links(event, product, key)
+            if links:
+                response["evidence_links"] = links
             now = auth.finish(())
-            checks(event, product, key, grants, now)
+            visible_scope(event, product, key, grants, now)
             if key:
                 response.update(project_refs(event, product, key, user, grants, now, target_code))
+            verbs = (*basic_actions(event, user), *response.get("evidence", {}))
+            response["allowed_actions"] = [
+                {
+                    "action": verb,
+                    "reason_codes": [ACTION_REASONS[verb]],
+                    "evidence_required": verb in CORRECTIONS,
+                }
+                for verb in verbs
+                if user.has_perm("accounts.adjudicate_quality")
+            ]
             return response
-        if cert:
+        data = command(data, ACTIONS, REASONS, extra={name: {"evidence_ref"} for name in ACTIONS})
+        action = data["action"]
+        is_mapping = action == "correct_mapping"
+        if action in CORRECTIONS:
+            if evidence_error:
+                raise evidence_error
+            cert = decode_ref(data["evidence_ref"], event, user, action)
             if key is None:
-                raise Denied("invalid_request")
-            checks(event, product, key, grants, auth.now, raw=is_mapping)
+                raise Denied("mapping_evidence_mismatch")
+            if is_mapping:
+                mapping_rights(product, scope, grants, auth.now)
+        elif data["evidence_ref"] is not None:
+            raise Denied("invalid_request")
         # Store only a command fingerprint and non-source codes in the generic audit.
-        parameter = fingerprint(cert) if cert else ""
+        prior = GovernanceAction.objects.filter(actor=user, request_id=data["request_id"]).first()
+        parameter = proof_parameter(data["evidence_ref"], cert, prior)
         previous = replay(user.pk, data, "quality", event.pk, parameter=parameter)
         if previous:
             now = auth.finish(())
-            checks(event, product, key, grants, now, raw=is_mapping)
+            visible_scope(event, product, key, grants, now)
             if is_mapping:
-                review_retained(product, Scope.from_issue(cert[5][5]), RAW, now, grants)
+                mapping_rights(product, scope, grants, now)
+                mapping_rights(product, Scope.from_issue(cert[5][5]), grants, now)
             return result(previous)
+        if data["reason_code"] != ACTION_REASONS[action]:
+            raise Denied("invalid_request")
         if data["expected_version"] != event.event_version or event.status == "resolved":
             raise Denied("precondition_conflict")
         before, version = event.status, event.event_version
-        if action == "claim" and before != "open":
-            raise Denied("precondition_conflict")
-        if action in {"hold", "close"} and before == "in_review" and event.handler_id != user.pk:
+        if action not in CORRECTIONS and action not in basic_actions(event, user):
             raise Denied("precondition_conflict")
         status = "resolved" if action == "close" else "in_review"
         affected = [project_scope(product, key, scope)]
@@ -592,7 +725,8 @@ def act(request, event_id, data=None, *, target_code=None):
             event_version=version + 1,
         )
         now = auth.finish(())
-        checks(event, product, key, grants, now, raw=is_mapping)
+        visible_scope(event, product, key, grants, now)
         if target_scope is not None:
-            review_retained(product, target_scope, RAW, now, grants)
+            mapping_rights(product, scope, grants, now)
+            mapping_rights(product, target_scope, grants, now)
         return {**result(record), "affected": affected, "outcome": outcome}

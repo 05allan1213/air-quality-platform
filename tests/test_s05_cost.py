@@ -445,7 +445,7 @@ def test_v12_csv_rows_hidden_records_and_new_input(identities, record_property):
                 web, records, "GET", previous, observe=observe("download", size)
             )
             verify_csv(downloaded, ticket, size)
-            assert ticket.format_version == "s05.csv.v1"
+            assert ticket.format_version == "s05.csv.v2"
             report["responses"][f"download_{size}"] = sample | {
                 "row_count": ticket.row_count,
                 "format_version": ticket.format_version,

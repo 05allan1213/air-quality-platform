@@ -104,3 +104,53 @@ def exact_shape(response):
             leaked = deepcopy(response)
             (leaked["results"][0] if target == "row" else leaked)[field] = 1
             assert schema_errors(leaked, schema)
+
+
+def test_new_write_schema_and_historical_lookup_validate_different_reason_rules():
+    """An old recorded command remains identifiable after new-write validation tightens."""
+    from uuid import uuid4
+
+    from s07_contract import operation
+
+    def body(path):
+        return operation(PREFIX + path, "post")["requestBody"]["content"]["application/json"][
+            "schema"
+        ]
+
+    command = {
+        "action": "claim",
+        "reason_code": "review_complete",
+        "request_id": str(uuid4()),
+        "expected_version": 0,
+        "evidence_ref": None,
+    }
+    write = body("admin/quality-issues/{event_id}/actions/")
+    assert schema_errors(command, write)
+    validate_schema(command | {"reason_code": "claim_review"}, write)
+    lookup = body("admin/command-receipts/lookup/")
+    validate_schema({"family": "quality", "target": 17, "command": command}, lookup)
+    stage = str(uuid4())
+    original = {
+        "profile": "uci501-edges-v1",
+        "stage_id": stage,
+        "reason": "historical_verification",
+    }
+    validate_schema({"family": "history_import", "target": stage, "command": original}, lookup)
+    assert schema_errors({"family": "history_import", "target": 17, "command": original}, lookup)
+    receipt = {"$ref": "#/components/schemas/SelfReceipt"}
+    validate_schema({"attempt_id": stage}, receipt)
+    assert schema_errors({"attempt_id": stage, "stage_id": stage}, receipt)
+
+
+def test_quality_write_and_receipt_responses_have_distinct_required_fields():
+    from uuid import uuid4
+
+    response = {"$ref": "#/components/schemas/QualityActionResponse"}
+    replay = {"action_id": str(uuid4()), "status": "in_review", "event_version": 1}
+    validate_schema(replay, response)
+    assert schema_errors(replay | {"outcome": "claim"}, response)
+    assert schema_errors({**replay, "version": replay["event_version"]}, response)
+    impact = {"$ref": "#/components/schemas/QualityReceiptImpact"}
+    validate_schema({"state": "unavailable"}, impact)
+    assert schema_errors({"state": "unavailable", "affected": []}, impact)
+    assert schema_errors({"state": "available", "affected": []}, impact)

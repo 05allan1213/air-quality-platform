@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "城市空气质量监测数据分析平台 API",
-    "version": "v1-s08-phase02.1",
-    "description": "S08 同源接口的 Phase 02 现行规格勘误。S07 标签和历史 V12 收据保持不变。GET 的正式域通常省略 scope，部分管理端显式接收 formal。F 用 synthetic。受保护操作使用 Django Session，变更操作还需当前 CSRF Cookie 与 X-CSRFToken。两类 Cookie 的 Secure 取 COOKIE_SECURE。sessionid 为 HttpOnly、SameSite=Lax，Session 有效期 8 小时。登录后重新获取 token。请求 JSON 上限 16 KiB。URL 保留末尾斜杠。"
+    "version": "v1-phase08",
+    "description": "Phase 08 后端同源接口契约。S07 标签和历史 V12 收据保持不变。GET 的正式域通常省略 scope，部分管理端显式接收 formal。F 用 synthetic。受保护操作使用 Django Session，变更操作还需当前 CSRF Cookie 与 X-CSRFToken。两类 Cookie 的 Secure 取 COOKIE_SECURE。sessionid 为 HttpOnly、SameSite=Lax，Session 有效期 8 小时。登录后重新获取 token。请求 JSON 上限 16 KiB。URL 保留末尾斜杠。"
   },
   "paths": {
     "/api/v1/auth/csrf/": {
@@ -365,7 +365,10 @@
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "enum": ["user", "manage"]
+                        "enum": [
+                          "user",
+                          "manage"
+                        ]
                       },
                       "uniqueItems": true,
                       "minItems": 1,
@@ -392,7 +395,10 @@
                       "uniqueItems": true
                     }
                   },
-                  "required": ["workspaces", "actions"],
+                  "required": [
+                    "workspaces",
+                    "actions"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -537,7 +543,7 @@
       "get": {
         "operationId": "discoverObjects",
         "summary": "发现当前可读产品和对象",
-        "description": "需要本人有效 Session，按产品、对象、期间及字段核对数据使用权。 名称单独判权。使用 link 和 history_link 进入后续页面。 分页及顺序。默认 50，最多 100，筛选并鉴权后按稳定顺序分页。 按产品及对象 ID 升序。",
+        "description": "需要本人有效 Session，按产品、对象、期间及字段核对数据使用权。 名称单独判权。使用 link 和 history_link 进入后续页面。 分页及顺序。默认 50，最多 100，筛选并鉴权后按稳定顺序分页。 按产品及对象 ID 升序。 传 city 时按当前权限返回各产品的 station_directory。",
         "security": [
           {
             "Session": []
@@ -558,6 +564,16 @@
           },
           {
             "$ref": "#/components/parameters/QueryCursor"
+          },
+          {
+            "in": "query",
+            "name": "city",
+            "description": "按城市发现已获权的站址目录。",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
           }
         ],
         "responses": {
@@ -566,7 +582,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DiscoveryPage"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DiscoveryPage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StationDirectoryDiscoveryPage"
+                    }
+                  ]
                 }
               }
             },
@@ -615,26 +638,42 @@
             "name": "purpose",
             "in": "query",
             "required": true,
-            "schema": { "type": "string", "const": "analysis" }
+            "schema": {
+              "type": "string",
+              "const": "analysis"
+            }
           },
           {
             "name": "method",
             "in": "query",
             "required": true,
-            "schema": { "type": "string", "enum": ["statistics", "compare", "pearson"] }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "statistics",
+                "compare",
+                "pearson"
+              ]
+            }
           },
           {
             "name": "start",
             "in": "query",
             "required": true,
-            "schema": { "type": "string", "format": "date-time" },
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
             "description": "带偏移时间；窗口为半开区间。"
           },
           {
             "name": "end",
             "in": "query",
             "required": true,
-            "schema": { "type": "string", "format": "date-time" }
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
           },
           {
             "$ref": "#/components/parameters/QueryScope"
@@ -643,32 +682,63 @@
             "name": "product",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer", "format": "int64", "minimum": 1, "maximum": 9223372036854775807 }
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
           },
           {
             "name": "city",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer", "format": "int64", "minimum": 1, "maximum": 9223372036854775807 }
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
           },
           {
             "name": "site_epoch",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer", "format": "int64", "minimum": 1, "maximum": 9223372036854775807 },
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            },
             "description": "city 与 site_epoch 互斥。"
           },
           {
             "name": "indicator",
             "in": "query",
             "required": false,
-            "schema": { "type": "string", "enum": ["AQI", "PM2.5", "PM10", "SO2", "NO2", "CO", "O3"] }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "AQI",
+                "PM2.5",
+                "PM10",
+                "SO2",
+                "NO2",
+                "CO",
+                "O3"
+              ]
+            }
           },
           {
             "name": "page_size",
             "in": "query",
             "required": false,
-            "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 25 }
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 25
+            }
           },
           {
             "$ref": "#/components/parameters/QueryCursor"
@@ -687,21 +757,81 @@
                       "items": {
                         "type": "object",
                         "properties": {
-                          "source": { "type": "string" },
-                          "product": { "type": "integer", "format": "int64", "minimum": 1 },
-                          "shape": { "type": "string", "enum": ["C", "S", "H"] },
-                          "city": { "type": "integer", "format": "int64", "minimum": 1 },
-                          "site_epoch": { "type": "integer", "format": "int64", "minimum": 1 },
-                          "indicator": { "type": "string", "enum": ["AQI", "PM2.5", "PM10", "SO2", "NO2", "CO", "O3"] },
-                          "unit": { "type": "string" },
-                          "report_kind": { "type": "string" },
-                          "window_definition": { "type": "string" },
-                          "standard_series": { "type": "string" },
-                          "source_timezone": { "type": "string" },
-                          "permitted_from": { "type": "string", "format": "date-time" },
-                          "permitted_until": { "type": "string", "format": "date-time" }
+                          "source": {
+                            "type": "string"
+                          },
+                          "product": {
+                            "type": "integer",
+                            "format": "int64",
+                            "minimum": 1
+                          },
+                          "shape": {
+                            "type": "string",
+                            "enum": [
+                              "C",
+                              "S",
+                              "H"
+                            ]
+                          },
+                          "city": {
+                            "type": "integer",
+                            "format": "int64",
+                            "minimum": 1
+                          },
+                          "site_epoch": {
+                            "type": "integer",
+                            "format": "int64",
+                            "minimum": 1
+                          },
+                          "indicator": {
+                            "type": "string",
+                            "enum": [
+                              "AQI",
+                              "PM2.5",
+                              "PM10",
+                              "SO2",
+                              "NO2",
+                              "CO",
+                              "O3"
+                            ]
+                          },
+                          "unit": {
+                            "type": "string"
+                          },
+                          "report_kind": {
+                            "type": "string"
+                          },
+                          "window_definition": {
+                            "type": "string"
+                          },
+                          "standard_series": {
+                            "type": "string"
+                          },
+                          "source_timezone": {
+                            "type": "string"
+                          },
+                          "permitted_from": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "permitted_until": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
                         },
-                        "required": ["source", "product", "shape", "indicator", "unit", "report_kind", "window_definition", "standard_series", "source_timezone", "permitted_from", "permitted_until"],
+                        "required": [
+                          "source",
+                          "product",
+                          "shape",
+                          "indicator",
+                          "unit",
+                          "report_kind",
+                          "window_definition",
+                          "standard_series",
+                          "source_timezone",
+                          "permitted_from",
+                          "permitted_until"
+                        ],
                         "additionalProperties": false,
                         "description": "city 或 site_epoch 恰有一个，按 shape 对应。"
                       }
@@ -709,29 +839,61 @@
                     "page": {
                       "type": "object",
                       "properties": {
-                        "page_size": { "type": "integer", "minimum": 1, "maximum": 50 },
-                        "next_cursor": { "type": ["string", "null"], "maxLength": 2048 }
+                        "page_size": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 50
+                        },
+                        "next_cursor": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 2048
+                        }
                       },
-                      "required": ["page_size", "next_cursor"],
+                      "required": [
+                        "page_size",
+                        "next_cursor"
+                      ],
                       "additionalProperties": false
                     }
                   },
-                  "required": ["results", "page"],
+                  "required": [
+                    "results",
+                    "page"
+                  ],
                   "additionalProperties": false
                 }
               }
             },
             "headers": {
-              "Cache-Control": { "$ref": "#/components/headers/NoStore" }
+              "Cache-Control": {
+                "$ref": "#/components/headers/NoStore"
+              }
             }
           },
-          "400": { "$ref": "#/components/responses/InvalidRequest2" },
-          "403": { "$ref": "#/components/responses/AccessDenied2" },
-          "405": { "$ref": "#/components/responses/WrongMethod2" },
-          "406": { "$ref": "#/components/responses/UnacceptableMedia" },
-          "409": { "$ref": "#/components/responses/Conflict" },
-          "503": { "$ref": "#/components/responses/DatabaseUnavailable" },
-          "500": { "$ref": "#/components/responses/UnexpectedHtml" }
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest2"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccessDenied2"
+          },
+          "405": {
+            "$ref": "#/components/responses/WrongMethod2"
+          },
+          "406": {
+            "$ref": "#/components/responses/UnacceptableMedia"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedHtml"
+          }
         }
       }
     },
@@ -751,7 +913,11 @@
             "in": "query",
             "required": false,
             "description": "L 产品 ID；正式域可省略，F 请求必填。",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 9223372036854775807 }
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
           },
           {
             "$ref": "#/components/parameters/QueryScope"
@@ -799,35 +965,57 @@
             "in": "query",
             "required": false,
             "description": "按已核 AQI 标准的单个等级筛选；在分页前生效。",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 6 }
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            }
           },
           {
             "name": "home",
             "in": "query",
             "required": false,
             "description": "传 1 启用同一快照的首页投影；省略时保留旧响应。",
-            "schema": { "type": "integer", "const": 1 }
+            "schema": {
+              "type": "integer",
+              "const": 1
+            }
           },
           {
             "name": "rank_preview",
             "in": "query",
             "required": false,
             "description": "仅用于 home=1。须明确已知标准；取同刻获权的高值或低值前五城，不改变表格排序。",
-            "schema": { "type": "string", "enum": ["aqi_desc", "aqi_asc"], "default": "aqi_desc" }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "aqi_desc",
+                "aqi_asc"
+              ],
+              "default": "aqi_desc"
+            }
           },
           {
             "name": "focus_city",
             "in": "query",
             "required": false,
             "description": "仅用于 home=1。可定位当前筛选和排序下任一获权城市，不受页界限制。",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 9223372036854775807 }
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9223372036854775807
+            }
           },
           {
             "name": "map_limit",
             "in": "query",
             "required": false,
             "description": "仅用于 home=1。请求地图投影；当前无获准地理映射，始终返回不可用且无点位。",
-            "schema": { "type": "integer", "minimum": 1, "maximum": 400 }
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 400
+            }
           },
           {
             "name": "q",
@@ -1218,7 +1406,7 @@
       "get": {
         "operationId": "queryObservations",
         "summary": "通用精确窗明细或逐项最近有效值",
-        "description": "需要本人有效 Session，按产品、对象、期间及字段核对数据使用权。 window 使用 [start,end)，latest_valid 仅接可选 as_of。城市与站址数组使用逗号列表，每次一类。上限 5 对象、7 指标、30 天、3,600 候选格。各产品独立，D 读精确日报接口。值为十进制字符串，可空。 分页及顺序。默认 50，最多 100，筛选并鉴权后按稳定顺序分页。 按观测时刻及逻辑键倒序。",
+        "description": "需要本人有效 Session，按产品、对象、期间及字段核对数据使用权。 window 使用 [start,end)，latest_valid 仅接可选 as_of。城市与站址数组使用逗号列表，每次一类。上限 5 对象、7 指标、30 天、3,600 候选格。各产品独立，D 读精确日报接口。值为十进制字符串，可空。 分页及顺序。默认 50，最多 100，筛选并鉴权后按稳定顺序分页。 按观测时刻及逻辑键倒序。 续页保持首批条件。可见投影改变返回 409/page_changed。",
         "security": [
           {
             "Session": []
@@ -1400,7 +1588,7 @@
       "get": {
         "operationId": "readExactObservation",
         "summary": "按完整逻辑键精确读取",
-        "description": "需要本人有效 Session，按产品、对象、期间及字段核对数据使用权。 city 与 site_epoch 取其一。小时观测用 observed_at，D 日报用 local_report_date。旧 input_version 对象已迁移为 64 位小写十六进制字符串。revision_id 为内容修订标识。",
+        "description": "需要本人有效 Session，按产品、对象、期间及字段核对数据使用权。 city 与 site_epoch 取其一。小时观测用 observed_at，D 日报用 local_report_date。旧 input_version 对象已迁移为 64 位小写十六进制字符串。revision_id 为内容修订标识。 产品、指标、标准、窗口与时锚组合非法返回 400/invalid_request。有效地方日无报返回空结果。",
         "security": [
           {
             "Session": []
@@ -1529,7 +1717,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResearchResult"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/StatisticsResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PearsonResult"
+                    }
+                  ]
                 }
               }
             },
@@ -1604,7 +1799,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResearchResult"
+                  "$ref": "#/components/schemas/CompareResult"
                 }
               }
             },
@@ -2857,7 +3052,7 @@
         ],
         "responses": {
           "200": {
-            "description": "当前权限、输入、格式与期限均通过时返回 s05.csv.v1。响应最多 10,000 行及 4 MiB。错误响应使用 JSON，且没有 Content-Disposition。",
+            "description": "当前权限、输入、格式与期限均通过时返回 s05.csv.v2 UTF-8 CSV，group 后的必备 data_scope 列按产品写 formal 或 synthetic。响应最多 10,000 行及 4 MiB。错误响应使用 JSON，且没有 Content-Disposition。",
             "headers": {
               "Content-Disposition": {
                 "schema": {
@@ -3522,7 +3717,7 @@
             "$ref": "#/components/parameters/QueryProduct2"
           },
           {
-            "$ref": "#/components/parameters/QueryScope"
+            "$ref": "#/components/parameters/QueryScope2"
           },
           {
             "name": "city_key",
@@ -3894,7 +4089,7 @@
       "post": {
         "operationId": "lookupSelfCommandReceipt",
         "summary": "核对本人已提交的命令",
-        "description": "提交原操作的 family、原入口 target 与包含原 request_id 的完整 command，按当前 Session、具名权限和目标范围查询已提交记录。redeliver 的 target 是 Run UUID，其他是正 int64。缺少可披露回执统一返回 404。",
+        "description": "提交原命令信封，以当前会话身份、权限和目标范围查证已受理操作。redeliver 及 history_import 的 target 为 UUID（分别为 Run、stage），其余为正 int64。历史导入使用原 stage 和完整原命令，200 仅返回 attempt_id。质量回执附当期可核实的 impact。无可披露回执返回 404。",
         "security": [
           {
             "Session": [],
@@ -3964,28 +4159,107 @@
         "operationId": "readObjectAudit",
         "summary": "读取单一对象的获权操作审计",
         "description": "需要当前会话及目标所需的具名权限，只返回在指定时间窗和当前授权内可披露的记录。Run 的 id 使用 UUID，其余 kind 使用正 int64。范围为带时区的半开区间，最长 30 天。游标绑定主体、对象和范围。与采集管理工作台共用逐用户限流。",
-        "security": [{"Session": []}],
+        "security": [
+          {
+            "Session": []
+          }
+        ],
         "parameters": [
-          {"name": "kind", "in": "query", "required": true, "schema": {"type": "string", "enum": ["job", "run", "quality_issue", "station", "grant"]}},
-          {"name": "id", "in": "query", "required": true, "schema": {"type": "string", "minLength": 1, "maxLength": 36}},
-          {"name": "start", "in": "query", "required": true, "schema": {"type": "string", "format": "date-time"}},
-          {"name": "end", "in": "query", "required": true, "schema": {"type": "string", "format": "date-time"}},
-          {"name": "page_size", "in": "query", "required": false, "schema": {"type": "integer", "minimum": 1, "maximum": 50, "default": 25}},
-          {"$ref": "#/components/parameters/QueryCursor"}
+          {
+            "name": "kind",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "job",
+                "run",
+                "quality_issue",
+                "station",
+                "grant"
+              ]
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 36
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 25
+            }
+          },
+          {
+            "$ref": "#/components/parameters/QueryCursor"
+          }
         ],
         "responses": {
           "200": {
             "description": "当前授权下的审计记录页。",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/S08ObjectAuditPage"}}},
-            "headers": {"Cache-Control": {"$ref": "#/components/headers/NoStore"}}
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/S08ObjectAuditPage"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/NoStore"
+              }
+            }
           },
-          "400": {"$ref": "#/components/responses/InvalidRequest2"},
-          "403": {"$ref": "#/components/responses/AccessDenied2"},
-          "405": {"$ref": "#/components/responses/WrongMethod2"},
-          "406": {"$ref": "#/components/responses/UnacceptableMedia"},
-          "429": {"$ref": "#/components/responses/RateLimited2"},
-          "503": {"$ref": "#/components/responses/DatabaseUnavailable"},
-          "500": {"$ref": "#/components/responses/UnexpectedHtml"}
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest2"
+          },
+          "403": {
+            "$ref": "#/components/responses/AccessDenied2"
+          },
+          "405": {
+            "$ref": "#/components/responses/WrongMethod2"
+          },
+          "406": {
+            "$ref": "#/components/responses/UnacceptableMedia"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited2"
+          },
+          "503": {
+            "$ref": "#/components/responses/DatabaseUnavailable"
+          },
+          "500": {
+            "$ref": "#/components/responses/UnexpectedHtml"
+          }
         }
       }
     },
@@ -4367,7 +4641,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CollectionWindow"
+                  "$ref": "#/components/schemas/CollectionRun"
                 }
               }
             },
@@ -4465,7 +4739,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SubmittedRedeliveryCommand"
+                "$ref": "#/components/schemas/RedeliveryWrite"
               }
             }
           }
@@ -4590,7 +4864,7 @@
               "schema": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/SubmittedJobControlCommand"
+                    "$ref": "#/components/schemas/JobControlWrite"
                   },
                   {
                     "type": "object",
@@ -5118,12 +5392,12 @@
                           "accounts.manage_accounts",
                           "accounts.adjudicate_quality",
                           "accounts.manage_catalog",
-                        "accounts.maintain_city_search_alias",
+                          "accounts.maintain_city_search_alias",
                           "accounts.diagnose_operations",
                           "accounts.manage_backups",
                           "accounts.restore_backup",
                           "observations.manage_collection",
-                        "observations.configure_collection_schedule",
+                          "observations.configure_collection_schedule",
                           "observations.run_collection",
                           "observations.import_history",
                           "observations.review_observation",
@@ -5336,7 +5610,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/QualityIssue"
+                  "$ref": "#/components/schemas/QualityDetail"
                 }
               }
             },
@@ -5424,26 +5698,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "action_id": {
-                      "type": "string",
-                      "maxLength": 36,
-                      "format": "uuid",
-                      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-                    },
-                    "status": {
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "integer",
-                      "minimum": 0
-                    }
-                  },
-                  "required": [
-                    "action_id"
-                  ],
-                  "additionalProperties": true
+                  "$ref": "#/components/schemas/QualityActionResponse"
                 }
               }
             },
@@ -5514,7 +5769,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SubmittedQualityCommand"
+                "$ref": "#/components/schemas/QualityWrite"
               }
             }
           }
@@ -8552,7 +8807,9 @@
           "results": {
             "type": "array",
             "maxItems": 100,
-            "items": { "$ref": "#/components/schemas/NationalCity" }
+            "items": {
+              "$ref": "#/components/schemas/NationalCity"
+            }
           },
           "page": {
             "$ref": "#/components/schemas/CursorPage"
@@ -8562,19 +8819,34 @@
           },
           "focused": {
             "anyOf": [
-              { "$ref": "#/components/schemas/NationalCity" },
-              { "type": "null" }
+              {
+                "$ref": "#/components/schemas/NationalCity"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "map": {
             "type": "object",
             "description": "当前无可披露的地理映射；请求 map_limit 时返回此状态，不含点位或坐标。",
             "properties": {
-              "state": { "const": "unavailable" },
-              "items": { "type": "array", "maxItems": 0 },
-              "has_more": { "const": false }
+              "state": {
+                "const": "unavailable"
+              },
+              "items": {
+                "type": "array",
+                "maxItems": 0
+              },
+              "has_more": {
+                "const": false
+              }
             },
-            "required": ["state", "items", "has_more"],
+            "required": [
+              "state",
+              "items",
+              "has_more"
+            ],
             "additionalProperties": false
           }
         },
@@ -8589,69 +8861,247 @@
           "page"
         ],
         "additionalProperties": false,
-        "if": { "properties": { "selection": { "required": ["home"] } } },
-        "then": { "required": ["ranking", "focused"] },
-        "else": { "not": { "anyOf": [{ "required": ["ranking"] }, { "required": ["focused"] }, { "required": ["map"] }] } }
+        "if": {
+          "properties": {
+            "selection": {
+              "required": [
+                "home"
+              ]
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "ranking",
+            "focused"
+          ]
+        },
+        "else": {
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "ranking"
+                ]
+              },
+              {
+                "required": [
+                  "focused"
+                ]
+              },
+              {
+                "required": [
+                  "map"
+                ]
+              }
+            ]
+          }
+        }
       },
       "NationalSelection": {
         "type": "object",
         "properties": {
-          "product": { "$ref": "#/components/schemas/PublicRow/properties/product" },
-          "source": { "type": "string" },
-          "scope": { "enum": ["synthetic", null] },
-          "at": { "type": ["string", "null"], "format": "date-time" },
-          "as_of": { "type": ["string", "null"], "format": "date-time" },
-          "standard_series": { "enum": ["HJ633-2012", "HJ633-2026", "unknown", null] },
-          "window_definition": { "enum": ["hourly_label_unspecified", "hourly_left_label", "hourly_right_label"] },
-          "order": { "enum": ["city", "aqi_desc", "aqi_asc"] },
-          "q": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
-          "geography": { "type": ["string", "null"], "minLength": 1, "maxLength": 200 },
-          "page_size": { "$ref": "#/components/schemas/CursorPage/properties/page_size" },
-          "home": { "const": 1 },
-          "grade": { "type": "integer", "minimum": 1, "maximum": 6 }
+          "product": {
+            "$ref": "#/components/schemas/PublicRow/properties/product"
+          },
+          "source": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "synthetic",
+              null
+            ]
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "as_of": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "standard_series": {
+            "enum": [
+              "HJ633-2012",
+              "HJ633-2026",
+              "unknown",
+              null
+            ]
+          },
+          "window_definition": {
+            "enum": [
+              "hourly_label_unspecified",
+              "hourly_left_label",
+              "hourly_right_label"
+            ]
+          },
+          "order": {
+            "enum": [
+              "city",
+              "aqi_desc",
+              "aqi_asc"
+            ]
+          },
+          "q": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "geography": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "page_size": {
+            "$ref": "#/components/schemas/CursorPage/properties/page_size"
+          },
+          "home": {
+            "const": 1
+          },
+          "grade": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
         },
-        "required": ["product", "source", "scope", "at", "as_of", "standard_series", "window_definition", "order", "q", "geography", "page_size"],
+        "required": [
+          "product",
+          "source",
+          "scope",
+          "at",
+          "as_of",
+          "standard_series",
+          "window_definition",
+          "order",
+          "q",
+          "geography",
+          "page_size"
+        ],
         "additionalProperties": false,
         "anyOf": [
-          { "properties": { "at": { "type": "null" } } },
-          { "properties": { "as_of": { "type": "null" } } }
+          {
+            "properties": {
+              "at": {
+                "type": "null"
+              }
+            }
+          },
+          {
+            "properties": {
+              "as_of": {
+                "type": "null"
+              }
+            }
+          }
         ]
       },
       "NationalSummary": {
         "oneOf": [
           {
             "type": "object",
-            "properties": { "state": { "const": "unavailable" } },
-            "required": ["state"],
+            "properties": {
+              "state": {
+                "const": "unavailable"
+              }
+            },
+            "required": [
+              "state"
+            ],
             "additionalProperties": false
           },
           {
             "type": "object",
             "properties": {
-              "state": { "const": "ok" },
-              "covered_city_count": { "type": ["integer", "null"], "minimum": 0 },
-              "summary_eligible_city_count": { "type": "integer", "minimum": 0 },
+              "state": {
+                "const": "ok"
+              },
+              "covered_city_count": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "summary_eligible_city_count": {
+                "type": "integer",
+                "minimum": 0
+              },
               "groups": {
                 "type": "object",
-                "propertyNames": { "enum": ["HJ633-2012", "HJ633-2026"] },
+                "propertyNames": {
+                  "enum": [
+                    "HJ633-2012",
+                    "HJ633-2026"
+                  ]
+                },
                 "additionalProperties": {
                   "type": "object",
                   "properties": {
-                    "ranked_city_count": { "type": "integer", "minimum": 0 },
+                    "ranked_city_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
                     "distribution": {
                       "type": "object",
-                      "propertyNames": { "enum": ["1", "2", "3", "4", "5", "6"] },
-                      "additionalProperties": { "type": "integer", "minimum": 1 }
+                      "propertyNames": {
+                        "enum": [
+                          "1",
+                          "2",
+                          "3",
+                          "4",
+                          "5",
+                          "6"
+                        ]
+                      },
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
                     }
                   },
-                  "required": ["ranked_city_count", "distribution"],
+                  "required": [
+                    "ranked_city_count",
+                    "distribution"
+                  ],
                   "additionalProperties": false
                 }
               },
-              "expected": { "type": ["integer", "null"], "minimum": 0 },
-              "completeness": { "enum": ["unknown", "partial", "complete"] }
+              "expected": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "completeness": {
+                "enum": [
+                  "unknown",
+                  "partial",
+                  "complete"
+                ]
+              }
             },
-            "required": ["state", "covered_city_count", "summary_eligible_city_count", "groups", "expected", "completeness"],
+            "required": [
+              "state",
+              "covered_city_count",
+              "summary_eligible_city_count",
+              "groups",
+              "expected",
+              "completeness"
+            ],
             "additionalProperties": false
           }
         ]
@@ -8659,15 +9109,34 @@
       "NationalCity": {
         "type": "object",
         "properties": {
-          "city": { "$ref": "#/components/schemas/PublicRow/properties/city" },
-          "name": { "type": ["string", "null"] },
-          "geography": { "type": ["string", "null"] },
+          "city": {
+            "$ref": "#/components/schemas/PublicRow/properties/city"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "geography": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "series": {
             "type": "array",
             "minItems": 1,
             "items": {
               "$ref": "#/components/schemas/NationalObservation",
-              "properties": { "indicator": { "const": "AQI" }, "unit": { "const": "1" } }
+              "properties": {
+                "indicator": {
+                  "const": "AQI"
+                },
+                "unit": {
+                  "const": "1"
+                }
+              }
             }
           },
           "levels": {
@@ -8675,116 +9144,343 @@
             "items": {
               "$ref": "#/components/schemas/NationalObservation",
               "properties": {
-                "indicator": { "enum": ["PM2.5Level", "PM10Level", "SO2Level", "NO2Level", "COLevel", "O3Level"] },
-                "unit": { "const": "grade" }
+                "indicator": {
+                  "enum": [
+                    "PM2.5Level",
+                    "PM10Level",
+                    "SO2Level",
+                    "NO2Level",
+                    "COLevel",
+                    "O3Level"
+                  ]
+                },
+                "unit": {
+                  "const": "grade"
+                }
               },
-              "not": { "required": ["rank"] }
+              "not": {
+                "required": [
+                  "rank"
+                ]
+              }
             }
           },
           "links": {
             "type": "object",
             "properties": {
-              "city": { "$ref": "#/components/schemas/CityLinks/properties/city" },
-              "trend": { "$ref": "#/components/schemas/CityLinks/properties/trend" },
-              "stations": { "$ref": "#/components/schemas/CityLinks/properties/stations" }
+              "city": {
+                "$ref": "#/components/schemas/CityLinks/properties/city"
+              },
+              "trend": {
+                "$ref": "#/components/schemas/CityLinks/properties/trend"
+              },
+              "stations": {
+                "$ref": "#/components/schemas/CityLinks/properties/stations"
+              }
             },
             "additionalProperties": false
           }
         },
-        "required": ["city", "name", "geography", "series", "levels", "links"],
+        "required": [
+          "city",
+          "name",
+          "geography",
+          "series",
+          "levels",
+          "links"
+        ],
         "additionalProperties": false
       },
       "NationalObservation": {
         "type": "object",
         "properties": {
-          "product": { "$ref": "#/components/schemas/PublicRow/properties/product" },
-          "source": { "$ref": "#/components/schemas/PublicRow/properties/source" },
-          "synthetic": { "$ref": "#/components/schemas/PublicRow/properties/synthetic" },
-          "indicator": { "$ref": "#/components/schemas/PublicRow/properties/indicator" },
-          "observed_at": { "type": "string", "format": "date-time" },
-          "standard_series": { "enum": ["HJ633-2012", "HJ633-2026", "unknown", "not_applicable"] },
-          "window_definition": { "$ref": "#/components/schemas/NationalSelection/properties/window_definition" },
-          "attribution": { "$ref": "#/components/schemas/PublicRow/properties/attribution" },
-          "revision_no": { "$ref": "#/components/schemas/PublicRow/properties/revision_no" },
-          "value": { "$ref": "#/components/schemas/PublicRow/properties/value" },
-          "unit": { "$ref": "#/components/schemas/PublicRow/properties/unit" },
-          "quality": { "$ref": "#/components/schemas/PublicRow/properties/quality" },
-          "censor_limit": { "$ref": "#/components/schemas/PublicRow/properties/censor_limit" },
-          "censor_direction": { "$ref": "#/components/schemas/PublicRow/properties/censor_direction" },
-          "source_timezone": { "$ref": "#/components/schemas/PublicRow/properties/source_timezone" },
-          "timezone_basis": { "$ref": "#/components/schemas/PublicRow/properties/timezone_basis" },
-          "window_start": { "$ref": "#/components/schemas/PublicRow/properties/window_start" },
-          "window_end": { "$ref": "#/components/schemas/PublicRow/properties/window_end" },
-          "label_position": { "$ref": "#/components/schemas/PublicRow/properties/label_position" },
-          "standard_basis": { "$ref": "#/components/schemas/PublicRow/properties/standard_basis" },
-          "standard_evidence": { "$ref": "#/components/schemas/PublicRow/properties/standard_evidence" },
-          "source_published_at": { "$ref": "#/components/schemas/PublicRow/properties/source_published_at" },
-          "mapping": { "$ref": "#/components/schemas/PublicRow/properties/mapping" },
-          "grade": { "type": ["integer", "null"], "minimum": 1, "maximum": 6 },
-          "color": { "$ref": "#/components/schemas/PublicRow/properties/color" },
-          "comparable": { "$ref": "#/components/schemas/PublicRow/properties/comparable" },
-          "issue": { "$ref": "#/components/schemas/PublicRow/properties/issue" },
-          "source_time": { "$ref": "#/components/schemas/PublicRow/properties/source_time" },
-          "source_description": { "$ref": "#/components/schemas/PublicRow/properties/source_description" },
-          "source_grade": { "type": ["integer", "null"], "minimum": 1, "maximum": 6 },
-          "primary_pollutant": { "$ref": "#/components/schemas/PublicRow/properties/primary_pollutant" },
-          "city": { "$ref": "#/components/schemas/PublicRow/properties/city" },
-          "key": { "$ref": "#/components/schemas/PublicRow/properties/key" },
-          "revision": { "$ref": "#/components/schemas/PublicRow/properties/revision" },
-          "qualification_version": { "$ref": "#/components/schemas/PublicRow/properties/qualification_version" },
-          "source_local_date": { "$ref": "#/components/schemas/PublicRow/properties/source_local_date" },
-          "report_kind": { "const": "hourly" },
-          "rights_attributions": { "$ref": "#/components/schemas/PublicRow/properties/rights_attributions" },
-          "evaluated_at": { "$ref": "#/components/schemas/PublicRow/properties/evaluated_at" },
-          "fetched_at": { "$ref": "#/components/schemas/PublicRow/properties/fetched_at" },
-          "source_status": { "$ref": "#/components/schemas/PublicRow/properties/source_status" },
-          "age_seconds": { "$ref": "#/components/schemas/PublicRow/properties/age_seconds" },
-          "freshness": { "$ref": "#/components/schemas/PublicRow/properties/freshness" },
-          "fetched_at_basis": { "$ref": "#/components/schemas/PublicRow/properties/fetched_at_basis" },
-          "source_event": { "$ref": "#/components/schemas/PublicRow/properties/source_event" },
-          "source_event_at": { "$ref": "#/components/schemas/PublicRow/properties/source_event_at" },
-          "source_status_until": { "$ref": "#/components/schemas/PublicRow/properties/source_status_until" },
-          "execution_started_at": { "$ref": "#/components/schemas/PublicRow/properties/execution_started_at" },
-          "rank": { "type": "integer", "minimum": 1 }
+          "product": {
+            "$ref": "#/components/schemas/PublicRow/properties/product"
+          },
+          "source": {
+            "$ref": "#/components/schemas/PublicRow/properties/source"
+          },
+          "synthetic": {
+            "$ref": "#/components/schemas/PublicRow/properties/synthetic"
+          },
+          "indicator": {
+            "$ref": "#/components/schemas/PublicRow/properties/indicator"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "standard_series": {
+            "enum": [
+              "HJ633-2012",
+              "HJ633-2026",
+              "unknown",
+              "not_applicable"
+            ]
+          },
+          "window_definition": {
+            "$ref": "#/components/schemas/NationalSelection/properties/window_definition"
+          },
+          "attribution": {
+            "$ref": "#/components/schemas/PublicRow/properties/attribution"
+          },
+          "revision_no": {
+            "$ref": "#/components/schemas/PublicRow/properties/revision_no"
+          },
+          "value": {
+            "$ref": "#/components/schemas/PublicRow/properties/value"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/PublicRow/properties/unit"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/PublicRow/properties/quality"
+          },
+          "censor_limit": {
+            "$ref": "#/components/schemas/PublicRow/properties/censor_limit"
+          },
+          "censor_direction": {
+            "$ref": "#/components/schemas/PublicRow/properties/censor_direction"
+          },
+          "source_timezone": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_timezone"
+          },
+          "timezone_basis": {
+            "$ref": "#/components/schemas/PublicRow/properties/timezone_basis"
+          },
+          "window_start": {
+            "$ref": "#/components/schemas/PublicRow/properties/window_start"
+          },
+          "window_end": {
+            "$ref": "#/components/schemas/PublicRow/properties/window_end"
+          },
+          "label_position": {
+            "$ref": "#/components/schemas/PublicRow/properties/label_position"
+          },
+          "standard_basis": {
+            "$ref": "#/components/schemas/PublicRow/properties/standard_basis"
+          },
+          "standard_evidence": {
+            "$ref": "#/components/schemas/PublicRow/properties/standard_evidence"
+          },
+          "source_published_at": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_published_at"
+          },
+          "mapping": {
+            "$ref": "#/components/schemas/PublicRow/properties/mapping"
+          },
+          "grade": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "color": {
+            "$ref": "#/components/schemas/PublicRow/properties/color"
+          },
+          "comparable": {
+            "$ref": "#/components/schemas/PublicRow/properties/comparable"
+          },
+          "issue": {
+            "$ref": "#/components/schemas/PublicRow/properties/issue"
+          },
+          "source_time": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_time"
+          },
+          "source_description": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_description"
+          },
+          "source_grade": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "primary_pollutant": {
+            "$ref": "#/components/schemas/PublicRow/properties/primary_pollutant"
+          },
+          "city": {
+            "$ref": "#/components/schemas/PublicRow/properties/city"
+          },
+          "key": {
+            "$ref": "#/components/schemas/PublicRow/properties/key"
+          },
+          "revision": {
+            "$ref": "#/components/schemas/PublicRow/properties/revision"
+          },
+          "qualification_version": {
+            "$ref": "#/components/schemas/PublicRow/properties/qualification_version"
+          },
+          "source_local_date": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_local_date"
+          },
+          "report_kind": {
+            "const": "hourly"
+          },
+          "rights_attributions": {
+            "$ref": "#/components/schemas/PublicRow/properties/rights_attributions"
+          },
+          "evaluated_at": {
+            "$ref": "#/components/schemas/PublicRow/properties/evaluated_at"
+          },
+          "fetched_at": {
+            "$ref": "#/components/schemas/PublicRow/properties/fetched_at"
+          },
+          "source_status": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_status"
+          },
+          "age_seconds": {
+            "$ref": "#/components/schemas/PublicRow/properties/age_seconds"
+          },
+          "freshness": {
+            "$ref": "#/components/schemas/PublicRow/properties/freshness"
+          },
+          "fetched_at_basis": {
+            "$ref": "#/components/schemas/PublicRow/properties/fetched_at_basis"
+          },
+          "source_event": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_event"
+          },
+          "source_event_at": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_event_at"
+          },
+          "source_status_until": {
+            "$ref": "#/components/schemas/PublicRow/properties/source_status_until"
+          },
+          "execution_started_at": {
+            "$ref": "#/components/schemas/PublicRow/properties/execution_started_at"
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          }
         },
         "required": [
-          "product", "source", "synthetic", "indicator", "observed_at", "standard_series", "window_definition",
-          "attribution", "revision_no", "value", "unit", "quality", "censor_limit", "censor_direction",
-          "source_timezone", "timezone_basis", "window_start", "window_end", "label_position", "standard_basis",
-          "standard_evidence", "source_published_at", "mapping", "grade", "color", "comparable", "issue",
-          "source_time", "source_description", "source_grade", "primary_pollutant", "city", "key", "revision",
-          "qualification_version", "source_local_date", "report_kind", "rights_attributions", "evaluated_at",
-          "fetched_at", "source_status", "age_seconds", "freshness", "fetched_at_basis", "source_event",
-          "source_event_at", "source_status_until", "execution_started_at"
+          "product",
+          "source",
+          "synthetic",
+          "indicator",
+          "observed_at",
+          "standard_series",
+          "window_definition",
+          "attribution",
+          "revision_no",
+          "value",
+          "unit",
+          "quality",
+          "censor_limit",
+          "censor_direction",
+          "source_timezone",
+          "timezone_basis",
+          "window_start",
+          "window_end",
+          "label_position",
+          "standard_basis",
+          "standard_evidence",
+          "source_published_at",
+          "mapping",
+          "grade",
+          "color",
+          "comparable",
+          "issue",
+          "source_time",
+          "source_description",
+          "source_grade",
+          "primary_pollutant",
+          "city",
+          "key",
+          "revision",
+          "qualification_version",
+          "source_local_date",
+          "report_kind",
+          "rights_attributions",
+          "evaluated_at",
+          "fetched_at",
+          "source_status",
+          "age_seconds",
+          "freshness",
+          "fetched_at_basis",
+          "source_event",
+          "source_event_at",
+          "source_status_until",
+          "execution_started_at"
         ],
         "additionalProperties": false
       },
       "NationalRanking": {
         "type": "object",
         "properties": {
-          "state": { "enum": ["ok", "unavailable"] },
+          "state": {
+            "enum": [
+              "ok",
+              "unavailable"
+            ]
+          },
           "rows": {
             "type": "array",
             "maxItems": 5,
             "items": {
               "type": "object",
               "properties": {
-                "city": { "$ref": "#/components/schemas/NationalCity/properties/city" },
-                "name": { "$ref": "#/components/schemas/NationalCity/properties/name" },
-                "geography": { "$ref": "#/components/schemas/NationalCity/properties/geography" },
-                "aqi": { "type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$" },
-                "grade": { "type": "integer", "minimum": 1, "maximum": 6 },
-                "rank": { "type": "integer", "minimum": 1, "maximum": 5 }
+                "city": {
+                  "$ref": "#/components/schemas/NationalCity/properties/city"
+                },
+                "name": {
+                  "$ref": "#/components/schemas/NationalCity/properties/name"
+                },
+                "geography": {
+                  "$ref": "#/components/schemas/NationalCity/properties/geography"
+                },
+                "aqi": {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?$"
+                },
+                "grade": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 6
+                },
+                "rank": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                }
               },
-              "required": ["city", "name", "geography", "aqi", "grade", "rank"],
+              "required": [
+                "city",
+                "name",
+                "geography",
+                "aqi",
+                "grade",
+                "rank"
+              ],
               "additionalProperties": false
             }
           }
         },
-        "required": ["state", "rows"],
+        "required": [
+          "state",
+          "rows"
+        ],
         "additionalProperties": false,
-        "if": { "properties": { "state": { "const": "unavailable" } } },
-        "then": { "properties": { "rows": { "maxItems": 0 } } }
+        "if": {
+          "properties": {
+            "state": {
+              "const": "unavailable"
+            }
+          }
+        },
+        "then": {
+          "properties": {
+            "rows": {
+              "maxItems": 0
+            }
+          }
+        }
       },
       "ResearchSelection": {
         "type": "object",
@@ -9457,6 +10153,36 @@
       "CoverageColumn": {
         "type": "object",
         "properties": {
+          "pos": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "entity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "indicator": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "standard_series": {
+            "type": "string"
+          },
+          "expected_windows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSpan"
+            }
+          },
+          "unknown_windows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSpan"
+            }
+          },
           "E": {
             "anyOf": [
               {
@@ -9476,386 +10202,325 @@
             "type": "integer",
             "minimum": 0
           },
+          "received_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "valid_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "outside_schedule": {
             "type": "integer",
             "minimum": 0
           },
-          "expected_windows": {
-            "type": [
-              "object",
-              "array",
-              "null"
+          "denominator_state": {
+            "enum": [
+              "denominator_unknown",
+              "no_expected_slots",
+              "known"
             ]
+          },
+          "exclusions": {
+            "type": "object",
+            "properties": {
+              "gap": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "missing": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "censored": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "invalid": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "suspect": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "disputed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "gap",
+              "missing",
+              "censored",
+              "invalid",
+              "suspect",
+              "disputed",
+              "unknown"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
+          "pos",
+          "entity",
+          "indicator",
+          "unit",
+          "standard_series",
+          "expected_windows",
+          "unknown_windows",
           "E",
           "O",
-          "V"
+          "V",
+          "received_ratio",
+          "valid_ratio",
+          "outside_schedule",
+          "denominator_state",
+          "exclusions"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "ResearchResult": {
-        "type": "object",
-        "properties": {
-          "selection": {
-            "$ref": "#/components/schemas/ResearchSelection"
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/StatisticsResult"
           },
-          "method": {
-            "type": "string",
-            "enum": [
-              "detail",
-              "compare",
-              "statistics",
-              "pearson"
-            ]
+          {
+            "$ref": "#/components/schemas/CompareResult"
           },
-          "method_version": {
-            "type": "string",
-            "enum": [
-              "s05.v1"
-            ],
-            "default": "s05.v1"
-          },
-          "grain": {
-            "type": "string",
-            "enum": [
-              "hour",
-              "day",
-              "month",
-              "season"
-            ],
-            "default": "day"
-          },
-          "input_version": {
-            "$ref": "#/components/schemas/ResearchVersion"
-          },
-          "state": {
-            "type": "string"
-          },
-          "source_timezone": {
-            "type": "string"
-          },
-          "attribution": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "requested_window": {
-            "type": "object",
-            "properties": {
-              "start": {
-                "type": "string",
-                "format": "date-time"
-              },
-              "end": {
-                "type": "string",
-                "format": "date-time"
-              }
-            },
-            "required": [
-              "start",
-              "end"
-            ],
-            "additionalProperties": false
-          },
-          "columns": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CoverageColumn"
-            },
-            "maxItems": 7
-          },
-          "expected_windows": {
-            "type": "array",
-            "items": {
-              "type": [
-                "object",
-                "array",
-                "null"
-              ]
-            }
-          },
-          "conclusion": {
-            "type": "object"
-          },
-          "buckets": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "chart": {
-            "type": "object",
-            "properties": {
-              "resolution": {
-                "type": "string",
-                "enum": [
-                  "exact",
-                  "range"
-                ]
-              },
-              "interval_seconds": {
-                "type": "number"
-              },
-              "points": {
-                "type": "array",
-                "items": {
-                  "type": "object"
-                },
-                "maxItems": 1000
-              }
-            },
-            "required": [
-              "resolution",
-              "points"
-            ],
-            "additionalProperties": false
-          },
-          "whole_period_mean": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "partial_mean": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "distribution": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "lower": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "upper": {
-                  "anyOf": [
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "n": {
-                  "type": "integer",
-                  "minimum": 0
-                }
-              },
-              "required": [
-                "lower",
-                "upper",
-                "n"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "anomalies": {
-            "type": "object"
-          },
-          "heatmap": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
+          {
+            "$ref": "#/components/schemas/PearsonResult"
           }
-        },
-        "required": [
-          "selection",
-          "method",
-          "method_version",
-          "grain",
-          "input_version",
-          "state",
-          "source_timezone",
-          "attribution",
-          "requested_window",
-          "columns",
-          "expected_windows"
-        ],
-        "additionalProperties": true
+        ]
       },
       "ResearchDetail": {
-        "type": "object",
-        "properties": {
-          "selection": {
-            "$ref": "#/components/schemas/ResearchSelection"
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResearchEnvelope"
           },
-          "method": {
-            "type": "string",
-            "enum": [
-              "detail",
-              "compare",
-              "statistics",
-              "pearson"
-            ]
-          },
-          "method_version": {
-            "type": "string",
-            "enum": [
-              "s05.v1"
-            ],
-            "default": "s05.v1"
-          },
-          "grain": {
-            "type": "string",
-            "enum": [
-              "hour",
-              "day",
-              "month",
-              "season"
-            ],
-            "default": "day"
-          },
-          "input_version": {
-            "$ref": "#/components/schemas/ResearchVersion"
-          },
-          "state": {
-            "type": "string"
-          },
-          "source_timezone": {
-            "type": "string"
-          },
-          "attribution": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "requested_window": {
+          {
             "type": "object",
             "properties": {
-              "start": {
+              "method": {
                 "type": "string",
-                "format": "date-time"
+                "enum": [
+                  "detail",
+                  "compare",
+                  "statistics",
+                  "pearson"
+                ]
               },
-              "end": {
-                "type": "string",
-                "format": "date-time"
-              }
-            },
-            "required": [
-              "start",
-              "end"
-            ],
-            "additionalProperties": false
-          },
-          "results": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "key": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9223372036854775807
+              "results": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ResearchDetailRow"
                 },
-                "pos": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "observed_at": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "value": {
-                  "anyOf": [
-                    {
-                      "type": "string",
-                      "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "quality": {
+                "maxItems": 100
+              },
+              "page": {
+                "$ref": "#/components/schemas/CursorPage"
+              },
+              "calendar_versions": {
+                "type": "array",
+                "items": {
                   "type": "string"
                 }
               },
-              "required": [
-                "key",
-                "pos",
-                "observed_at"
-              ],
-              "additionalProperties": true
+              "timezone_basis": {
+                "type": "string"
+              }
             },
-            "maxItems": 100
+            "required": [
+              "method",
+              "results",
+              "page"
+            ]
           },
-          "page": {
-            "$ref": "#/components/schemas/CursorPage"
+          {
+            "if": {
+              "properties": {
+                "method": {
+                  "const": "detail"
+                }
+              }
+            },
+            "then": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "calendar_versions"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "timezone_basis"
+                    ]
+                  }
+                ]
+              }
+            },
+            "else": {
+              "required": [
+                "calendar_versions",
+                "timezone_basis"
+              ]
+            }
           }
-        },
-        "required": [
-          "selection",
-          "method",
-          "method_version",
-          "grain",
-          "input_version",
-          "state",
-          "source_timezone",
-          "attribution",
-          "requested_window",
-          "results",
-          "page"
         ],
-        "additionalProperties": true
+        "unevaluatedProperties": false
       },
       "Favorite": {
         "type": "object",
         "properties": {
-          "id": {"type": "integer", "minimum": 1},
-          "kind": {"enum": ["city", "station"]},
-          "state": {"enum": ["ok", "no_data", "select_epoch", "unavailable"]},
-          "product": {"type": "integer", "minimum": 1},
-          "target_id": {"type": "integer", "minimum": 1},
-          "source": {"type": "string"},
-          "name": {"type": ["string", "null"]},
-          "link": {"type": ["string", "null"], "pattern": "^/api/v1/"},
-          "results": {"type": "array", "items": {"$ref": "#/components/schemas/PublicRow"}},
-          "snapshot_at": {"type": ["string", "null"], "format": "date-time"},
-          "site_epoch": {"type": ["integer", "null"], "minimum": 1},
-          "epochs": {"type": "array", "items": {"type": "object"}}
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "kind": {
+            "enum": [
+              "city",
+              "station"
+            ]
+          },
+          "state": {
+            "enum": [
+              "ok",
+              "no_data",
+              "select_epoch",
+              "unavailable"
+            ]
+          },
+          "product": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "target_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "source": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "link": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^/api/v1/"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicRow"
+            }
+          },
+          "snapshot_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "site_epoch": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "epochs": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
         },
-        "required": ["id", "kind", "state"],
+        "required": [
+          "id",
+          "kind",
+          "state"
+        ],
         "additionalProperties": false,
         "oneOf": [
-          {"properties": {"state": {"const": "unavailable"}}, "maxProperties": 3},
           {
-            "properties": {"kind": {"const": "city"}, "state": {"enum": ["ok", "no_data"]}, "site_epoch": false, "epochs": false},
-            "required": ["product", "target_id", "source", "name", "link", "results", "snapshot_at"]
+            "properties": {
+              "state": {
+                "const": "unavailable"
+              }
+            },
+            "maxProperties": 3
           },
           {
-            "properties": {"kind": {"const": "station"}, "state": {"enum": ["ok", "no_data", "select_epoch"]}, "snapshot_at": false},
-            "required": ["product", "target_id", "source", "name", "link", "results", "site_epoch", "epochs"]
+            "properties": {
+              "kind": {
+                "const": "city"
+              },
+              "state": {
+                "enum": [
+                  "ok",
+                  "no_data"
+                ]
+              },
+              "site_epoch": false,
+              "epochs": false
+            },
+            "required": [
+              "product",
+              "target_id",
+              "source",
+              "name",
+              "link",
+              "results",
+              "snapshot_at"
+            ]
+          },
+          {
+            "properties": {
+              "kind": {
+                "const": "station"
+              },
+              "state": {
+                "enum": [
+                  "ok",
+                  "no_data",
+                  "select_epoch"
+                ]
+              },
+              "snapshot_at": false
+            },
+            "required": [
+              "product",
+              "target_id",
+              "source",
+              "name",
+              "link",
+              "results",
+              "site_epoch",
+              "epochs"
+            ]
           }
         ]
       },
@@ -10005,76 +10670,90 @@
         "additionalProperties": false
       },
       "CollectionWindow": {
-        "type": "object",
-        "properties": {
-          "window_id": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9223372036854775807
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/WindowMinimalDetail"
           },
-          "state": {
-            "type": "string"
-          },
-          "coverage": {
-            "anyOf": [
+          {
+            "allOf": [
               {
-                "type": "object"
-              },
-              {
-                "type": "null"
+                "$ref": "#/components/schemas/WindowDetailFields"
               }
-            ]
-          },
-          "runs": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
+            ],
+            "unevaluatedProperties": false
           }
-        },
-        "required": [
-          "window_id",
-          "state",
-          "coverage"
-        ],
-        "additionalProperties": true
+        ]
       },
       "CollectionRun": {
-        "type": "object",
-        "properties": {
-          "run_id": {
-            "type": "string",
-            "maxLength": 36,
-            "format": "uuid",
-            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/WindowMinimalDetail"
           },
-          "window_id": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9223372036854775807
-          },
-          "window": {
-            "type": "object"
-          },
-          "status": {
-            "type": "string"
-          },
-          "dispatch": {
-            "type": "string"
-          },
-          "links": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "pattern": "^/api/v1/"
-            }
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/WindowDetailFields"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "quality_issues": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/QualityIssue"
+                    }
+                  },
+                  "target": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "const": "run"
+                      },
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "control_version": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "state": {
+                        "type": "string"
+                      },
+                      "dispatch": {
+                        "type": "string"
+                      },
+                      "request_state": {
+                        "type": "string"
+                      },
+                      "owner_present": {
+                        "type": "boolean"
+                      },
+                      "reason": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "id",
+                      "control_version",
+                      "state",
+                      "dispatch",
+                      "request_state",
+                      "owner_present",
+                      "reason"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "quality_issues"
+                ]
+              }
+            ],
+            "unevaluatedProperties": false
           }
-        },
-        "required": [
-          "run_id",
-          "window_id"
-        ],
-        "additionalProperties": true
+        ]
       },
       "JobControl": {
         "type": "object",
@@ -10086,16 +10765,126 @@
           },
           "targets": {
             "type": "object",
-            "additionalProperties": {
-              "type": "object"
-            }
+            "properties": {
+              "job": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "const": "job"
+                  },
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9223372036854775807
+                  },
+                  "control_version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "control_version",
+                  "state",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "const": "source"
+                  },
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9223372036854775807
+                  },
+                  "control_version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "resume_after": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "control_version",
+                  "state",
+                  "reason",
+                  "resume_after"
+                ],
+                "additionalProperties": false
+              },
+              "product": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "const": "product"
+                  },
+                  "id": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9223372036854775807
+                  },
+                  "control_version": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "state": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "control_version",
+                  "state",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "job",
+              "source",
+              "product"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
           "job",
           "targets"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "JobAction": {
         "type": "object",
@@ -10117,7 +10906,7 @@
           "enabled",
           "reason"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "AccountState": {
         "type": "object",
@@ -10581,7 +11370,82 @@
             "minimum": 1,
             "maximum": 9223372036854775807
           },
-          "window_id": {
+          "product": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "synthetic": {
+            "type": "boolean"
+          },
+          "target_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "target_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "full_scope": {
+            "type": "boolean"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "quality_issues": {
+                "type": "string",
+                "pattern": "^/api/v1/"
+              },
+              "detail": {
+                "type": "string",
+                "pattern": "^/api/v1/"
+              },
+              "runs": {
+                "type": "string",
+                "pattern": "^/api/v1/"
+              },
+              "disposition": {
+                "type": "string",
+                "pattern": "^/api/v1/"
+              }
+            },
+            "required": [
+              "quality_issues",
+              "detail"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "product",
+          "synthetic",
+          "target_start",
+          "target_end",
+          "full_scope",
+          "result",
+          "links"
+        ],
+        "additionalProperties": false
+      },
+      "RunListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "window": {
             "type": "integer",
             "minimum": 1,
             "maximum": 9223372036854775807
@@ -10594,48 +11458,59 @@
           "synthetic": {
             "type": "boolean"
           },
-          "links": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "pattern": "^/api/v1/"
-            }
-          }
-        },
-        "required": [
-          "links"
-        ],
-        "additionalProperties": true
-      },
-      "RunListItem": {
-        "type": "object",
-        "properties": {
-          "id": {
+          "created_at": {
             "type": "string",
-            "maxLength": 36,
-            "format": "uuid",
-            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-          },
-          "window": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9223372036854775807
+            "format": "date-time"
           },
           "status": {
             "type": "string"
           },
+          "dispatch": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
           "links": {
             "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "pattern": "^/api/v1/"
-            }
+            "properties": {
+              "detail": {
+                "type": "string",
+                "pattern": "^/api/v1/"
+              },
+              "window": {
+                "type": "string",
+                "pattern": "^/api/v1/"
+              },
+              "quality_issues": {
+                "type": "string",
+                "pattern": "^/api/v1/"
+              },
+              "disposition": {
+                "type": "string",
+                "pattern": "^/api/v1/"
+              }
+            },
+            "required": [
+              "detail",
+              "window",
+              "quality_issues"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
+          "id",
+          "window",
+          "product",
+          "synthetic",
+          "created_at",
+          "status",
+          "dispatch",
+          "result",
           "links"
         ],
-        "additionalProperties": true
+        "additionalProperties": false
       },
       "SubmittedRunCommand": {
         "type": "object",
@@ -11045,6 +11920,45 @@
               "command"
             ],
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "family": {
+                "const": "history_import"
+              },
+              "target": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "command": {
+                "type": "object",
+                "properties": {
+                  "profile": {
+                    "const": "uci501-edges-v1"
+                  },
+                  "stage_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "reason": {
+                    "const": "historical_verification"
+                  }
+                },
+                "required": [
+                  "profile",
+                  "stage_id",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "family",
+              "target",
+              "command"
+            ],
+            "additionalProperties": false
           }
         ]
       },
@@ -11221,18 +12135,93 @@
               "status"
             ],
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "attempt_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": [
+              "attempt_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 48
+              },
+              "recorded_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "action_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "impact": {
+                "$ref": "#/components/schemas/QualityReceiptImpact"
+              }
+            },
+            "required": [
+              "state",
+              "action",
+              "recorded_at",
+              "action_id",
+              "version",
+              "impact"
+            ],
+            "additionalProperties": false
           }
         ]
       },
       "ManagementExecuteOption": {
         "type": "object",
         "properties": {
-          "product": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
-          "job": {"type": "integer", "minimum": 1, "maximum": 9223372036854775807},
-          "reason": {"type": "string", "enum": ["manual", "review", "backfill"]},
-          "target": {"type": "string", "format": "date-time"}
+          "product": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "job": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "review",
+              "backfill"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "format": "date-time"
+          }
         },
-        "required": ["product", "job", "reason", "target"],
+        "required": [
+          "product",
+          "job",
+          "reason",
+          "target"
+        ],
         "additionalProperties": false
       },
       "ManagementProductOption": {
@@ -11354,36 +12343,91 @@
       "S08ObjectAuditRecord": {
         "type": "object",
         "properties": {
-          "at": {"type": "string", "format": "date-time"},
-          "action": {"type": "string"},
-          "outcome": {"type": "string"},
-          "actor_relation": {"type": "string", "enum": ["self", "other", "system"]},
-          "before_version": {"type": ["integer", "null"], "minimum": 0},
-          "after_version": {"type": ["integer", "null"], "minimum": 0}
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "actor_relation": {
+            "type": "string",
+            "enum": [
+              "self",
+              "other",
+              "system"
+            ]
+          },
+          "before_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "after_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
         },
-        "required": ["at", "action", "outcome", "actor_relation", "before_version", "after_version"],
+        "required": [
+          "at",
+          "action",
+          "outcome",
+          "actor_relation",
+          "before_version",
+          "after_version"
+        ],
         "additionalProperties": false
       },
       "S08ObjectAuditPage": {
         "type": "object",
         "properties": {
-          "results": {"type": "array", "items": {"$ref": "#/components/schemas/S08ObjectAuditRecord"}, "maxItems": 50},
-          "page": {"$ref": "#/components/schemas/CursorPage50Default25"}
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/S08ObjectAuditRecord"
+            },
+            "maxItems": 50
+          },
+          "page": {
+            "$ref": "#/components/schemas/CursorPage50Default25"
+          }
         },
-        "required": ["results", "page"],
+        "required": [
+          "results",
+          "page"
+        ],
         "additionalProperties": false
       },
       "CursorPage50Default25": {
         "type": "object",
         "properties": {
-          "page_size": {"type": "integer", "minimum": 1, "maximum": 50, "default": 25},
+          "page_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50,
+            "default": 25
+          },
           "next_cursor": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
             "maxLength": 2048
           }
         },
-        "required": ["page_size", "next_cursor"],
+        "required": [
+          "page_size",
+          "next_cursor"
+        ],
         "additionalProperties": false
       },
       "CollectionJobPage": {
@@ -11946,47 +12990,12 @@
         "additionalProperties": false
       },
       "QualityIssue": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9223372036854775807
-          },
-          "code": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          },
-          "version": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "evidence_ref": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2048,
-                "minLength": 1
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "links": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "pattern": "^/api/v1/"
-            }
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/QualityIssueFields"
           }
-        },
-        "required": [
-          "id"
         ],
-        "additionalProperties": true
+        "unevaluatedProperties": false
       },
       "StationIdentity": {
         "type": "object",
@@ -12121,6 +13130,3025 @@
           "status",
           "coordinates",
           "link"
+        ],
+        "additionalProperties": false
+      },
+      "TimeSpan": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchSupport": {
+        "type": "object",
+        "properties": {
+          "support": {
+            "enum": [
+              "observed",
+              "effective",
+              "paired"
+            ]
+          },
+          "bucket": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "end": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "pos": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "local_hour": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 23
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "support",
+          "bucket"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchConclusion": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "enum": [
+              "denominator_unknown",
+              "no_expected_slots",
+              "insufficient_coverage",
+              "partial_coverage",
+              "sufficient",
+              "insufficient_pairs",
+              "zero_variance"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchBucket": {
+        "type": "object",
+        "properties": {
+          "pos": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "E": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "O": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "V": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "received_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "valid_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outside_schedule": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "denominator_state": {
+            "enum": [
+              "denominator_unknown",
+              "no_expected_slots",
+              "known"
+            ]
+          },
+          "exclusions": {
+            "type": "object",
+            "properties": {
+              "gap": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "missing": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "censored": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "invalid": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "suspect": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "disputed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unknown": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "gap",
+              "missing",
+              "censored",
+              "invalid",
+              "suspect",
+              "disputed",
+              "unknown"
+            ],
+            "additionalProperties": false
+          },
+          "conclusion": {
+            "$ref": "#/components/schemas/ResearchConclusion"
+          },
+          "drilldown": {
+            "$ref": "#/components/schemas/ResearchSupport"
+          },
+          "observed_drilldown": {
+            "$ref": "#/components/schemas/ResearchSupport"
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minimum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maximum": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minimum_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "maximum_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "minimum_ties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maximum_ties": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "box": {
+            "type": "object",
+            "properties": {
+              "n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "q1": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "median": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "q3": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lower_whisker": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "upper_whisker": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "n",
+              "q1",
+              "median",
+              "q3",
+              "lower_whisker",
+              "upper_whisker"
+            ],
+            "additionalProperties": false
+          },
+          "complete_month": {
+            "type": "boolean"
+          },
+          "all_received": {
+            "type": "boolean"
+          },
+          "all_effective": {
+            "type": "boolean"
+          },
+          "complete_season": {
+            "type": "boolean"
+          },
+          "season": {
+            "type": "string"
+          },
+          "season_year": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "pos",
+          "start",
+          "end",
+          "E",
+          "O",
+          "V",
+          "received_ratio",
+          "valid_ratio",
+          "outside_schedule",
+          "denominator_state",
+          "exclusions",
+          "conclusion",
+          "drilldown",
+          "observed_drilldown"
+        ],
+        "additionalProperties": false
+      },
+      "ResearchChart": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "resolution": {
+                "const": "exact"
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "pos": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "quality": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "expected": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "key_id": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9223372036854775807
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "censor_limit": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "censor_direction": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "drilldown": {
+                      "type": "object",
+                      "properties": {
+                        "support": {
+                          "const": "observed"
+                        },
+                        "bucket": {
+                          "type": "object",
+                          "properties": {
+                            "start": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "end": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "pos": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end",
+                            "pos"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "support",
+                        "bucket"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "pos",
+                    "at",
+                    "quality",
+                    "value",
+                    "expected",
+                    "key_id",
+                    "censor_limit",
+                    "censor_direction"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 1000
+              }
+            },
+            "required": [
+              "resolution",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "resolution": {
+                "const": "range"
+              },
+              "interval_seconds": {
+                "type": "number"
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "pos": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "minimum": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "maximum": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "valid_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "gaps": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "drilldown": {
+                      "type": "object",
+                      "properties": {
+                        "support": {
+                          "const": "effective"
+                        },
+                        "bucket": {
+                          "type": "object",
+                          "properties": {
+                            "start": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "end": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "pos": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end",
+                            "pos"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "support",
+                        "bucket"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "pos",
+                    "at",
+                    "minimum",
+                    "maximum",
+                    "valid_count",
+                    "gaps"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 1000
+              }
+            },
+            "required": [
+              "resolution",
+              "interval_seconds",
+              "points"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ResearchEnvelope": {
+        "type": "object",
+        "properties": {
+          "selection": {
+            "$ref": "#/components/schemas/ResearchSelection"
+          },
+          "method_version": {
+            "type": "string",
+            "enum": [
+              "s05.v1"
+            ],
+            "default": "s05.v1"
+          },
+          "grain": {
+            "type": "string",
+            "enum": [
+              "hour",
+              "day",
+              "month",
+              "season"
+            ],
+            "default": "day"
+          },
+          "input_version": {
+            "$ref": "#/components/schemas/ResearchVersion"
+          },
+          "state": {
+            "enum": [
+              "ok",
+              "no_data"
+            ]
+          },
+          "source_timezone": {
+            "type": "string"
+          },
+          "attribution": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requested_window": {
+            "$ref": "#/components/schemas/TimeSpan"
+          },
+          "label_position": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "selection",
+          "method_version",
+          "grain",
+          "input_version",
+          "state",
+          "source_timezone",
+          "attribution",
+          "requested_window",
+          "label_position"
+        ]
+      },
+      "ResearchSummaryFields": {
+        "type": "object",
+        "properties": {
+          "calendar_versions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "timezone_basis": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoverageColumn"
+            }
+          },
+          "expected_windows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/TimeSpan"
+              }
+            }
+          },
+          "conclusion": {
+            "$ref": "#/components/schemas/ResearchConclusion"
+          },
+          "chart": {
+            "$ref": "#/components/schemas/ResearchChart"
+          }
+        },
+        "required": [
+          "calendar_versions",
+          "timezone_basis",
+          "columns",
+          "expected_windows",
+          "conclusion"
+        ]
+      },
+      "ResearchPairFields": {
+        "type": "object",
+        "properties": {
+          "E_common": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "P": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actual_pairs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "paired_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expected_common_windows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimeSpan"
+            }
+          },
+          "paired_drilldown": {
+            "$ref": "#/components/schemas/ResearchSupport"
+          }
+        },
+        "required": [
+          "E_common",
+          "P",
+          "actual_pairs",
+          "paired_ratio",
+          "expected_common_windows",
+          "paired_drilldown"
+        ]
+      },
+      "StatisticsResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResearchEnvelope"
+          },
+          {
+            "$ref": "#/components/schemas/ResearchSummaryFields"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "method": {
+                "const": "statistics"
+              },
+              "buckets": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ResearchBucket"
+                }
+              },
+              "whole_period_mean": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "partial_mean": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "distribution": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "lower": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "upper": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "n": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "lower",
+                    "upper",
+                    "n"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "anomalies": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "enum": [
+                          "insufficient_samples",
+                          "zero_iqr"
+                        ]
+                      },
+                      "count": {
+                        "type": "null"
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "count"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "state": {
+                        "const": "ok"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "q1": {
+                        "type": "number"
+                      },
+                      "q3": {
+                        "type": "number"
+                      },
+                      "truncated": {
+                        "type": "boolean"
+                      },
+                      "candidates": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "at": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "key_id": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9223372036854775807
+                            },
+                            "value": {
+                              "type": "number"
+                            },
+                            "drilldown": {
+                              "$ref": "#/components/schemas/ResearchSupport"
+                            }
+                          },
+                          "required": [
+                            "at",
+                            "key_id",
+                            "value",
+                            "drilldown"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "state",
+                      "count",
+                      "q1",
+                      "q3"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "heatmap": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "month": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "hour": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "mean": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "E": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "O": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "V": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "received_ratio": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "valid_ratio": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "outside_schedule": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "denominator_state": {
+                      "enum": [
+                        "denominator_unknown",
+                        "no_expected_slots",
+                        "known"
+                      ]
+                    },
+                    "exclusions": {
+                      "type": "object",
+                      "properties": {
+                        "gap": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "missing": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "censored": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "invalid": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "suspect": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "disputed": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "unknown": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "gap",
+                        "missing",
+                        "censored",
+                        "invalid",
+                        "suspect",
+                        "disputed",
+                        "unknown"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "drilldown": {
+                      "$ref": "#/components/schemas/ResearchSupport"
+                    },
+                    "observed_drilldown": {
+                      "$ref": "#/components/schemas/ResearchSupport"
+                    }
+                  },
+                  "required": [
+                    "month",
+                    "hour",
+                    "mean",
+                    "E",
+                    "O",
+                    "V",
+                    "received_ratio",
+                    "valid_ratio",
+                    "outside_schedule",
+                    "denominator_state",
+                    "exclusions",
+                    "drilldown",
+                    "observed_drilldown"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "months": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ResearchBucket"
+                }
+              }
+            },
+            "required": [
+              "method",
+              "buckets"
+            ]
+          }
+        ],
+        "unevaluatedProperties": false
+      },
+      "CompareResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResearchEnvelope"
+          },
+          {
+            "$ref": "#/components/schemas/ResearchSummaryFields"
+          },
+          {
+            "$ref": "#/components/schemas/ResearchPairFields"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "method": {
+                "const": "compare"
+              },
+              "buckets": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ResearchBucket"
+                }
+              },
+              "ranking": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "pos": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "entity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9223372036854775807
+                        },
+                        "mean": {
+                          "type": "number"
+                        },
+                        "rank": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9223372036854775807
+                        }
+                      },
+                      "required": [
+                        "pos",
+                        "entity",
+                        "mean",
+                        "rank"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "mean_difference": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "partial_summary": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "ranking": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "pos": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "entity": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9223372036854775807
+                            },
+                            "mean": {
+                              "type": "number"
+                            },
+                            "rank": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 9223372036854775807
+                            }
+                          },
+                          "required": [
+                            "pos",
+                            "entity",
+                            "mean",
+                            "rank"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "mean_difference": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "ranking",
+                      "mean_difference"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "paired_points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "difference": {
+                      "type": "number"
+                    },
+                    "percent_change": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "at",
+                    "difference",
+                    "percent_change"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "method",
+              "buckets",
+              "ranking",
+              "mean_difference",
+              "partial_summary"
+            ]
+          }
+        ],
+        "unevaluatedProperties": false
+      },
+      "PearsonResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResearchEnvelope"
+          },
+          {
+            "$ref": "#/components/schemas/ResearchSummaryFields"
+          },
+          {
+            "$ref": "#/components/schemas/ResearchPairFields"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "method": {
+                "const": "pearson"
+              },
+              "pearson": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "interpretation": {
+                "const": "exploratory_pearson_seasonality_autocorrelation_missingness"
+              },
+              "pearson_pairs": {
+                "type": "object",
+                "properties": {
+                  "points": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "x": {
+                          "type": "string",
+                          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?$"
+                        },
+                        "y": {
+                          "type": "string",
+                          "pattern": "^-?[0-9]+(?:\\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?$"
+                        }
+                      },
+                      "required": [
+                        "at",
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "shown": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "truncated": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "points",
+                  "shown",
+                  "truncated"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "method",
+              "pearson",
+              "interpretation"
+            ]
+          }
+        ],
+        "unevaluatedProperties": false
+      },
+      "ResearchDetailRow": {
+        "type": "object",
+        "properties": {
+          "pos": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "entity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "indicator": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "standard_series": {
+            "type": "string"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "key": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "qualification_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quality": {
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "censor_limit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?[0-9]+(?:\\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "censor_direction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fetched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "local_report_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "source_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "product": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "synthetic": {
+            "type": "boolean"
+          },
+          "source_timezone": {
+            "type": "string"
+          },
+          "window_definition": {
+            "type": "string"
+          },
+          "report_kind": {
+            "type": "string"
+          },
+          "fetched_at_basis": {
+            "enum": [
+              "contributing_batch",
+              "unknown"
+            ]
+          },
+          "attribution": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pos",
+          "entity",
+          "indicator",
+          "unit",
+          "standard_series",
+          "observed_at",
+          "key",
+          "revision",
+          "qualification_version",
+          "quality",
+          "value",
+          "censor_limit",
+          "censor_direction",
+          "fetched_at",
+          "source",
+          "product",
+          "synthetic",
+          "source_timezone",
+          "window_definition",
+          "report_kind",
+          "fetched_at_basis",
+          "attribution"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "report_kind": {
+                  "const": "daily"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "observed_at": {
+                  "type": "null"
+                }
+              },
+              "required": [
+                "local_report_date"
+              ]
+            },
+            "else": {
+              "properties": {
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "not": {
+                "required": [
+                  "local_report_date"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "QualityScope": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "synthetic": {
+            "type": "boolean"
+          },
+          "geography": {
+            "type": "string"
+          },
+          "object_code": {
+            "type": "string"
+          },
+          "indicator": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "end": {
+            "type": "string",
+            "format": "date"
+          },
+          "city_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "site_epoch_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "report_kind": {
+            "type": "string"
+          },
+          "window_definition": {
+            "type": "string"
+          },
+          "standard_series": {
+            "type": "string"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "query_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "product",
+          "synthetic",
+          "geography",
+          "object_code",
+          "indicator",
+          "start",
+          "end"
+        ],
+        "additionalProperties": false,
+        "not": {
+          "required": [
+            "city_id",
+            "site_epoch_id"
+          ]
+        }
+      },
+      "QualityIssueFields": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "event_version": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "enum": [
+              "open",
+              "in_review",
+              "resolved"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "unknown",
+              "info",
+              "warning",
+              "blocking"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "handler": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rule_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "run_item": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "window": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "window_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "window_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batch": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9223372036854775807
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "affected": {
+            "$ref": "#/components/schemas/QualityScope"
+          }
+        },
+        "required": [
+          "id",
+          "event_version",
+          "status",
+          "severity",
+          "code",
+          "handler",
+          "rule_version",
+          "created_at",
+          "resolved_at",
+          "run",
+          "run_item",
+          "window",
+          "window_start",
+          "window_end",
+          "batch",
+          "receipt",
+          "affected"
+        ]
+      },
+      "QualityDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/QualityIssueFields"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "current_revision": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9223372036854775807
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "watermark": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "qualification_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "disputed": {
+                "type": "boolean"
+              },
+              "candidate_revisions": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9223372036854775807
+                }
+              },
+              "evidence": {
+                "type": "object",
+                "properties": {
+                  "correct_mapping": {
+                    "type": "string"
+                  },
+                  "correct_source": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "allowed_actions": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "const": "claim"
+                        },
+                        "reason_codes": {
+                          "const": [
+                            "claim_review"
+                          ]
+                        },
+                        "evidence_required": {
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "reason_codes",
+                        "evidence_required"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "const": "hold"
+                        },
+                        "reason_codes": {
+                          "const": [
+                            "retain_isolation"
+                          ]
+                        },
+                        "evidence_required": {
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "reason_codes",
+                        "evidence_required"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "const": "close"
+                        },
+                        "reason_codes": {
+                          "const": [
+                            "review_complete"
+                          ]
+                        },
+                        "evidence_required": {
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "reason_codes",
+                        "evidence_required"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "const": "correct_source"
+                        },
+                        "reason_codes": {
+                          "const": [
+                            "verified_correction"
+                          ]
+                        },
+                        "evidence_required": {
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "reason_codes",
+                        "evidence_required"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "action": {
+                          "const": "correct_mapping"
+                        },
+                        "reason_codes": {
+                          "const": [
+                            "registered_mapping"
+                          ]
+                        },
+                        "evidence_required": {
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "action",
+                        "reason_codes",
+                        "evidence_required"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "evidence_links": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^/api/v1/admin/observation-evidence/\\?"
+                  },
+                  "batch": {
+                    "type": "string",
+                    "pattern": "^/api/v1/admin/observation-evidence/\\?"
+                  }
+                },
+                "additionalProperties": false,
+                "minProperties": 1
+              }
+            },
+            "dependentRequired": {
+              "current_revision": [
+                "watermark",
+                "qualification_version",
+                "disputed",
+                "candidate_revisions",
+                "evidence"
+              ],
+              "watermark": [
+                "current_revision",
+                "qualification_version",
+                "disputed",
+                "candidate_revisions",
+                "evidence"
+              ],
+              "qualification_version": [
+                "current_revision",
+                "watermark",
+                "disputed",
+                "candidate_revisions",
+                "evidence"
+              ],
+              "disputed": [
+                "current_revision",
+                "watermark",
+                "qualification_version",
+                "candidate_revisions",
+                "evidence"
+              ],
+              "candidate_revisions": [
+                "current_revision",
+                "watermark",
+                "qualification_version",
+                "disputed",
+                "evidence"
+              ],
+              "evidence": [
+                "current_revision",
+                "watermark",
+                "qualification_version",
+                "disputed",
+                "candidate_revisions"
+              ]
+            },
+            "required": [
+              "allowed_actions"
+            ]
+          }
+        ],
+        "unevaluatedProperties": false
+      },
+      "QualityActionResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "action_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "enum": [
+                  "open",
+                  "in_review",
+                  "resolved"
+                ]
+              },
+              "event_version": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "action_id",
+              "status",
+              "event_version"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "enum": [
+                  "open",
+                  "in_review",
+                  "resolved"
+                ]
+              },
+              "event_version": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "affected": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/QualityScope"
+                }
+              },
+              "outcome": {
+                "enum": [
+                  "claim",
+                  "hold",
+                  "close",
+                  "correct_source",
+                  "local_mapping_fix",
+                  "mapping_review_required",
+                  "mapping_conflict"
+                ]
+              }
+            },
+            "required": [
+              "action_id",
+              "status",
+              "event_version",
+              "affected",
+              "outcome"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StationDirectoryDiscoveryPage": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "city": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9223372036854775807
+                },
+                "product": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9223372036854775807
+                },
+                "synthetic": {
+                  "type": "boolean"
+                },
+                "station_directory": {
+                  "type": "string",
+                  "pattern": "^/api/v1/cities/[1-9][0-9]*/stations/"
+                }
+              },
+              "required": [
+                "city",
+                "product",
+                "synthetic",
+                "station_directory"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100
+          },
+          "page": {
+            "$ref": "#/components/schemas/CursorPage"
+          }
+        },
+        "required": [
+          "results",
+          "page"
+        ],
+        "additionalProperties": false
+      },
+      "QualityReceiptImpact": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "const": "unavailable"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "const": "available"
+              },
+              "affected": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/QualityScope"
+                },
+                "minItems": 1
+              },
+              "outcome": {
+                "enum": [
+                  "claim",
+                  "hold",
+                  "close",
+                  "correct_source",
+                  "local_mapping_fix",
+                  "mapping_review_required",
+                  "mapping_conflict"
+                ]
+              }
+            },
+            "required": [
+              "state",
+              "affected"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "JobControlWrite": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SubmittedJobControlCommand"
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "action": {
+                    "const": "pause"
+                  },
+                  "reason_code": {
+                    "const": "operator_pause"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "action": {
+                    "const": "resume"
+                  },
+                  "reason_code": {
+                    "const": "operator_resume"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "action": {
+                    "const": "resume_source"
+                  },
+                  "reason_code": {
+                    "const": "operator_recovery"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "action": {
+                    "const": "resume_product"
+                  },
+                  "reason_code": {
+                    "const": "operator_recovery"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "RedeliveryWrite": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SubmittedRedeliveryCommand"
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "action": {
+                    "const": "redeliver"
+                  },
+                  "reason_code": {
+                    "const": "operator_recovery"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "QualityWrite": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SubmittedQualityCommand"
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "action": {
+                    "const": "claim"
+                  },
+                  "reason_code": {
+                    "const": "claim_review"
+                  },
+                  "evidence_ref": {
+                    "type": "null"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "action": {
+                    "const": "hold"
+                  },
+                  "reason_code": {
+                    "const": "retain_isolation"
+                  },
+                  "evidence_ref": {
+                    "type": "null"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "action": {
+                    "const": "close"
+                  },
+                  "reason_code": {
+                    "const": "review_complete"
+                  },
+                  "evidence_ref": {
+                    "type": "null"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "action": {
+                    "const": "correct_source"
+                  },
+                  "reason_code": {
+                    "const": "verified_correction"
+                  },
+                  "evidence_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "action": {
+                    "const": "correct_mapping"
+                  },
+                  "reason_code": {
+                    "const": "registered_mapping"
+                  },
+                  "evidence_ref": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "WindowDetailFields": {
+        "type": "object",
+        "properties": {
+          "window_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "product": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "synthetic": {
+            "type": "boolean"
+          },
+          "target_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "target_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "roster_basis": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "disposed",
+              "partially_authorized",
+              "closed",
+              "active",
+              "open"
+            ]
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "type": "object",
+            "properties": {
+              "E": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "O": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "V": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accepted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "object_slots": {
+                "type": "object",
+                "properties": {
+                  "E": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "O": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "E",
+                  "O"
+                ],
+                "additionalProperties": false
+              },
+              "not_received": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "not_valid": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "received_ratio": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "valid_ratio": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "by_indicator": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "E": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "O": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "V": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "E",
+                    "O",
+                    "V"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "attempted_cells": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "latest_observed_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "latest_valid_at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "observation_age_seconds": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "E",
+              "O",
+              "V",
+              "accepted",
+              "object_slots",
+              "not_received",
+              "not_valid",
+              "received_ratio",
+              "valid_ratio",
+              "by_indicator",
+              "attempted_cells",
+              "latest_observed_at",
+              "latest_valid_at",
+              "observation_age_seconds"
+            ],
+            "additionalProperties": false
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "item_key": {
+                  "type": "string"
+                },
+                "object_code": {
+                  "type": "string"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "indicator": {
+                  "type": "string"
+                },
+                "received": {
+                  "type": "boolean"
+                },
+                "accepted": {
+                  "type": "boolean"
+                },
+                "valid": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "expected": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "item_key",
+                "object_code",
+                "observed_at",
+                "indicator",
+                "received",
+                "accepted",
+                "valid",
+                "reason"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 50
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "runs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "predecessor_id": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "type": "string"
+                },
+                "attempt": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "result": {
+                  "type": "string"
+                },
+                "error_code": {
+                  "type": "string"
+                },
+                "dispatch": {
+                  "type": "string"
+                },
+                "deliveries": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "request_state": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "reserved_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "started_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "finished_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "fetched_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "generation": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "batch_id": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9223372036854775807
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "manifest_count": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "next_retry_at": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "endpoint": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "reason",
+                "predecessor_id",
+                "status",
+                "attempt",
+                "result",
+                "error_code",
+                "dispatch",
+                "deliveries",
+                "request_state",
+                "created_at",
+                "reserved_at",
+                "started_at",
+                "finished_at",
+                "fetched_at",
+                "generation",
+                "batch_id",
+                "manifest_count",
+                "next_retry_at"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 50
+          },
+          "next_run_after": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9223372036854775807
+                },
+                "run_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "item_key": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "accepted": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "batch_id": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9223372036854775807
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "run_id",
+                "item_key",
+                "status",
+                "accepted",
+                "reason",
+                "batch_id"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100
+          },
+          "items_truncated": {
+            "type": "boolean"
+          },
+          "receipts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9223372036854775807
+                },
+                "item_id": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9223372036854775807
+                },
+                "batch_id": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9223372036854775807
+                },
+                "outcome": {
+                  "type": "string"
+                },
+                "revision": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "city",
+                        "station"
+                      ]
+                    },
+                    "id": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9223372036854775807
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                "metadata": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "id",
+                "item_id",
+                "batch_id",
+                "outcome",
+                "revision"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 100
+          },
+          "receipts_truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "window_id",
+          "product",
+          "synthetic",
+          "target_start",
+          "target_end",
+          "scope",
+          "profile",
+          "roster_basis",
+          "state",
+          "closed_at",
+          "result",
+          "coverage",
+          "cells",
+          "next_after",
+          "runs",
+          "next_run_after",
+          "items",
+          "items_truncated",
+          "receipts",
+          "receipts_truncated"
+        ]
+      },
+      "WindowMinimalDetail": {
+        "type": "object",
+        "properties": {
+          "window_id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9223372036854775807
+          },
+          "state": {
+            "enum": [
+              "disposed",
+              "not_applicable"
+            ]
+          },
+          "coverage": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "window_id",
+          "state",
+          "coverage"
         ],
         "additionalProperties": false
       }

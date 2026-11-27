@@ -76,6 +76,15 @@ def csv_download(client, ticket):
     return {"bytes": len(response.content), "sha256": digest, "status": response.status_code}
 
 
+def rejected_v1_download(client, ticket):
+    response = client.get(f"{EXPORTS}{ticket['id']}/download/{SCOPE}")
+    require(
+        parse(response, 409, "legacy_csv_format") == {"code": "method_changed"}, "legacy_csv_code"
+    )
+    require("Content-Disposition" not in response.headers, "legacy_csv_attachment")
+    return {"status": 409, "code": "method_changed"}
+
+
 def diagnostic(exc):
     """Keep exception types and code locations; never retain credential-bearing output."""
     frames = []
@@ -238,8 +247,7 @@ def accepted_upgrade(old):
             )
             require(saved["state"] in {"current", "baseline_unavailable"}, "s05_saved_state")
             require(saved["result"]["input_version"] == query["input_version"], "s05_saved_version")
-            file_receipt = csv_download(client, data["ticket"])
-            require(file_receipt == data["download"], "s05_csv_bytes_changed")
+            file_receipt = rejected_v1_download(client, data["ticket"])
             mixing = parse(
                 client.post(DETAILS, json=query | {"input_version": mark}), 409, "c02_mixed"
             )
@@ -252,7 +260,7 @@ def accepted_upgrade(old):
                 require(stale == {"code": "input_changed"}, "s05_version_diagnostic")
                 response = client.get(f"{EXPORTS}{data['ticket']['id']}/download/{SCOPE}")
                 denial = parse(response, 409, "s05_changed_ticket")
-                require(denial == {"code": "input_changed"}, "s05_ticket_diagnostic")
+                require(denial == {"code": "method_changed"}, "s05_ticket_diagnostic")
                 require("Content-Disposition" not in response.headers, "s05_denial_csv_header")
             evidence.append(
                 {
@@ -266,7 +274,7 @@ def accepted_upgrade(old):
                     "changed_ticket_reject_status": 409 if data["role"] == "changing" else None,
                 }
             )
-        csv_download(client, old["products"][0]["ticket"])
+        rejected_v1_download(client, old["products"][0]["ticket"])
     return evidence
 
 

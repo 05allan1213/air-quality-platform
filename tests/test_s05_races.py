@@ -81,6 +81,7 @@ def rejection(response, status, code):
 # Fixed detail format and one full-day, unexpiring allow per purpose in the race fixture.
 DETAIL_COLUMNS = (
     "group",
+    "data_scope",
     "source",
     "product",
     "attribution",
@@ -152,7 +153,13 @@ def assert_frozen_snapshot(state, ticket, snapshot):
         (
             "retain_normalized",
             "platform",
-            {"catalog", "export_manifest", "normalized", "provenance"},
+            {
+                "catalog",
+                "export_manifest",
+                "normalized",
+                "provenance",
+                *("csv_" + c for c in DETAIL_COLUMNS),
+            },
         ),
         (
             "export",
@@ -190,6 +197,7 @@ def assert_frozen_snapshot(state, ticket, snapshot):
         writer.writerow(
             (
                 1,
+                "synthetic",
                 product.source.namespace,
                 product.pk,
                 attribution,
@@ -221,7 +229,7 @@ def assert_frozen_snapshot(state, ticket, snapshot):
         [
             owner.pk,
             "detail",
-            "s05.csv.v1",
+            "s05.csv.v2",
             list(DETAIL_COLUMNS),
             [{k: v for k, v in row.items() if k != "until"} for row in manifest],
             checksum,

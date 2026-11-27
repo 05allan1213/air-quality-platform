@@ -2,10 +2,11 @@
 
 from uuid import UUID
 
+from accounts.api import CsrfSessionAuthentication
 from accounts.management_api import rejection
 from django.urls import path
 from django.views.decorators.cache import never_cache
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.response import Response
 
 from .catalog_governance import station_change
@@ -49,17 +50,7 @@ def issues(request):
 
 def event(request, event_id, *, write):
     try:
-        values = params(request.query_params, set() if write else {"mapping_target"})
-        target_code = values.get("mapping_target")
-        if not 0 < event_id < 2**63 or (
-            target_code is not None
-            and (not target_code.isprintable() or not 0 < len(target_code) <= 100)
-        ):
-            raise Denied("invalid_request")
-        data = request.data if write else None
-        if write and not isinstance(data, dict):
-            raise Denied("invalid_request")
-        return Response(act(request, event_id, data=data, target_code=target_code))
+        return Response(act(request, event_id, write=write))
     except Denied as exc:
         return rejection(exc)
 
@@ -70,8 +61,16 @@ def detail(request, event_id):
     return event(request, event_id, write=False)
 
 
+class QualityActionSessionAuthentication(CsrfSessionAuthentication):
+    def enforce_csrf(self, request):
+        # Django checks the session's CSRF header without invoking the DRF JSON
+        # parser via request.POST. act() parses the body after global authorization.
+        super().enforce_csrf(request._request)
+
+
 @never_cache
 @api_view(["POST"])
+@authentication_classes([QualityActionSessionAuthentication])
 def actions(request, event_id):
     return event(request, event_id, write=True)
 

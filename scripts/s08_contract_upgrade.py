@@ -29,6 +29,7 @@ from s07_contract_upgrade import (
     csv_download,
     diagnostic,
     parse,
+    rejected_v1_download,
     session,
 )
 from s07_regression_upgrade import database_snapshot, migration_state
@@ -113,7 +114,7 @@ def legacy_http(client, role, job, run):
     return result
 
 
-def research_http(client, contract):
+def research_http(client, contract, *, upgraded=False):
     csrf(client)
     page = parse(client.post(DETAILS, json=contract["page"]), 200, "legacy_detail_cursor")
     saved = parse(
@@ -125,7 +126,8 @@ def research_http(client, contract):
         == contract["page"]["input_version"],
         "legacy_research_version",
     )
-    return {"page": page, "saved": saved, "csv": csv_download(client, contract["ticket"])}
+    download = rejected_v1_download if upgraded else csv_download
+    return {"page": page, "saved": saved, "csv": download(client, contract["ticket"])}
 
 
 def national_http(client, params):
@@ -484,9 +486,17 @@ def check_after(old, result):
                         "home_cursor_code": mismatch["code"],
                     }
                 research = witness["research"]
-                observed = research_http(client, research["contract"])
-                for operation, expected in research["http"].items():
-                    require(observed[operation] == expected, f"legacy_research_{operation}_changed")
+                observed = research_http(client, research["contract"], upgraded=True)
+                for point in observed["saved"]["result"]["chart"]["points"]:
+                    if point["key_id"] is not None:
+                        require(
+                            point.pop("drilldown")["support"] == "observed", "saved_point_support"
+                        )
+                for operation in ("page", "saved"):
+                    require(
+                        observed[operation] == research["http"][operation],
+                        f"legacy_research_{operation}_changed",
+                    )
                 result["private_research"] = {
                     "detail_cursor_http": 200,
                     "saved_query_run_http": 200,

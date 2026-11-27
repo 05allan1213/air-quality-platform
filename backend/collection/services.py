@@ -814,6 +814,7 @@ def change_job(actor_id, job_id, action, *, request=None, data=None):
         else:
             authorize_resume(job)
         return control.job_result(job, previous)
+    control.check_new_reason(data)
     if modern and version != data["expected_version"]:
         raise Denied("precondition_conflict")
     if action == "pause" and before == "paused":
@@ -992,6 +993,7 @@ def redeliver(actor_id, run_id, *, request=None, data=None):
         session.finish(())
         authorize_delivery(run)
         return run
+    control.check_new_reason(data)
     if (
         modern
         and version != data["expected_version"]

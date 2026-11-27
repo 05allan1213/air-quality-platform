@@ -5,6 +5,7 @@ from django.db.models import Q
 
 from .disposition import PACKAGE_SCOPE
 from .history import source_product
+from .import_uci import PROFILE
 from .models import ImportAttempt
 from .normalization import CONCENTRATIONS
 from .policy import REQUIRED, Denied, Scope, actor, applicable
@@ -86,3 +87,33 @@ def read(request, attempt_id=None):
             }
         permit(product, auth.finish(()))
         return result
+
+
+def lookup_submission(request, target, command):
+    if command != {
+        "profile": PROFILE,
+        "stage_id": str(target),
+        "reason": "historical_verification",
+    }:
+        raise Denied("not_found")
+    user_id = request.user.pk
+    product = source_product()
+    lock_users_and_groups({user_id})
+    session = SessionCheck(request)
+    may_read(actor(user_id))
+    attempt = (
+        ImportAttempt.objects.filter(
+            stage_id=target,
+            stage__owner_id=user_id,
+            stage__product=product,
+            actor_id=user_id,
+            product=product,
+            reason=command["reason"],
+        )
+        .values_list("pk", flat=True)
+        .first()
+    )
+    if attempt is None:
+        raise Denied("not_found")
+    permit(product, session.finish(()))
+    return {"attempt_id": str(attempt)}

@@ -71,7 +71,9 @@ def payload(action, version):
     return dict(
         action=action,
         request_id=str(uuid4()),
-        reason_code="incident_review",
+        reason_code={"pause": "operator_pause", "resume": "operator_resume"}.get(
+            action, "operator_recovery"
+        ),
         expected_version=version,
     )
 
@@ -346,13 +348,16 @@ def test_v04_five_command_contracts(action, collection_job, operators, web_clien
         )
     if action != "pause":
         denied(web.post(path, json={"action": action}), "invalid_request", 400)
+    denied(
+        web.post(path, json=command | {"reason_code": "incident_review"}), "invalid_request", 400
+    )
     denied(web.post(path, json=payload(action, current + 1)), "precondition_conflict", 409)
     assert GovernanceAction.objects.count() == before and len(calls) == before_calls
     status = 202 if action == "redeliver" else 200
     result = json_status(web.post(path, json=command), status)
     assert json_status(web.post(path, json=command), status) == result
     denied(
-        web.post(path, json=command | {"reason_code": "operator_recovery"}), "request_conflict", 409
+        web.post(path, json=command | {"reason_code": "incident_review"}), "request_conflict", 409
     )
     denied(web.post(path, json=payload(action, current)), "precondition_conflict", 409)
     with transaction.atomic():

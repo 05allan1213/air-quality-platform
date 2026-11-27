@@ -25,9 +25,13 @@ LIMITS = {
 
 
 def control_payload(action, version):
-    reason = {"pause": "operator_pause", "redeliver": "operator_recovery"}.get(
-        action, "operator_resume"
-    )
+    reason = {
+        "pause": "operator_pause",
+        "resume": "operator_resume",
+        "resume_source": "operator_recovery",
+        "resume_product": "operator_recovery",
+        "redeliver": "operator_recovery",
+    }[action]
     return dict(
         action=action, request_id=str(uuid.uuid4()), reason_code=reason, expected_version=version
     )

@@ -232,7 +232,7 @@ def verify_quality_detail(web, operator, password, source):
                         f"/api/v1/admin/observation-evidence/?product={product.pk}"
                         f"&scope=synthetic&station_key={key.pk}"
                     )
-                    detail_status, _ = operator_web.call(f"{ISSUES}{link.pk}/")
+                    detail_status, denial = operator_web.call(f"{ISSUES}{link.pk}/")
                     require(
                         not review_hidden["quality_issues"]
                         and all(not item["reason"] for item in review_hidden["items"])
@@ -241,7 +241,7 @@ def verify_quality_detail(web, operator, password, source):
                         )
                         and old_evidence == 200
                         and not evidence["issues"]
-                        and detail_status == 403
+                        and (detail_status, denial) == (404, {"code": "not_found"})
                         and QualityIssue.objects.filter(pk=link.pk).exists(),
                         "quality_v05_review_only_withdrawal",
                     )

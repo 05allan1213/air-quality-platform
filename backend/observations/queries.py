@@ -19,7 +19,7 @@ from .models import (
     SiteEpoch,
     StationIdentifier,
 )
-from .normalization import DAY, INDICATORS, REPORT_KIND, WINDOWS
+from .normalization import DAY, WINDOWS, valid_selector
 from .policy import (
     RAW,
     REQUIRED,
@@ -150,10 +150,8 @@ def read_current(actor_id, params, purpose="display"):
     ident = pk(params[entity])
     ind = params["indicator"]
     window = params["window_definition"]
-    if (
-        ind not in INDICATORS[product.shape]
-        or window not in WINDOWS
-        or params["report_kind"] != REPORT_KIND.get(window, "hourly")
+    if not valid_selector(
+        product.shape, ind, window, params["report_kind"], params["standard_series"]
     ):
         raise Denied("invalid_request")
     try:
@@ -325,6 +323,8 @@ def details(r, raw, optional):
 def read_evidence(actor_id, params):
     actor(actor_id, "review_observation")
     params = params_once(params)
+    if params.get("scope") == "formal":
+        params.pop("scope")
     product = product_space(params)
     after = pk(params.pop("after")) if "after" in params else 0
     obs, _, _, fk, rf = tables(product.level)

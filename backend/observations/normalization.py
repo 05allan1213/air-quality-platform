@@ -37,6 +37,22 @@ REPORT_KIND = {
     "rolling_24h_right_label": "rolling_24h",
     "local_daily": "daily",
 }
+
+
+def valid_selector(shape: str, indicator: str, window: str, report: str, standard: str) -> bool:
+    if indicator not in INDICATORS[shape] or window not in WINDOWS:
+        return False
+    if report != REPORT_KIND.get(window, "hourly") or (shape == "D") != (report == "daily"):
+        return False
+    if shape == "H" and window != "hourly_label_unspecified":
+        return False
+    if window.startswith("rolling_") and (shape not in {"C", "S"} or indicator != "O3"):
+        return False
+    if indicator == "AQI" or indicator in LEVELS:
+        return standard in {STANDARD_2012, STANDARD_2026, UNKNOWN_STANDARD}
+    return standard == "not_applicable"
+
+
 NUMERIC = re.compile(r"-?[0-9]+(?:\.[0-9]+)?")
 DAY = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 LOCAL_TIME = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}")

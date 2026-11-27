@@ -71,3 +71,31 @@ def test_exact_version_tracks_only_visible_changes(django_user_model):
         revoke_grant(operator.pk, display.pk, "withdraw F display")
         response = get()
         assert (response.status_code, response.json()) == (403, {"code": "use_denied"})
+
+
+def test_exact_series_and_local_report_date(django_user_model):
+    from s05_support import authorize, city, product
+
+    op = django_user_model.objects.create_superuser("exact-day-operator")
+    user = django_user_model.objects.create_user("exact-day-reader", password="s05-test-only")
+    with loopback(user) as (web, _):
+        for shape in ("C", "D"):
+            p = product("exact-" + shape, shape, timezone="Asia/Shanghai")
+            entity = city(p)
+            authorize(op, p)
+            conditions = selector(p, entity)
+            if shape == "D":
+                del conditions["observed_at"]
+                conditions.update(
+                    local_report_date="2024-01-02",
+                    report_kind="daily",
+                    window_definition="local_daily",
+                )
+            reply = web.get("/api/v1/observations/current/", params=conditions)
+            assert reply.status_code == 200 and reply.json()["reason"] == "no_observation_at_time"
+            for invalid in (
+                {"standard_series": "unknown"},
+                {"window_definition": "rolling_8h_right_label", "report_kind": "rolling_8h"},
+            ):
+                response = web.get("/api/v1/observations/current/", params=conditions | invalid)
+                assert (response.status_code, response.json()) == (400, {"code": "invalid_request"})

@@ -202,6 +202,12 @@ def paired_summary(relation, series):
             interpretation="exploratory_pearson_seasonality_autocorrelation_missingness",
             conclusion={"state": state},
         )
+        if series and common_pairs is not None:
+            points = relation.query("""SELECT at,
+                (max(value) FILTER (WHERE pos=0))::text AS x,
+                (max(value) FILTER (WHERE pos=1))::text AS y
+                FROM slots WHERE expected_common AND paired GROUP BY at ORDER BY at""")
+            result["pearson_pairs"] = {"points": points, "shown": len(points), "truncated": False}
     else:
         ranking = None
         mean_difference = None
@@ -457,11 +463,15 @@ def chart(relation):
     spec = relation.spec
     row_count = relation.query("SELECT count(*) AS n FROM slots")[0]["n"]
     if row_count <= 1000:
-        return {
-            "resolution": "exact",
-            "points": relation.query("""SELECT pos,at,quality,value,expected,
-            key_id,censor_limit,censor_direction FROM slots ORDER BY at,pos"""),
-        }
+        points = relation.query("""SELECT pos,at,quality,value,expected,
+            key_id,censor_limit,censor_direction FROM slots ORDER BY at,pos""")
+        for point in points:
+            if point["key_id"] is not None:
+                at = point["at"]
+                point["drilldown"] = support(
+                    at, min(at + TICK, spec.end), "observed", pos=point["pos"]
+                )
+        return {"resolution": "exact", "points": points}
     column_count = len(relation.profiles)
     bins = 1000 // column_count
     microseconds = (spec.end - spec.start) // TICK
@@ -477,6 +487,12 @@ def chart(relation):
     FROM compressed GROUP BY pos,chart_bin ORDER BY chart_bin,pos LIMIT 1000""",
         [width, spec.start],
     )
+    for point in points:
+        if point["valid_count"]:
+            start = point["at"]
+            point["drilldown"] = support(
+                start, min(start + width, spec.end), "effective", pos=point["pos"]
+            )
     return {"resolution": "range", "interval_seconds": width.total_seconds(), "points": points}
 
 

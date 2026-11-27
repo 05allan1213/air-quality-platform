@@ -132,6 +132,7 @@ class ReadContext:
         self.user_id = user_id
         actor(user_id)
         self.now = clock()
+        self.projection_at = self.now
         self.grants = grant_bins(self.products)
         self.boundaries = {
             g_time

@@ -70,7 +70,10 @@ def uses(purpose, spec, fields=()):
     detail_only = spec.method == "detail"
     retain = REQUIRED | {"catalog"} if detail_only else INPUT
     if purpose in {"export", "export_aggregate"}:
-        obligations = [("retain_normalized", "platform", retain | {"export_manifest"})]
+        # data_scope is mandatory and server-selected on every v2 ticket. V1
+        # downloads must first recheck the rights for their frozen field set.
+        retained_fields = set(fields) if "csv_data_scope" in fields else {"export_manifest"}
+        obligations = [("retain_normalized", "platform", retain | retained_fields)]
         if purpose == "export_aggregate":
             obligations.append(("analyze", LOCAL, REQUIRED | DERIVED))
         obligations.append((purpose, LOCAL, set(fields) | {"export_manifest"}))

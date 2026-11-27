@@ -255,3 +255,51 @@ def test_parsed_rows_cannot_commit_after_disposition_and_regrant(source, monkeyp
             assert observer.execute(f"SELECT count(*) FROM observations_{relation}").fetchone() == (
                 0,
             )
+
+
+def test_history_lookup_recovers_only_original_actor_stage_command(
+    source, django_user_model, monkeypatch
+):
+    from django.test import Client
+    from observations.disposition import clear_stage
+
+    user, product, _ = source
+    other = django_user_model.objects.create_superuser("other-history-reader")
+    submissions = []
+
+    def publish(attempt):
+        submissions.append(attempt.pk)
+        return str(attempt.pk), "unconfirmed"
+
+    monkeypatch.setattr(history, "publish", publish)
+    stages = [stage(user) for _ in range(2)]
+    attempts = [submit(user, stage_id) for stage_id in stages]
+    clear_stage(StagedInput.objects.get(pk=stages[0]))
+    web = Client()
+    web.force_login(user)
+    url = "/api/v1/admin/command-receipts/lookup/"
+
+    def lookup(target, **overrides):
+        command = {
+            "stage_id": target,
+            "profile": import_uci.PROFILE,
+            "reason": "historical_verification",
+        }
+        return web.post(
+            url,
+            {"family": "history_import", "target": target, "command": command | overrides},
+            content_type="application/json",
+        )
+
+    for i in (0, 1, 0):
+        result = lookup(stages[i])
+        assert (result.status_code, result.json()) == (200, {"attempt_id": str(attempts[i].pk)})
+    assert lookup(stages[0], stage_id=stages[1]).status_code == 404
+    assert lookup("not-uuid").status_code == 400
+    web.force_login(other)
+    assert lookup(stages[1]).json() == {"code": "not_found"}
+    web.force_login(user)
+    grant = product.usegrant_set.get(operation="retain_normalized", fields=["batch_identity"])
+    revoke_grant(user.pk, grant.pk, "fixture withdrawal")
+    assert lookup(stages[0]).status_code == 404
+    assert ImportAttempt.objects.count() == len(submissions) == 2

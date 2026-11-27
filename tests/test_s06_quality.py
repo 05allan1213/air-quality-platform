@@ -288,7 +288,10 @@ def test_v07_mapping_requires_retained_original_and_review(world):
     assert "correct_mapping" in proof["evidence"]
     grant(op, p, "review", effect="deny", object_code="101", fields=RAW - REQUIRED)
     assert "correct_mapping" not in ask(admin, event)["evidence"]
-    assert action(admin, event, command(proof, "correct_mapping"), 403)["code"] == "use_denied"
+    assert (
+        action(admin, event, command(proof, "correct_mapping"), 403)["code"]
+        == "mapping_evidence_mismatch"
+    )
     assert key.revisions.count() == 1
 
 
@@ -608,3 +611,134 @@ def test_v17_download_transaction_releases_no_uncommitted_csv(
         replay_http=replay.status_code,
         replay_csv_bytes=csv_bytes(replay),
     )
+
+
+def test_phase02_visibility_action_reasons_and_evidence_routes(
+    world, django_user_model, web_clients
+):
+    op, product, _, _, admin, _ = world
+    event = entered_conflict(world)
+    detail = ask(admin, event)
+    mismapped = ask(admin, event, target="102")
+    assert "correct_mapping" not in {row["action"] for row in mismapped["allowed_actions"]}
+    reasons = {
+        row["action"]: (row["reason_codes"], row["evidence_required"])
+        for row in detail["allowed_actions"]
+    }
+    assert reasons["claim"] == (["claim_review"], False)
+    assert reasons["correct_source"] == (["verified_correction"], True)
+    assert set(detail["evidence_links"]) == {"key", "batch"}
+    assert (
+        "city_key=" in detail["evidence_links"]["key"]
+        and "scope=synthetic" in detail["evidence_links"]["key"]
+    )
+    for href in detail["evidence_links"].values():
+        assert check(admin.get(href), 200)["synthetic"] is True
+    user = django_user_model.objects.create_user("review-only", password=PASSWORD)
+    user.user_permissions.add(permission("observations.review_observation"))
+    reader = sign_in(web_clients(), user, PASSWORD)
+    reviewed = ask(reader, event)
+    assert reviewed["allowed_actions"] == [] and reviewed["evidence"] == {}
+    url = f"{QUALITY}{event.pk}/actions/"
+    missing = f"{QUALITY}{2**62}/actions/"
+    for route in (url, missing):
+        assert check(reader.post(route, json={}), 403) == {"code": "permission_denied"}
+    bad = command(detail, "claim", reason_code="review_complete")
+    assert check(admin.post(url, json=bad), 400) == {"code": "invalid_request"}
+    user.user_permissions.add(permission("accounts.adjudicate_quality"))
+    grant(op, product, "review", effect="deny", object_code="101", fields=REQUIRED)
+    for route in (url, missing):
+        for body in (bad, command(detail, evidence_ref="invalid"), {"x": 1}):
+            assert check(reader.post(route, json=body), 404) == {"code": "not_found"}
+        assert check(reader.get(route.removesuffix("actions/")), 404) == {"code": "not_found"}
+    assert not GovernanceAction.objects.filter(target_kind="quality").exists()
+
+
+def test_quality_invalid_json_has_same_response_for_each_object(world):
+    op, product, _, _, admin, reader = world
+    event = entered_conflict(world)
+    event.refresh_from_db()
+    before = (event.status, event.event_version, event.last_action_id)
+    path = f"{QUALITY}{event.pk}/actions/"
+    missing = f"{QUALITY}{2**62}/actions/"
+    malformed = {"content": b'{"action":', "headers": {"Content-Type": "application/json"}}
+    assert check(
+        admin.post(
+            path,
+            content=malformed["content"],
+            headers={"Content-Type": "application/json", "X-CSRFToken": "bad"},
+        ),
+        403,
+    ) == {"code": "csrf_failed"}
+    for target in (path, missing):
+        assert check(reader.post(target, **malformed), 403) == {"code": "permission_denied"}
+        assert check(admin.post(target, **malformed), 400) == {"code": "parse_error"}
+    grant(op, product, "review", effect="deny", object_code="101", fields=REQUIRED)
+    assert check(admin.post(path, **malformed), 400) == {"code": "parse_error"}
+    event.refresh_from_db()
+    assert (event.status, event.event_version, event.last_action_id) == before
+    assert not GovernanceAction.objects.filter(target_kind="quality").exists()
+    assert not QualityDecision.objects.exists()
+
+
+def test_phase02_two_claimants_get_one_action_and_owned_receipt(
+    world, django_user_model, web_clients, sql_hook
+):
+    _, _, _, _, admin, _ = world
+    other = django_user_model.objects.create_superuser("second-reviewer", password=PASSWORD)
+    challenger = sign_in(web_clients(), other, PASSWORD)
+    event = entered_conflict(world)
+    detail = ask(admin, event)
+    winner = command(detail, "claim")
+    loser = command(ask(challenger, event), "claim")
+    url = f"{QUALITY}{event.pk}/actions/"
+    held, waiting, release = Queue(), Queue(), Event()
+
+    def hook_win(execute, sql, params, many, context):
+        if sql.startswith('INSERT INTO "accounts_governanceaction"'):
+            held.put(pid())
+            assert release.wait(4)
+        return execute(sql, params, many, context)
+
+    def hook_lose(execute, sql, params, many, context):
+        if 'FROM "observations_source"' in sql and "FOR UPDATE" in sql:
+            waiting.put(pid())
+        return execute(sql, params, many, context)
+
+    sql_hook.update(claiming=hook_win, challenging=hook_lose)
+    admin.headers["X-S06-Test-Hook"] = "claiming"
+    challenger.headers["X-S06-Test-Hook"] = "challenging"
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        one = pool.submit(admin.post, url, json=winner)
+        holder = held.get(timeout=5)
+        two = pool.submit(challenger.post, url, json=loser)
+        try:
+            blocked_by(waiting.get(timeout=5), holder)
+        finally:
+            release.set()
+        first = check(one.result(timeout=5), 200)
+        assert check(two.result(timeout=5), 409) == {"code": "precondition_conflict"}
+    admin.headers.pop("X-S06-Test-Hook")
+    challenger.headers.pop("X-S06-Test-Hook")
+    assert not {"claim", "hold", "close"} & {
+        row["action"] for row in ask(challenger, event)["allowed_actions"]
+    }
+    assert (
+        action(challenger, event, command(ask(challenger, event), "close"), 409)["code"]
+        == "precondition_conflict"
+    )
+    assert action(admin, event, winner)["action_id"] == first["action_id"]
+    envelope = {"family": "quality", "target": event.pk, "command": winner}
+    lookup = "/api/v1/admin/command-receipts/lookup/"
+    receipt = check(admin.post(lookup, json=envelope), 200)
+    assert receipt["action_id"] == first["action_id"]
+    assert receipt["impact"] == {
+        "state": "available",
+        "affected": first["affected"],
+        "outcome": "claim",
+    }
+    assert check(challenger.post(lookup, json=envelope), 404) == {"code": "not_found"}
+    assert GovernanceAction.objects.filter(target_kind="quality").count() == 1
+    action(admin, event, command(ask(admin, event), "close"))
+    assert ask(admin, event)["allowed_actions"] == []
+    assert check(admin.post(lookup, json=envelope), 200)["impact"] == {"state": "unavailable"}

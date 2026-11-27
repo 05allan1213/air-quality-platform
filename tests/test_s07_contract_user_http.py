@@ -448,3 +448,104 @@ def test_injected_database_and_unexpected_error(django_user_model, failure, stat
     with loopback(reader, before_sql=inject) as (web, _):
         armed = True
         check_response(web.get(ME), ME, status, code=code)
+
+
+def test_pair_method_responses_decode_only_their_own_projection(django_user_model):
+    from s07_contract import operation, schema_errors
+    from test_s05_selection import parent
+
+    curator = django_user_model.objects.create_superuser("schema-pairs-curator")
+    reader = user_model(django_user_model, "schema-pairs-reader")
+    observations = product("schema-pairs", "C")
+    a, b = city(observations, "101"), city(observations, "102")
+    authorize(curator, observations)
+    ingest(
+        curator,
+        observations,
+        [
+            candidate(observations, "101", value=1),
+            candidate(observations, "102", value=2),
+            candidate(observations, "101", indicator="PM2.5", unit="µg/m³", value=3),
+        ],
+    )
+    with loopback(reader) as (web, _):
+        compare = check_response(
+            web.post(COMPARE, json=parent(observations, [a, b], method="compare", hours=1)),
+            COMPARE,
+            200,
+        )
+        assert compare["P"] == 1 and compare["paired_points"][0]["difference"] == -1
+        pearson = check_response(
+            web.post(
+                STATISTICS,
+                json=parent(
+                    observations, [a], method="pearson", indicators=("CO", "PM2.5"), hours=1
+                ),
+            ),
+            STATISTICS,
+            200,
+        )
+        assert pearson["P"] == 1 and pearson["pearson"] is None
+        assert pearson["pearson_pairs"]["shown"] == 1
+        schema = operation(STATISTICS, "post")["responses"]["200"]["content"]["application/json"][
+            "schema"
+        ]
+        assert schema_errors(compare, schema)
+        assert schema_errors(pearson | {"pearson": "0.0"}, schema)
+        assert schema_errors({k: v for k, v in pearson.items() if k != "P"}, schema)
+        assert schema_errors(pearson | {"paired_points": []}, schema)
+
+
+@pytest.mark.parametrize("scope", ["formal", "synthetic"])
+def test_quality_evidence_urls_match_declared_scope_and_return_original_key(
+    django_user_model, scope
+):
+    from urllib.parse import parse_qs, urlsplit
+
+    from observations.models import Product, QualityIssue
+    from s05_support import grant
+    from s07_contract import dereference, operation, validate_schema
+
+    reviewer = django_user_model.objects.create_superuser(
+        "schema-evidence-reviewer", password="s05-test-only"
+    )
+    source = product("schema-evidence", "C")
+    city(source)
+    authorize(reviewer, source)
+    grant(reviewer, source, "review")
+    for value in [1, 2]:
+        ingest(reviewer, source, [candidate(source, value=value, token=1)])
+    issue = QualityIssue.objects.get(product=source, code="same_version_conflict")
+    if scope == "formal":
+        # Exercise the formal HTTP branch on a disposable product of local F origin.
+        Product.objects.filter(pk=source.pk).update(synthetic=False, family="C")
+
+    evidence = PREFIX + "admin/observation-evidence/"
+    detail = PREFIX + "admin/quality-issues/{event_id}/"
+    parameters = [dereference(p) for p in operation(evidence, "get")["parameters"]]
+    schemas = {p["name"]: p["schema"] for p in parameters if p["in"] == "query"}
+    with loopback(reviewer) as (web, _):
+        response = check_response(web.get(detail.format(event_id=issue.pk)), detail, 200)
+        links = response["evidence_links"]
+        assert set(links) == {"key", "batch"}
+        for kind, href in links.items():
+            parts = urlsplit(href)
+            assert not parts.scheme and not parts.netloc and parts.path == evidence
+            query = parse_qs(parts.query, strict_parsing=True)
+            selector, selected = (
+                ("city_key", issue.city_key_id) if kind == "key" else ("batch", issue.batch_id)
+            )
+            assert query == {
+                "product": [str(source.pk)],
+                "scope": [scope],
+                selector: [str(selected)],
+            }
+            for name, (value,) in query.items():
+                schema = schemas[name]
+                validate_schema(int(value) if schema["type"] == "integer" else value, schema)
+            body = check_response(web.get(href), evidence, 200)
+            assert body["synthetic"] is (scope == "synthetic")
+            if kind == "key":
+                assert body["disputed"] and "same_version_conflict" in body["issues"]
+            else:
+                assert any(row["key_id"] == issue.city_key_id for row in body["receipts"])

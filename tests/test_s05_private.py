@@ -440,3 +440,101 @@ def test_export_download_prioritizes_current_use_over_frozen_versions(users, fie
     for info in tickets:
         assert ExportTicket.objects.get(pk=info["id"]).invalidated_at is None
         reject(csv_response(web, info))
+
+
+@pytest.mark.parametrize("scope", ["synthetic", "formal"])
+@pytest.mark.parametrize("kind,width", [("detail", 24), ("aggregate", 25)])
+def test_csv_v2_scope_in_downloaded_bytes(users, scope, kind, width):
+    op, owner, _ = users
+    web = login(owner)
+    p = product("neutral", "C")
+    a = city(p)
+    fields = export_fields(kind)
+    authorize(op, p, **{f"{kind}_fields": fields})
+    ingest(op, p, [candidate(p, value=1), candidate(p, at=START + HOUR, value=2)])
+    if scope == "formal":
+        # Inject a formal-domain fixture only in this disposable DB. Both domains
+        # intentionally use the same neutral source namespace and records.
+        Product.objects.filter(pk=p.pk).update(synthetic=False, family="C")
+    query = parent(p, [a], method="detail" if kind == "detail" else "statistics")
+    query["selection"]["scope"] = scope
+    _, group = read_version(web, query)
+    ticket = check(post(web, EXPORTS, {"kind": kind, "groups": [group]}), 201)
+    download = web.get(f"{EXPORTS}{ticket['id']}/download/?scope={scope}")
+    assert download.status_code == 200, download.content
+    rows = list(csv.reader(StringIO(download.content.decode("utf-8"))))
+    assert rows[0][:3] == ["group", "data_scope", "source"]
+    assert len(rows[0]) == width
+    assert {tuple(row[:3]) for row in rows[1:]} == {("1", scope, p.source.namespace)}
+    persisted = ExportTicket.objects.get(pk=ticket["id"])
+    assert persisted.format_version == "s05.csv.v2"
+    assert (len(download.content), len(rows) - 1, sha256(download.content).hexdigest()) == (
+        persisted.byte_count,
+        persisted.row_count,
+        persisted.data_sha256,
+    )
+
+
+@pytest.mark.parametrize("purpose", ["export", "retain_normalized"])
+def test_csv_scope_column_cannot_be_deselected_or_covered_by_wildcard(users, purpose):
+    op, owner, _ = users
+    web = login(owner)
+    p = product("csv-field-grants", "C")
+    a = city(p)
+    grants = authorize(op, p, detail_fields=export_fields("detail"))
+    ingest(op, p, [candidate(p)])
+    _, group = read_version(web, parent(p, [a]))
+    original = grants[purpose]
+    # Simulate expiry without the separate eager-disposition pathway.
+    type(original).objects.filter(pk=original.pk).update(
+        fields=sorted(set(original.fields) - {"csv_data_scope"} | {"*"})
+    )
+    rejection = prepare_csv(web, group, fields=["value"])
+    assert (rejection.status_code, rejection.json()) == (403, {"code": "use_denied"})
+    assert not ExportTicket.objects.exists()
+
+
+def test_retained_legacy_csv_without_new_rights_expires_by_format(users):
+    op, owner, other = users
+    web, outsider = login(owner), login(other)
+    p = product("csv-v1", "C")
+    a = city(p)
+    grants = authorize(op, p, detail_fields=export_fields("detail"))
+    ingest(op, p, [candidate(p)])
+    _, group = read_version(web, parent(p, [a]))
+    ticket = check(prepare_csv(web, group), 201)
+    old = ExportTicket.objects.get(pk=ticket["id"])
+    old.format_version = "s05.csv.v1"
+    old.fields.remove("data_scope")
+    old.save(update_fields=["format_version", "fields"])
+    for purpose in ("export", "retain_normalized"):
+        original = grants[purpose]
+        fields = (
+            set(original.fields) - {"csv_data_scope"}
+            if purpose == "export"
+            else {f for f in original.fields if not f.startswith("csv_")}
+        )
+        type(original).objects.filter(pk=original.pk).update(fields=sorted(fields))
+    for client, status, code in ((web, 409, "method_changed"), (outsider, 404, "not_found")):
+        response = csv_response(client, ticket)
+        assert (response.status_code, response.json()) == (status, {"code": code})
+        assert "Content-Disposition" not in response.headers
+
+
+def test_csv_no_data_and_invalid_group_combinations_leave_no_ticket(users):
+    op, owner, _ = users
+    web = login(owner)
+    p = product("no-data", "C")
+    a = city(p)
+    authorize(op, p, detail_fields=export_fields("detail"))
+    _, group = read_version(web, parent(p, [a]))
+    assert check(prepare_csv(web, group), 200) == {"state": "no_data"}
+    formal = group | {"selection": group["selection"] | {"scope": "formal"}}
+    for groups, kind, code in (
+        ([group, formal], "detail", "invalid_request"),
+        ([group, group], "detail", "invalid_request"),
+        ([group] * 3, "detail", "query_too_large"),
+        ([group], "summary", "invalid_request"),
+    ):
+        assert check(prepare_csv(web, *groups, kind=kind), 400) == {"code": code}
+    assert not ExportTicket.objects.exists()

@@ -1,6 +1,7 @@
 """Self receipts through the mounted route, real database Session and CSRF (F/I)."""
 
 from datetime import timedelta
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -9,6 +10,7 @@ from accounts.models import GovernanceAction
 from collection import services
 from collection.models import ControlEvent, Job, Run, WorkWindow
 from collection.s08_schedule import register_template
+from django.core import signing
 from django.test import Client
 from observations.models import (
     CityIdentifier,
@@ -217,6 +219,11 @@ def test_control_and_redelivery_receipts_keep_the_committed_identity(registered,
     lookup(web, "job_control", job.pk, pause | {"expected_version": job.control_version}, 404)
     lookup(web, "job_control", job.pk, pause | {"reason_code": "incident_review"}, 404)
     lookup(peer, "job_control", job.pk, pause, 404)
+    # Inject one receipt from the previous reason-code vocabulary. The owner can
+    # still verify its exact original envelope, including the retired reason.
+    GovernanceAction.objects.filter(pk=old["action_id"]).update(reason_code="incident_review")
+    historical = pause | {"reason_code": "incident_review"}
+    assert lookup(web, "job_control", job.pk, historical)["action_id"] == old["action_id"]
     assert before == (
         Run.objects.count(),
         GovernanceAction.objects.count(),
@@ -331,7 +338,7 @@ def test_grant_withdrawal_checks_recorded_grant_and_current_manager(registered):
     lookup(web, "grant_withdraw", subject.pk, withdraw, 404)
 
 
-def test_quality_correction_rechecks_both_scopes_of_signed_original(registered):
+def test_quality_correction_rechecks_both_scopes_of_signed_original(registered, monkeypatch):
     _, _, _, principal = registered
     reviewer = principal(
         "receipt-quality-reviewer",
@@ -362,13 +369,42 @@ def test_quality_correction_rechecks_both_scopes_of_signed_original(registered):
         proof["event_version"],
         evidence_ref=proof["evidence"]["correct_mapping"],
     )
+    with monkeypatch.context() as patch:
+        later = signing.time.time() + 2
+        patch.setattr(signing, "time", SimpleNamespace(time=lambda: later))
+        refreshed = check(web[0].get(path, {"mapping_target": "102"}), 200)["evidence"][
+            "correct_mapping"
+        ]
+    assert refreshed != correct["evidence_ref"]
     original = check(post(web[0], f"{path}actions/", correct, web[1]), 200)
+    lookup(web, "quality", issue.pk, correct | {"evidence_ref": refreshed}, 404)
+    assert check(
+        post(web[0], f"{path}actions/", correct | {"evidence_ref": refreshed}, web[1]), 409
+    ) == {"code": "request_conflict"}
     receipt = lookup(web, "quality", issue.pk, correct)
     assert (receipt["action_id"], receipt["state"], receipt["version"]) == (
         original["action_id"],
         original["status"],
         original["event_version"],
     )
+    assert receipt["impact"] == {
+        "state": "available",
+        "outcome": "local_mapping_fix",
+        "affected": original["affected"],
+    }
+    with monkeypatch.context() as patch:
+        later = signing.time.time() + 1801
+        patch.setattr(signing, "time", SimpleNamespace(time=lambda: later))
+        assert lookup(web, "quality", issue.pk, correct) == receipt
+        assert check(post(web[0], f"{path}actions/", correct, web[1]), 403) == {
+            "code": "mapping_evidence_mismatch"
+        }
+    # The original signed scope remains readable. The target revision now joins a
+    # geography outside the current review grant and cannot be safely projected.
+    new.geography = "F-restricted-geography"
+    new.save(update_fields=["geography"])
+    partial = lookup(web, "quality", issue.pk, correct)["impact"]
+    assert partial == {"state": "available", "affected": [original["affected"][0]]}
     lookup(web, "quality", issue.pk, correct | {"evidence_ref": "different-ref"}, 404)
     revoke_grant(reviewer.pk, target_review.pk, "fixture destination review withdrawn")
     lookup(web, "quality", issue.pk, correct, 404)

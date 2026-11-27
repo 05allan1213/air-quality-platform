@@ -13,6 +13,7 @@ from django.urls import path
 from django.utils.crypto import salted_hmac
 from django.views.decorators.cache import never_cache
 from observations import catalog_governance, quality_governance
+from observations.history_status import lookup_submission
 from observations.models import (
     CatalogChange,
     Product,
@@ -283,7 +284,7 @@ def quality(request, target, data):
             raise Denied("not_found")
     elif args["evidence_ref"] is not None:
         raise Denied("not_found")
-    owned_command(request, args, target_kind="quality", target=str(target))
+    original = owned_command(request, args, target_kind="quality", target=str(target))
     if mapping and (not isinstance(proof[5], list) or len(proof[5]) != 6):
         raise Denied("not_found")
     initial = found(QualityIssue.objects.filter(pk=target).first())
@@ -293,33 +294,33 @@ def quality(request, target, data):
         QualityIssue.objects.select_for_update().filter(pk=target, product=product).first()
     )
     session = control.lock_principals(request)
-    record = found(
-        replay(
-            session.user_id, args, "quality", target, parameter=fingerprint(proof) if proof else ""
-        )
-    )
+    parameter = rules.proof_parameter(args["evidence_ref"], proof, original)
+    record = found(replay(session.user_id, args, "quality", target, parameter=parameter))
+    after = None
     if correcting:
         if key is None:
             raise Denied("not_found")
         relation = "city" if event.city_key_id else "station"
-        found(
-            QualityDecision.objects.filter(
+        decision = found(
+            QualityDecision.objects.select_related(f"{relation}_after__key")
+            .filter(
                 action=record,
                 **{
                     f"{relation}_before__key": key,
                     f"{relation}_after__key__product": product,
                 },
             )
-            .values_list("pk", flat=True)
             .first()
         )
+        after = getattr(decision, f"{relation}_after")
     now = session.finish(())
     rules.user_permission(session.user_id, "accounts.adjudicate_quality")
     grants = list(product.usegrant_set.filter(revoked_at=None))
-    rules.checks(event, product, key, grants, now, raw=mapping)
+    scope = rules.checks(event, product, key, grants, now, raw=mapping)
     if mapping:
         rules.review_retained(product, Scope.from_issue(proof[5][5]), RAW, now, grants)
-    return governance_result(record)
+    impact = rules.receipt_impact(record, product, event, key, scope, after, proof, grants, now)
+    return governance_result(record) | {"impact": impact}
 
 
 def station_change(request, target, data):
@@ -388,6 +389,7 @@ def grant_withdraw(request, target, data):
 
 
 LOOKUPS = {
+    "history_import": lookup_submission,
     "manual_run": manual_run,
     "job_control": job_control,
     "redeliver": redeliver,
@@ -415,7 +417,15 @@ def lookup(request):
         return error("invalid_request", 400)
     family = envelope["family"]
     try:
-        target = (uuid if family == "redeliver" else identifier)(envelope["target"])
+        target = (uuid if family in {"redeliver", "history_import"} else identifier)(
+            envelope["target"]
+        )
+    except Denied:
+        return error(
+            "invalid_request" if family == "history_import" else "not_found",
+            400 if family == "history_import" else 404,
+        )
+    try:
         with request_transaction():
             result = LOOKUPS[family](request, target, envelope["command"])
     except Denied as exc:

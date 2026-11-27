@@ -1,15 +1,16 @@
 """The bounded history/latest API. Selection always precedes ordering and paging."""
 
+from hashlib import sha256
+from itertools import batched
 from math import ceil
 
 from django.db import transaction
-from django.db.models import Q
 
 from .coverage import outside_registered_epochs
 from .normalization import INDICATORS, LEVELS, REPORT_KIND, STANDARD_2012, STANDARD_2026, WINDOWS
 from .policy import Denied
 from .queries import pk
-from .s04_http import decode_cursor, encode_cursor, instant, page_size, params
+from .s04_http import decode_cursor, encode_cursor, fingerprint, instant, page_size, params
 from .selection import TICK, ReadContext
 
 KEYS = {
@@ -129,7 +130,7 @@ def read_detail(user_id, query):
     else:
         raise Denied("invalid_request")
     binding = selection | {"page_size": size}
-    prior = decode_cursor(values.get("cursor"), "detail", user_id, binding)
+    prior = decode_cursor(values.get("cursor"), "detail.v2", user_id, binding)
     if mode == "latest_valid":
         if prior:
             anchor = instant(prior["anchor"])
@@ -161,23 +162,34 @@ def read_detail(user_id, query):
         rows = rows.filter(key__standard_series=standard)
     if mode == "latest_valid":
         rows = ctx.latest(rows, product)
-    if prior:
-        last = (
-            rows.filter(key_id=prior["key"]).values_list("key__observed_at_utc", flat=True).first()
-        )
-        if last is None:
-            raise Denied("page_changed")
-        rows = rows.filter(
-            Q(key__observed_at_utc__lt=last) | Q(key__observed_at_utc=last, key_id__lt=prior["key"])
-        )
-    page = list(rows.order_by("-key__observed_at_utc", "-key_id")[: size + 1])
-    results = ctx.project(product, page[:size])
+    ordered = rows.order_by("-key__observed_at_utc", "-key_id")
+    # Compare the authorized DTO, including optional fields and lineage. Keep memory
+    # bounded even for off-grid publications inside the requested window.
+    offset = prior["offset"] if prior else 0
+    ctx.projection_at = instant(prior["evaluated_at"]) if prior else ctx.now
+    digest = sha256(fingerprint(selection).encode())
+    results = []
+    count = 0
+    for batch in batched(ordered.iterator(chunk_size=256), 256, strict=False):
+        for row in ctx.project(product, batch):
+            stable = {k: v for k, v in row.items() if k not in ("age_seconds", "evaluated_at")}
+            digest.update(bytes.fromhex(fingerprint(stable)))
+            if offset <= count < offset + size:
+                results.append(row)
+            count += 1
+    version = digest.hexdigest()
+    if prior and prior["version"] != version:
+        raise Denied("page_changed")
     cursor = None
-    if len(page) > size:
-        payload = {"key": page[size - 1].key_id}
+    if count > offset + size:
+        payload = {
+            "offset": offset + size,
+            "version": version,
+            "evaluated_at": ctx.projection_at.isoformat(),
+        }
         if mode == "latest_valid":
             payload["anchor"] = anchor.isoformat()
-        cursor = encode_cursor("detail", user_id, binding, payload)
+        cursor = encode_cursor("detail.v2", user_id, binding, payload)
     ctx.finish()
     return dict(
         selection=selection,

@@ -182,7 +182,7 @@ def _site_projection(ctx, product, epoch, at, codes):
 def _catalog_page(ctx, product, candidates, at, controls, route, conditions, *, city=None):
     periods = dict(candidates.values_list("pk", "active_period"))
     catalog = _epoch_catalog(ctx, product, periods, at, current=city is not None)
-    if not catalog.permitted and (city is None or not _directory_permitted(ctx, product, city, at)):
+    if not catalog.permitted and (city is None or not directory_permitted(ctx, product, city, at)):
         raise Denied()
     by_epoch = defaultdict(list)
     for segment in catalog.segments:
@@ -241,7 +241,7 @@ def _catalog_page(ctx, product, candidates, at, controls, route, conditions, *, 
     }
 
 
-def _directory_permitted(ctx, product, city, at):
+def directory_permitted(ctx, product, city, at):
     """A broadly authorized product may provide a genuinely empty directory."""
     day = at.astimezone(ZoneInfo(product.source_timezone)).date()
     return any(

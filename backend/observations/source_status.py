@@ -129,9 +129,9 @@ def collection_status(ctx, product, revisions, entity):
                 json.dumps(cells),
                 sorted(PROFILES),
                 product.pk,
-                ctx.now,
-                ctx.now,
-                ctx.now,
+                ctx.projection_at,
+                ctx.projection_at,
+                ctx.projection_at,
                 cnemc_contract,
                 PROFILE,
             ],
@@ -210,7 +210,7 @@ def collection_status(ctx, product, revisions, entity):
             else finished + timedelta(seconds=cadence)
         )
         results[pk] = dict(
-            source_status=state if ctx.now < until else "unknown",
+            source_status=state if ctx.projection_at < until else "unknown",
             source_event=state,
             source_event_at=finished,
             source_status_until=until,

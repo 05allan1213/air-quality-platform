@@ -235,7 +235,7 @@ def test_v05_independent_known_intersection_and_quality(users):
         (41, 30, False, "insufficient_coverage"),
     ],
 )
-def test_v06_pearson_threshold_and_variance(users, hours, pairs, constant, reason):
+def test_v06_pearson_threshold_and_variance(users, hours, pairs, constant, reason, monkeypatch):
     op, web = users
     p = product("v06")
     a = site(p)
@@ -258,9 +258,35 @@ def test_v06_pearson_threshold_and_variance(users, hours, pairs, constant, reaso
     report = successful(web, STATISTICS, req)
     assert (report["E_common"], report["P"]) == (hours, pairs)
     assert report["conclusion"]["state"] == reason
+    points = report["pearson_pairs"]["points"]
+    assert report["pearson_pairs"] == {"points": points, "shown": pairs, "truncated": False}
+    assert [
+        (datetime.fromisoformat(point["at"]), Decimal(point["x"]), Decimal(point["y"]))
+        for point in points
+    ] == [(START + i * HOUR, i, 1 if constant else 3 * i + 5) for i in range(pairs)]
+    assert all(isinstance(point[axis], str) for point in points for axis in ("x", "y"))
     coefficient = report["pearson"]
     if reason == "sufficient":
         assert coefficient == pytest.approx(1, abs=1e-9)
+        from rest_framework.renderers import JSONRenderer
+
+        prefix = {"points": points[:9], "shown": 9, "truncated": True}
+        limit = len(JSONRenderer().render(report | {"pearson_pairs": prefix}))
+        monkeypatch.setattr("observations.research_api.JSON_LIMIT", limit)
+        partial = successful(web, STATISTICS, req)
+        assert partial == report | {"pearson_pairs": prefix}
+        saved = post(web, "/api/v1/me/saved-queries/", req | {"title": "Pair budget"})
+        assert saved.status_code == 201
+        replay = successful(
+            web, f"/api/v1/me/saved-queries/{saved.json()['id']}/run/?scope=synthetic", {}
+        )
+        fitted = replay["result"]["pearson_pairs"]
+        assert fitted["truncated"] and fitted["points"] == points[: fitted["shown"]]
+        assert fitted["shown"] < 9 and replay["result"]["pearson"] == coefficient
+        assert len(JSONRenderer().render(replay)) <= limit
+        monkeypatch.setattr("observations.research_api.JSON_LIMIT", 1)
+        failed = post(web, STATISTICS, req)
+        assert (failed.status_code, failed.json()) == (400, {"code": "query_too_large"})
     else:
         assert coefficient is None
 
@@ -445,6 +471,12 @@ def test_hour_buckets_keep_repeated_dst_labels_distinct_in_http_details_and_csv(
         (0, None),
         (1, None),
     ]
+    for point in compare["chart"]["points"]:
+        if point["key_id"] is not None:
+            clicked = compare_req | {"input_version": compare["input_version"]} | point["drilldown"]
+            assert [row["key"] for row in successful(web, DETAIL, clicked)["results"]] == [
+                point["key_id"]
+            ]
     for bucket in compare["buckets"]:
         rows = successful(
             web,
@@ -635,3 +667,147 @@ def test_v08_zero_iqr_leaves_peak_in_effective_samples(users):
     assert result["anomalies"] == {"state": "zero_iqr", "count": None}
     assert result["columns"][0]["V"] == 30
     assert result["buckets"][-1]["maximum"] == 50
+
+
+def test_point_drilldown_exact_microsecond_and_range_tail(users):
+    op, web = users
+    p = product("chart-interval", "C")
+    a, b = city(p, "A"), city(p, "B")
+    rights = authorize(op, p)
+    tick = timedelta(microseconds=1)
+    # Inject two adjacent sub-millisecond labels to exercise stored-time precision.
+    ingest(
+        op,
+        p,
+        [
+            candidate(p, "A", START, 1),
+            candidate(p, "A", START + HOUR, 2),
+            candidate(p, "B", START, "NA"),
+            candidate(p, "A", START + 719 * HOUR, 3),
+        ],
+    )
+    CityObservation.objects.filter(product=p, observed_at_utc=START + HOUR).update(
+        observed_at_utc=START + tick
+    )
+    query = parent(p, [a, b], method="compare", hours=2)
+    report = successful(web, COMPARE, query)
+    pinned = query | {"input_version": report["input_version"]}
+    for point in report["chart"]["points"]:
+        if point["key_id"] is None:
+            assert "drilldown" not in point
+            continue
+        link = point["drilldown"]
+        assert link["support"] == "observed" and link["bucket"]["pos"] == point["pos"]
+        assert (
+            datetime.fromisoformat(link["bucket"]["end"])
+            == datetime.fromisoformat(point["at"]) + tick
+        )
+        rows = successful(web, DETAIL, pinned | link)["results"]
+        assert [(r["key"], r["pos"]) for r in rows] == [(point["key_id"], point["pos"])]
+    end = START + 719 * HOUR + tick
+    query = with_dates(query, START, end)
+    report = successful(web, COMPARE, query)
+    assert report["chart"]["resolution"] == "range"
+    tail = [point for point in report["chart"]["points"] if point["pos"] == 0][-1]
+    link = tail["drilldown"]
+    assert link["support"] == "effective" and link["bucket"]["start"] == tail["at"]
+    assert datetime.fromisoformat(link["bucket"]["end"]) == end
+    assert all(
+        ("drilldown" in point) == bool(point["valid_count"]) for point in report["chart"]["points"]
+    )
+    pinned = query | {"input_version": report["input_version"]}
+    rows = successful(web, DETAIL, pinned | link)["results"]
+    assert [(r["pos"], Decimal(r["value"])) for r in rows] == [(0, 3)]
+    for altered in ({"pos": 2}, {"end": (end + tick).isoformat()}):
+        failure = post(web, DETAIL, pinned | link | {"bucket": link["bucket"] | altered})
+        assert (failure.status_code, failure.json()) == (400, {"code": "invalid_request"})
+    ingest(op, p, [candidate(p, "A", START + HOUR, 4)])
+    stale = post(web, DETAIL, pinned | link)
+    assert (stale.status_code, stale.json()) == (409, {"code": "input_changed"})
+    revoke_grant(op.pk, rights["display"].pk, "withdraw point display")
+    revoked = post(web, DETAIL, pinned | link)
+    assert (revoked.status_code, revoked.json()) == (403, {"code": "use_denied"})
+
+
+def test_pearson_unknown_calendar_or_restricted_display(users):
+    op, web = users
+    p = product("pearson-sample", "C")
+    unknown, known = city(p, "unknown"), city(p, "known")
+    rights = authorize(op, p)
+    ingest(op, p, [candidate(p, "unknown", indicator=i) for i in ("CO", "PM2.5")])
+    query = parent(p, [unknown], method="pearson", indicators=("CO", "PM2.5"))
+    report = successful(web, STATISTICS, query)
+    assert report["actual_pairs"] == 1 and report["P"] is None and "pearson_pairs" not in report
+    details = successful(
+        web, DETAIL, query | {"input_version": report["input_version"]} | report["paired_drilldown"]
+    )
+    assert [row["pos"] for row in details["results"]] == [0, 1]
+    query = parent(p, [known], method="pearson", indicators=("CO", "PM2.5"))
+    report = successful(web, STATISTICS, query)
+    assert report["P"] == 0 and report["pearson_pairs"] == {
+        "points": [],
+        "shown": 0,
+        "truncated": False,
+    }
+    revoke_grant(op.pk, rights["display"].pk, "summary only")
+    grant(op, p, "display", fields=DISPLAY - {"normalized", "provenance"})
+    grant(op, p, "display", fields=DISPLAY, indicator="CO")
+    restricted = successful(web, STATISTICS, query)
+    assert "pearson_pairs" not in restricted and "chart" not in restricted
+
+
+@pytest.mark.parametrize("saved", [False, True], ids=["direct", "saved-run"])
+def test_negotiated_pearson_json_budget_over_http(django_user_model, saved):
+    from observations.research_api import JSON_LIMIT
+    from s05_http import loopback
+
+    op = django_user_model.objects.create_superuser("budget-curator")
+    user = django_user_model.objects.create_user("budget-reader", password="s05-test-only")
+    p = product("budget-pairs", "C")
+    p.attribution = "Budget test credit"
+    p.save(update_fields=["attribution"])
+    target = city(p)
+    authorize(op, p)
+    ingest(
+        op,
+        p,
+        [
+            candidate(p, at=START + i * HOUR, value=i, indicator=ind)
+            for i in range(30)
+            for ind in ("CO", "PM2.5")
+        ],
+    )
+    query = parent(p, [target], method="pearson", hours=30, indicators=("CO", "PM2.5"))
+    with loopback(user) as (web, _):
+        endpoint, payload = STATISTICS, query
+        if saved:
+            created = web.post("/api/v1/me/saved-queries/", json=query | {"title": "Budget"})
+            assert created.status_code == 201
+            endpoint, payload = (
+                f"/api/v1/me/saved-queries/{created.json()['id']}/run/?scope=synthetic",
+                {},
+            )
+        pretty = {"Accept": "application/json; indent=4"}
+        full = web.post(endpoint, json=payload, headers=pretty)
+        assert full.status_code == 200 and b'\n    "' in full.content
+        # Increase the unique ASCII attribution until the full pretty response is
+        # exactly 200 bytes above the real wire limit. Compact JSON still fits.
+        p.attribution += "." * (JSON_LIMIT - len(full.content) + 200)
+        p.save(update_fields=["attribution"])
+        compact = web.post(endpoint, json=payload)
+        assert compact.status_code == 200 and len(compact.content) <= JSON_LIMIT
+        report = compact.json()["result"] if saved else compact.json()
+        points = report["pearson_pairs"]["points"]
+        assert report["P"] == len(points) == 30 and not report["pearson_pairs"]["truncated"]
+        response = web.post(endpoint, json=payload, headers=pretty)
+        assert response.status_code == 200 and len(response.content) <= JSON_LIMIT
+        assert b'\n    "' in response.content
+        report = response.json()["result"] if saved else response.json()
+        projection = report["pearson_pairs"]
+        assert 0 < projection["shown"] < 30 and projection["truncated"]
+        assert projection["points"] == points[: projection["shown"]]
+        assert report["P"] == 30 and report["pearson"] == pytest.approx(1)
+        p.attribution += "." * len(full.content)
+        p.save(update_fields=["attribution"])
+        rejected = web.post(endpoint, json=payload, headers=pretty)
+        assert (rejected.status_code, rejected.json()) == (400, {"code": "query_too_large"})

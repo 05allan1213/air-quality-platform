@@ -4,7 +4,6 @@ from django.db import OperationalError, transaction
 from django.urls import path
 from django.views.decorators.cache import never_cache
 from rest_framework.decorators import api_view
-from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
 from .analysis_query import build_relation, detail_rows
@@ -28,9 +27,32 @@ STATUS = {
 JSON_LIMIT = 1024 * 1024
 
 
-def bounded(data):
-    if len(JSONRenderer().render(data)) > JSON_LIMIT:
+def bounded(request, data):
+    def fits():
+        # JSONRenderer honors negotiated media parameters such as indent=4.
+        body = request.accepted_renderer.render(data, request.accepted_media_type)
+        return len(body) <= JSON_LIMIT
+
+    if fits():
+        return Response(data)
+    # Saved runs wrap the same report. Charge its complete envelope, attribution,
+    # columns and chart against the same budget before fitting the sorted prefix.
+    pairs = data.get("result", data).get("pearson_pairs")
+    if not pairs or not pairs["points"]:
         raise Denied("query_too_large")
+    points = pairs["points"]
+    pairs.update(points=[], shown=0, truncated=True)
+    if not fits():
+        raise Denied("query_too_large")
+    low, high = 0, len(points) - 1
+    while low < high:
+        shown = (low + high + 1) // 2
+        pairs.update(points=points[:shown], shown=shown)
+        if fits():
+            low = shown
+        else:
+            high = shown - 1
+    pairs.update(points=points[:low], shown=low)
     return Response(data)
 
 
@@ -88,7 +110,8 @@ def drilldown(rel, data, user):
     )
 
 
-def query_response(user_id, spec, purpose, data, *, nowait):
+def query_response(request, spec, purpose, data, *, nowait):
+    user_id = request.user.pk
     with transaction.atomic():
         rel = build_relation(user_id, spec, purpose=purpose, nowait=nowait)
         if purpose == "details":
@@ -98,6 +121,7 @@ def query_response(user_id, spec, purpose, data, *, nowait):
 
             response = summarize(rel, series=rel.series)
         result = bounded(
+            request,
             spec.canonical
             | dict(
                 input_version=rel.input_version,
@@ -106,7 +130,7 @@ def query_response(user_id, spec, purpose, data, *, nowait):
                 requested_window={"start": spec.start, "end": spec.end},
                 **rel.metadata,
             )
-            | response
+            | response,
         )
         rel.after()
     return result
@@ -136,7 +160,7 @@ def research_view(action):
                 raise Denied("invalid_request")
             purpose = "details" if action == "details" else "analysis"
             try:
-                return query_response(request.user.pk, spec, purpose, data, nowait=True)
+                return query_response(request, spec, purpose, data, nowait=True)
             except OperationalError as exc:
                 if getattr(exc.__cause__, "sqlstate", None) != "55P03":
                     raise
@@ -144,7 +168,7 @@ def research_view(action):
             # hidden resource, then recompute everything after the authorized lock wait.
             with transaction.atomic():
                 Access(ResearchContext(request.user.pk, spec, locked=True), spec, purpose, ())
-            return query_response(request.user.pk, spec, purpose, data, nowait=False)
+            return query_response(request, spec, purpose, data, nowait=False)
         except Denied as exc:
             return Response({"code": exc.code}, status=STATUS.get(exc.code, 400))
 

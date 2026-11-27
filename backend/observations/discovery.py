@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import Case, Q, When
 from django.urls import path
 
-from .models import Product, UseGrant
+from .models import City, Product, UseGrant
 from .normalization import INDICATORS, STANDARD_2012, STANDARD_2026, WINDOWS
 from .policy import Denied, Scope
 from .queries import pk
@@ -21,7 +21,15 @@ from .s04_http import (
     params,
     read_view,
 )
-from .s04_station import CATALOG, HOUR, history_link, observation_link, synthetic_scope
+from .s04_station import (
+    CATALOG,
+    HOUR,
+    directory_permitted,
+    epoch_queryset,
+    history_link,
+    observation_link,
+    synthetic_scope,
+)
 from .selection import TICK, ReadContext
 
 ROUTE = "catalog-objects"
@@ -165,14 +173,66 @@ def entry(ctx, product, key):
     }
 
 
+def station_directories(ctx, city_id, at, size, after, conditions):
+    city = City.objects.filter(pk=city_id).first()
+    rows = []
+    anchor_visible = after is None
+    for product in ctx.products.values():
+        if city is None or product.source_id != city.source_id:
+            continue
+        epochs = epoch_queryset(product).filter(city=city, active_period__contains=at)
+        if (
+            not directory_permitted(ctx, product, city, at)
+            and not ctx.scope(
+                product,
+                INDICATORS[product.shape],
+                epochs.values_list("pk", flat=True),
+                start=at,
+                end=at + TICK,
+                fields=CATALOG,
+            ).permitted
+        ):
+            continue
+        if after and product.pk == after["product"]:
+            anchor_visible = True
+            continue
+        rows.append(
+            {
+                "city": city_id,
+                "product": product.pk,
+                "synthetic": product.synthetic,
+                "station_directory": observation_link(
+                    f"cities/{city_id}/stations", product, at=at.isoformat()
+                ),
+            }
+        )
+        if len(rows) > size:
+            break
+    if not anchor_visible:
+        raise Denied()
+    cursor = None
+    if len(rows) > size:
+        cursor = encode_cursor(
+            ROUTE,
+            ctx.user_id,
+            conditions,
+            {"product": rows[size - 1]["product"], "at": at.isoformat()},
+        )
+    ctx.finish()
+    return {"results": rows[:size], "page": {"page_size": size, "next_cursor": cursor}}
+
+
 @transaction.atomic
 def discover(user_id, query):
-    values = params(query, {"scope", "product", "at", "page_size", "cursor"})
+    values = params(query, {"scope", "product", "city", "at", "page_size", "cursor"})
     synthetic = synthetic_scope(values)
     selection = pk(values["product"]) if "product" in values else None
     size = page_size(values)
     requested = instant(values["at"]) if "at" in values else None
     conditions = [selection, synthetic, requested, size]
+    city = pk(values["city"]) if "city" in values else None
+    if city is not None:
+        conditions.append(city)
     after = decode_cursor(values.get("cursor"), ROUTE, user_id, conditions)
     products = Product.objects.filter(
         synthetic=synthetic,
@@ -180,6 +240,8 @@ def discover(user_id, query):
             operation="display", revoked_at__isnull=True, effect="allow"
         ).values("product_id"),
     )
+    if city is not None:
+        products = products.filter(shape="S", level="station")
     if selection:
         products = products.filter(pk=selection)
     if after:
@@ -188,6 +250,8 @@ def discover(user_id, query):
     at = instant(after["at"]) if after else requested or ctx.now
     if at > ctx.now:
         raise Denied("invalid_request")
+    if city is not None:
+        return station_directories(ctx, city, at, size, after, conditions)
     entries = []
     seen_anchor = not after
     for product in ctx.products.values():

@@ -13,6 +13,20 @@ JOB_ACTIONS = {"pause", "resume", "resume_source", "resume_product"}
 REASONS = {"operator_pause", "operator_resume", "operator_recovery", "incident_review"}
 
 
+ACTION_REASONS = {
+    "pause": "operator_pause",
+    "resume": "operator_resume",
+    "resume_source": "operator_recovery",
+    "resume_product": "operator_recovery",
+    "redeliver": "operator_recovery",
+}
+
+
+def check_new_reason(data):
+    if data["request_id"] is not None and data["reason_code"] != ACTION_REASONS[data["action"]]:
+        raise Denied("invalid_request")
+
+
 def parse(data, actions):
     if data == {"action": "pause"} and "pause" in actions:
         return dict(action="pause", request_id=None, reason_code="", expected_version=None)

@@ -30,7 +30,7 @@ from .research_session import (
     scope,
 )
 
-FORMAT = "s05.csv.v1"
+FORMAT = "s05.csv.v2"
 MAX_ROWS = 10_000
 MAX_BYTES = 4 * 1024 * 1024
 TICKET_TTL = timedelta(minutes=15)
@@ -38,6 +38,7 @@ TICKET_LIMIT = 12
 TICKET_RATE = 5
 COMMON_FIELDS = (
     "group",
+    "data_scope",
     "source",
     "product",
     "attribution",
@@ -252,6 +253,7 @@ def data_rows(kind, relations, generated_at):
             raise Denied("query_too_large")
         common = {
             "group": index,
+            "data_scope": "synthetic" if rel.product.synthetic else "formal",
             "source": rel.product.source.namespace,
             "product": rel.product.pk,
             "attribution": "\n".join(rel.attributions),

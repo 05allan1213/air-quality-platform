@@ -378,3 +378,38 @@ def test_source_status_without_receipt_requires_frozen_series(status_series, ind
         revoke_grant(op.pk, grant.pk, "F status withdrawn")
         assert results() == [("unknown", None), ("unknown", None)]
     assert Run.objects.count() == 1
+
+
+def test_city_station_discovery_uses_catalog_rights_without_observations(django_user_model):
+    from observations.models import City
+
+    op = django_user_model.objects.create_superuser("station-directory-operator")
+    reader = django_user_model.objects.create_user(
+        "station-directory-reader", password="s05-test-only"
+    )
+    p = create_product()
+    epoch = create_site(p)
+    empty = City.objects.create(source=p.source, name="F empty", geography="B")
+    grant = allow(op, p, "display", fields=["catalog"], object_code="001")
+    allow(op, p, "retain_normalized", fields=["catalog"])
+    with loopback(reader) as (web, _):
+        route = "/api/v1/catalog/objects/"
+        query = {"scope": "synthetic", "at": START.isoformat()}
+
+        def get(city):
+            response = web.get(route, params=query | {"city": city})
+            assert response.status_code == 200
+            return response.json()["results"]
+
+        assert web.get(route, params=query).json()["results"] == []
+        (row,) = get(epoch.city_id)
+        assert set(row) == {"city", "product", "station_directory", "synthetic"}
+        assert row["product"] == p.pk and row["synthetic"]
+        assert web.get(row["station_directory"]).json()["results"][0]["site_epoch"] == epoch.pk
+        assert get(empty.pk) == get(empty.pk + 999) == []
+        revoke_grant(op.pk, grant.pk, "F directory withdrawn")
+        assert get(epoch.city_id) == []
+        assert web.get(row["station_directory"]).status_code == 403
+        allow(op, p, "display", fields=["catalog"], geography="B")
+        (empty_row,) = get(empty.pk)
+        assert web.get(empty_row["station_directory"]).json()["state"] == "no_data"

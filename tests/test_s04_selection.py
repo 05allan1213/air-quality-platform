@@ -405,3 +405,47 @@ def test_exact_and_range_deny_ended_station_epoch_even_with_active_code(catalog)
         read_current(reader.pk, selector(p, old, at=BOUNDARY))
     with pytest.raises(Denied, match="use_denied"):
         read_detail(reader.pk, q | {"start": BOUNDARY.isoformat()})
+
+
+def test_cursor_binds_full_authorized_projection(catalog):
+    op, reader, p, site, q = catalog
+    hidden = create_site(p, code="002")
+    allow(op, p, "display", object_code="001")
+    q = q | {"page_size": "2", "site_epochs": f"{site.pk},{hidden.pk}"}
+    ingest_fixture(
+        op.pk, p.pk, "seen", "F", [candidate(p, 1, at=START + n * HOUR) for n in range(3)]
+    )
+    token = read_detail(reader.pk, q)["page"]["next_cursor"]
+    continuation = q | {"cursor": token}
+    # Changing only a hidden row or adding an equivalent basis leaves the same result.
+    ingest_fixture(op.pk, p.pk, "unseen", "F", [candidate(p, 1, code="002")])
+    allow(op, p, "display", object_code="001")
+    assert len(read_detail(reader.pk, continuation)["results"]) == 1
+    # Update the first displayed row; the previous page's last row is unchanged.
+    ingest_fixture(op.pk, p.pk, "revision", "F", [candidate(p, 2, value="12", at=START + 2 * HOUR)])
+    with pytest.raises(Denied, match="page_changed"):
+        read_detail(reader.pk, continuation)
+    token = read_detail(reader.pk, q)["page"]["next_cursor"]
+    ingest_fixture(op.pk, p.pk, "insert", "F", [candidate(p, 1, at=START + 3 * HOUR)])
+    with pytest.raises(Denied, match="page_changed"):
+        read_detail(reader.pk, q | {"cursor": token})
+
+
+def test_continuation_waits_for_non_anchor_correction(catalog):
+    op, reader, p, _, q = catalog
+    allow(op, p, "display")
+    ingest_fixture(
+        op.pk, p.pk, "before", "F", [candidate(p, 1, at=START + i * HOUR) for i in range(3)]
+    )
+    q = q | {"page_size": "2"}
+    continuation = q | {"cursor": read_detail(reader.pk, q)["page"]["next_cursor"]}
+    queue = Queue()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with transaction.atomic():
+            ingest_fixture(
+                op.pk, p.pk, "change", "F", [candidate(p, 2, at=START + 2 * HOUR, value="13")]
+            )
+            read = pool.submit(in_db_session, queue, lambda: read_detail(reader.pk, continuation))
+            wait_for_block(queue.get(timeout=5))
+        with pytest.raises(Denied, match="page_changed"):
+            read.result(timeout=5)

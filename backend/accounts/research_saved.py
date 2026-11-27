@@ -214,6 +214,7 @@ def run_saved_query(request, item_id):
                         "current" if item.baseline == relation.content_version else "data_changed"
                     )
             output = bounded(
+                request,
                 {
                     "state": state,
                     "intent_revision": item.intent_revision,
@@ -228,7 +229,7 @@ def run_saved_query(request, item_id):
                             **relation.metadata,
                         }
                     ),
-                }
+                },
             )
             auth.finish([relation])
         return output
